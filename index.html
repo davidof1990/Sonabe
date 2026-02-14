@@ -8,7 +8,7 @@
         body {
             background-color: #121212;
             color: white;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -23,49 +23,59 @@
             width: 100%;
         }
 
-        /* LA FINESTRA DE RETALL: Només 80px x 80px */
-        .crop-window {
-            width: 80px; 
-            height: 80px;
+        /* EL CERCLE DE VISIÓ: Només veiem el botó Play */
+        .play-window {
+            width: 100px;
+            height: 100px;
             margin: 20px auto;
-            overflow: hidden; /* Això talla tot el que sobresurt */
-            border-radius: 50%; /* Ho fem rodó perquè sembli un botó */
-            border: 4px solid #1DB954;
+            overflow: hidden; /* Això talla el títol i l'artista */
+            border-radius: 50%;
+            border: 5px solid #1DB954;
             position: relative;
             background-color: #000;
+            box-shadow: 0 0 20px rgba(29, 185, 84, 0.3);
         }
 
-        /* EL REPRODUCTOR: El fem molt més gran i el movem */
+        /* EL REPRODUCTOR: El fem gran i el desplacem */
         iframe {
             position: absolute;
-            top: -0px;
-            left: -0px; /* Aliniem el botó de play al quadrat */
-            width: 400px; /* Amplada gran perquè el títol quedi lluny a la dreta */
-            height: 80px;
+            top: 0;
+            left: 0;
+            width: 400px; /* L'amplada gran fa que el text s'allunyi a la dreta */
+            height: 100px;
             border: none;
+            /* El Play de Spotify sol estar a l'esquerra, així que el deixem a left:0 */
         }
 
         .instruccions {
-            color: #b3b3b3;
+            color: #888;
             font-size: 0.9rem;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
 
         .btn-revelar {
-            margin-top: 30px;
+            margin-top: 40px;
             background: none;
-            border: 1px solid #555;
-            color: #888;
-            padding: 10px 20px;
-            border-radius: 20px;
+            border: 1px solid #444;
+            color: #666;
+            padding: 12px 24px;
+            border-radius: 30px;
             cursor: pointer;
+            font-size: 0.8rem;
+            text-transform: uppercase;
         }
 
         #solucio {
             display: none;
-            margin-top: 20px;
+            margin-top: 25px;
             font-weight: bold;
             color: #1DB954;
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 10px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
         }
     </style>
 </head>
@@ -74,33 +84,38 @@
     <div class="container">
         <h1>Hitster Català</h1>
         
-        <div id="joc">
-            <p class="instruccions">Prem el botó central per escoltar:</p>
+        <div id="pantalla-joc">
+            <p class="instruccions">Prem el centre per escoltar:</p>
             
-            <div class="crop-window">
-                <iframe id="player" src="" allow="autoplay; encrypted-media"></iframe>
+            <div class="play-window">
+                <iframe id="reproductor" src="" allow="autoplay; encrypted-media"></iframe>
             </div>
 
-            <button class="btn-revelar" onclick="revelar()">REVELAR SOLUCIÓ</button>
-            <div id="solucio">🔍 Mira la cara B de la teva carta!</div>
+            <button class="btn-revelar" onclick="revelar()">Revelar Solució</button>
+            <div id="solucio">🔍 L'any i l'artista són a la carta!</div>
         </div>
 
-        <div id="error" style="display:none">
-            <p>Cap cançó detectada. Escaneja un QR!</p>
+        <div id="pantalla-error" style="display:none">
+            <p>❌ Escaneja un codi QR amb un ID de cançó vàlid.</p>
         </div>
     </div>
 
     <script>
+        // Llegim l'ID de la cançó de la URL (?id=...)
         const urlParams = new URLSearchParams(window.location.search);
-        const trackId = urlParams.get('id');
+        let trackId = urlParams.get('id');
 
         if (trackId) {
+            // Netejem l'ID si porta el prefix de spotify:track:
             const cleanId = trackId.replace('spotify:track:', '');
-            // Aquesta és la URL oficial d'Spotify per a reproductors
-            document.getElementById('player').src = `https://open.spotify.com/embed/track/${cleanId}`;
+            
+            // URL OFICIAL DE SPOTIFY (Ara sí!)
+            const finalUrl = `https://open.spotify.com/embed/track/${cleanId}?utm_source=generator&theme=0`;
+            
+            document.getElementById('reproductor').src = finalUrl;
         } else {
-            document.getElementById('joc').style.display = 'none';
-            document.getElementById('error').style.display = 'block';
+            document.getElementById('pantalla-joc').style.display = 'none';
+            document.getElementById('pantalla-error').style.display = 'block';
         }
 
         function revelar() {
