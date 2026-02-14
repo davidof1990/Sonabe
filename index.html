@@ -9,69 +9,48 @@
             background-color: #121212;
             color: white;
             font-family: sans-serif;
+            margin: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            margin: 0;
-            overflow: hidden;
         }
 
-        .container { text-align: center; width: 100%; }
+        .instruccions {
+            margin-bottom: 20px;
+            color: #1DB954;
+            font-weight: bold;
+        }
 
-        /* EL CERCLE ON ES JUGA */
-        .play-area {
-            position: relative;
-            width: 220px;
-            height: 220px;
-            margin: 0 auto;
+        /* LA FINESTRA: Només deixem veure un quadrat de 80x80 píxels */
+        .window {
+            width: 80px;
+            height: 80px;
+            overflow: hidden; /* Tot el que surti d'aquí no es veurà */
             border-radius: 50%;
             border: 5px solid #1DB954;
-            background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+            position: relative;
+            background-color: #000;
+            box-shadow: 0 0 20px rgba(29, 185, 84, 0.5);
         }
 
-        /* EL BOTÓ QUE TU VEUS (DISSENY) */
-        .visual-button {
-            width: 100px;
-            height: 100px;
-            background-color: #1DB954;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1; /* Està a sota */
-        }
-
-        .play-shape {
-            width: 0; height: 0;
-            border-top: 20px solid transparent;
-            border-bottom: 20px solid transparent;
-            border-left: 30px solid black;
-            margin-left: 8px;
-        }
-
-        /* EL REPRODUCTOR REAL (INVISIBLE PERÒ CLICABLE) */
+        /* EL REPRODUCTOR: El movem perquè el botó de play coincideixi amb la finestra */
         iframe {
             position: absolute;
-            top: -110px; /* Centrem el botó de play de l'embed */
-            left: -10px;
-            width: 350px; /* El fem gran perquè el clic sigui fàcil */
-            height: 400px;
+            top: -76px;  /* Ajustem amunt/avall */
+            left: -12px; /* Ajustem esquerra/dreta */
+            width: 300px;
+            height: 380px;
             border: none;
-            z-index: 10; /* Està a sobre de tot! */
-            opacity: 0.01; /* Quasi invisible però hi és */
+            /* Eliminem el difuminat per evitar que Spotify es bloquegi */
         }
 
         .btn-reveal {
-            margin-top: 50px;
-            background: transparent;
+            margin-top: 40px;
+            background-color: #282828;
+            color: #aaa;
             border: 1px solid #444;
-            color: #666;
             padding: 10px 20px;
             border-radius: 20px;
             cursor: pointer;
@@ -80,28 +59,29 @@
 </head>
 <body>
 
-    <div class="container">
-        <h1 style="font-weight: 300;">Hitster Català</h1>
-        
-        <div class="play-area">
-            <div class="visual-button">
-                <div class="play-shape"></div>
-            </div>
-            
-            <iframe id="sp-player" src="" allow="autoplay; encrypted-media"></iframe>
-        </div>
+    <div class="instruccions">Prem el Play per jugar</div>
 
-        <button class="btn-reveal" onclick="alert('L\'any i el títol són a la carta!')">MOSTRAR SOLUCIÓ</button>
+    <div class="window">
+        <iframe 
+            id="player" 
+            src="" 
+            allow="autoplay; encrypted-media">
+        </iframe>
     </div>
+
+    <button class="btn-reveal" onclick="alert('Mira la carta per veure el resultat!')">REVELAR SOLUCIÓ</button>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const trackId = urlParams.get('id');
+        
         if (trackId) {
-            // ARA SÍ: Amb el símbol $ correcte per carregar l'ID
-            document.getElementById('sp-player').src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`;
+            // HEM CORREGIT AIXÒ: Ara l'ID es carrega correctament
+            const iframe = document.getElementById('player');
+            iframe.src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`;
+        } else {
+            document.body.innerHTML = "<h1>Falta l'ID de la cançó!</h1>";
         }
     </script>
-
 </body>
 </html>
