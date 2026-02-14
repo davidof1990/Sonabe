@@ -5,89 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hitster Català 🎶</title>
     <style>
-        :root {
-            --spotify-green: #1DB954;
-            --dark-bg: #121212;
-            --card-bg: #181818;
-        }
-
         body {
-            background-color: var(--dark-bg);
+            background-color: #121212;
             color: white;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: sans-serif;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             height: 100vh;
             margin: 0;
-            overflow: hidden;
         }
 
-        .container {
+        .game-container {
             width: 90%;
             max-width: 400px;
             text-align: center;
         }
 
-        /* EL TRUCO: Un contenedor pequeño y redondo que solo deja ver el centro del player */
-        .player-clipper {
+        /* CONTENIDOR DEL REPRODUCTOR */
+        .player-container {
             position: relative;
-            width: 150px;
-            height: 150px;
-            margin: 20px auto;
-            border-radius: 50%; /* Lo hacemos circular */
-            overflow: hidden;    /* Escondemos todo lo que sobresalga */
-            border: 5px solid var(--spotify-green);
-            box-shadow: 0 0 20px rgba(29, 185, 84, 0.4);
+            width: 100%;
+            height: 80px; /* Alçada del reproductor compacte */
+            background: #282828;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 20px;
         }
 
-        /* Ajustamos el iframe para que el botón de PLAY quede centrado y lo demás fuera */
+        /* EL REPRODUCTOR REAL */
         iframe {
-            position: absolute;
-            top: -25px;   /* Movemos el reproductor hacia arriba */
-            left: -10px;  /* Lo centramos lateralmente */
-            width: 300px; /* Lo hacemos más ancho para que el texto quede "fuera de plano" */
-            height: 200px;
+            width: 100%;
+            height: 80px;
             border: none;
         }
 
-        /* Una capa invisible encima para que no puedan clicar en el texto por error */
-        .touch-layer {
+        /* LA MÀSCARA (Això tapa el text) */
+        .mask {
             position: absolute;
             top: 0;
-            left: 0;
-            width: 100%;
+            right: 0;
+            width: 75%; /* Tapem el 75% de la dreta, on va el text */
             height: 100%;
-            z-index: 5;
-            background: transparent;
+            background-color: #282828; /* Mateix color que el fons de Spotify */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            /* EL TRUC: El clic passa a través d'aquesta capa */
+            pointer-events: none; 
         }
 
-        .info-text {
-            color: #b3b3b3;
-            margin-bottom: 20px;
-            font-size: 1.1rem;
+        .mask-text {
+            color: #1DB954;
+            font-weight: bold;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
         }
 
         .btn-reveal {
-            margin-top: 30px;
-            background: var(--spotify-green);
+            margin-top: 40px;
+            background: #1DB954;
             border: none;
-            color: black;
-            padding: 12px 25px;
+            padding: 15px 30px;
             border-radius: 30px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 1rem;
         }
 
-        #solution-area {
+        #solution {
             display: none;
             margin-top: 20px;
-            padding: 15px;
-            background: #282828;
+            padding: 20px;
+            border: 2px dashed #1DB954;
             border-radius: 10px;
-            border: 1px solid var(--spotify-green);
         }
 
         .hidden { display: none; }
@@ -95,46 +86,43 @@
 </head>
 <body>
 
-    <div class="container">
-        <h1>Hitster Català</h1>
-        
-        <div id="game-area" class="hidden">
-            <p class="info-text">Prem el botó central per escoltar</p>
-            
-            <div class="player-clipper">
-                <iframe id="spotify-player" src="" allow="autoplay; encrypted-media"></iframe>
-            </div>
+<div class="game-container">
+    <h1>Hitster Català</h1>
 
-            <button class="btn-reveal" onclick="showSolution()">REVELAR SOLUCIÓ</button>
-            
-            <div id="solution-area">
-                <p>🔍 <strong>L'any i la cançó són a la carta!</strong></p>
-                <p style="font-size: 0.8rem; color: #aaa;">(Spotify no permet amagar el títol completament si es clica fora del play, mira només la carta!)</p>
-            </div>
-        </div>
-
-        <div id="no-id-message">
-            <p>Escaneja un codi QR per començar.</p>
-        </div>
+    <div id="setup-view">
+        <p>Escaneja una carta per començar</p>
     </div>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const trackId = urlParams.get('id');
-
-        if (trackId) {
-            document.getElementById('game-area').classList.remove('hidden');
-            document.getElementById('no-id-message').classList.add('hidden');
+    <div id="play-view" class="hidden">
+        <p>Prem el botó 🟢 per escoltar:</p>
+        
+        <div class="player-container">
+            <iframe id="sp-player" src="" allow="autoplay; encrypted-media"></iframe>
             
-            // Usamos la versión "compacta" del reproductor de Spotify
-            const player = document.getElementById('spotify-player');
-            player.src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`;
-        }
+            <div class="mask">
+                <span class="mask-text">HITSTER MODE ON 🔒</span>
+            </div>
+        </div>
 
-        function showSolution() {
-            const sol = document.getElementById('solution-area');
-            sol.style.display = 'block';
-        }
-    </script>
+        <button class="btn-reveal" onclick="document.getElementById('solution').style.display='block'">REVELAR SOLUCIÓ</button>
+
+        <div id="solution">
+            <p>✅ Mira la carta per veure l'any!</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+
+    if(id) {
+        document.getElementById('setup-view').classList.add('hidden');
+        document.getElementById('play-view').classList.remove('hidden');
+        // Carreguem el reproductor compacte (80px)
+        document.getElementById('sp-player').src = `https://open.spotify.com/embed/track/${id}?utm_source=generator&theme=0`;
+    }
+</script>
+
 </body>
 </html>
