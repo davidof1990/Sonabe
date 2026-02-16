@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hitster Català 🎶</title>
+    <title>HitsterCAT 🎶</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body {
             background-color: #121212;
             color: white;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -18,7 +19,6 @@
             overflow: hidden;
         }
 
-        /* ESTIL NEÓ PER AL LOGO */
         .neon-logo {
             font-weight: bold;
             font-size: 2.2rem;
@@ -26,10 +26,9 @@
             color: #fff;
             margin-bottom: 30px;
             text-shadow: 0 0 10px #fff, 0 0 20px #ff007f, 0 0 40px #ff007f;
-            transition: opacity 0.5s ease;
         }
 
-        /* EL BOTÓ VERMELL */
+        /* BOTÓ PLAY */
         .play-button {
             width: 120px;
             height: 120px;
@@ -41,51 +40,21 @@
             cursor: pointer;
             box-shadow: 0 0 30px rgba(250, 45, 72, 0.4);
             border: none;
-            z-index: 10;
         }
 
-        .play-icon {
-            width: 0; height: 0;
-            border-top: 20px solid transparent;
-            border-bottom: 20px solid transparent;
-            border-left: 30px solid white;
-            margin-left: 8px;
-        }
+        .play-icon { width: 0; height: 0; border-top: 20px solid transparent; border-bottom: 20px solid transparent; border-left: 30px solid white; margin-left: 8px; }
+        .stop-icon { width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none; }
 
-        .stop-icon {
-            width: 30px; height: 30px;
-            background-color: white;
-            border-radius: 4px;
-            display: none;
-        }
-
-        /* TARGETA DE SOLUCIÓ (AMAGADA AL PRINCIPI) */
-        #solution-card {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            animation: fadeIn 0.8s ease forwards;
-            margin-bottom: 20px;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .album-art {
-            width: 180px;
-            height: 180px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-            margin-bottom: 15px;
-        }
-
-        .track-name { font-size: 1.4rem; font-weight: bold; margin: 5px 0; color: #fff; text-align: center; }
+        /* TARGETA DE SOLUCIÓ */
+        #solution-card { display: none; flex-direction: column; align-items: center; animation: fadeIn 0.8s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .album-art { width: 180px; height: 180px; border-radius: 10px; margin-bottom: 15px; }
+        .track-name { font-size: 1.4rem; font-weight: bold; text-align: center; }
         .artist-name { font-size: 1.1rem; color: #fa2d48; margin-bottom: 10px; }
 
-        .btn-reveal {
-            margin-top: 40px;
+        /* BOTONS INFERIORS */
+        .btn {
+            margin-top: 20px;
             background: rgba(255,255,255,0.1);
             border: 1px solid #333;
             color: #aaa;
@@ -95,16 +64,20 @@
             font-weight: bold;
             text-transform: uppercase;
             font-size: 0.7rem;
-            letter-spacing: 1px;
+            width: 200px;
         }
 
+        .btn-next { background-color: #fa2d48; color: white; border: none; margin-top: 10px; display: none; }
+
+        /* ESCÀNER */
+        #reader { width: 300px; border-radius: 15px; overflow: hidden; display: none; }
+        
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <div id="game-ui" style="display:none; text-align:center; flex-direction: column; align-items: center;">
-        
+    <div id="game-ui" style="display:none; flex-direction: column; align-items: center;">
         <div id="logo-header" class="neon-logo">HitsterCAT</div>
 
         <div id="solution-card">
@@ -118,10 +91,17 @@
             <div class="stop-icon" id="icon-stop"></div>
         </button>
 
-        <audio id="audio-player"></audio>
-
-        <button class="btn-reveal" id="reveal-btn" onclick="revealSolution()">REVELAR SOLUCIÓ</button>
+        <button class="btn" id="reveal-btn" onclick="revealSolution()">REVELAR SOLUCIÓ</button>
+        <button class="btn btn-next" id="next-btn" onclick="startScanner()">SEGÜENT CANÇÓ 📷</button>
     </div>
+
+    <div id="scanner-ui" style="display:none; flex-direction: column; align-items: center;">
+        <div class="neon-logo" style="font-size: 1.2rem;">Escaneja el QR</div>
+        <div id="reader"></div>
+        <button class="btn" onclick="location.reload()">CANCEL·LAR</button>
+    </div>
+
+    <audio id="audio-player"></audio>
 
     <script>
         const params = new URLSearchParams(window.location.search);
@@ -132,23 +112,22 @@
         if (appleId) {
             document.getElementById('game-ui').style.display = 'flex';
             loadAppleSong(appleId);
+        } else {
+            startScanner(); // Si no hi ha ID, obrim càmera directament
         }
 
         async function loadAppleSong(id) {
             try {
                 const response = await fetch(`https://itunes.apple.com/lookup?id=${id}`);
                 const data = await response.json();
-
                 if (data.results && data.results.length > 0) {
                     songData = data.results[0];
                     audio.src = songData.previewUrl;
-                    
-                    // Preparem la targeta (però no l'ensenyem encara)
                     document.getElementById('album-img').src = songData.artworkUrl100.replace('100x100', '600x600');
                     document.getElementById('song-title').innerText = songData.trackName;
                     document.getElementById('song-artist').innerText = songData.artistName;
                 }
-            } catch (e) { console.error("Error carregant la cançó"); }
+            } catch (e) { alert("Error carregant cançó"); }
         }
 
         function togglePlay() {
@@ -163,13 +142,26 @@
 
         function revealSolution() {
             if (!songData) return;
-            
-            // Amaguem el logo i el botó de revelar
             document.getElementById('logo-header').classList.add('hidden');
             document.getElementById('reveal-btn').classList.add('hidden');
-            
-            // Ensenyem la targeta amb la info
             document.getElementById('solution-card').style.display = 'flex';
+            document.getElementById('next-btn').style.display = 'block'; // Apareix el botó de següent
+        }
+
+        function startScanner() {
+            document.getElementById('game-ui').style.display = 'none';
+            document.getElementById('scanner-ui').style.display = 'flex';
+            document.getElementById('reader').style.display = 'block';
+
+            const html5QrCode = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                // Quan detecta un QR, anem a la URL que contingui
+                html5QrCode.stop().then(() => {
+                    window.location.href = decodedText;
+                });
+            });
         }
 
         audio.onended = () => updateUI(false);
