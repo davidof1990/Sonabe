@@ -19,6 +19,7 @@
             overflow: hidden;
         }
 
+        /* ESTIL BASE DEL LOGO NEÓ */
         .neon-logo {
             font-weight: bold;
             font-size: 2.8rem;
@@ -27,7 +28,27 @@
             margin-bottom: 20px;
             text-shadow: 0 0 10px #fff, 0 0 20px #ff007f, 0 0 40px #ff007f;
             text-align: center;
+            transition: all 0.1s ease; /* Transició suau per quan s'atura */
         }
+
+        /* --- NOVA ANIMACIÓ PAMPALLUGUES --- */
+        @keyframes flickering {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% {
+                text-shadow: 0 0 10px #fff, 0 0 20px #ff007f, 0 0 40px #ff007f, 0 0 80px #ff007f;
+                opacity: 1;
+            }
+            20%, 24%, 55% {
+                text-shadow: none; /* Apagada momentània */
+                opacity: 0.5; /* Una mica més fosc */
+            }
+        }
+
+        /* Classe que aplicarem amb JS quan soni la música */
+        .flickering-on {
+            animation: flickering 2s infinite alternate-reverse;
+        }
+        /* ---------------------------------- */
+
 
         .play-button {
             width: 130px;
@@ -43,7 +64,6 @@
             margin: 20px 0;
             transition: transform 0.2s;
         }
-        .play-button:active { transform: scale(0.9); }
 
         .play-icon { width: 0; height: 0; border-top: 25px solid transparent; border-bottom: 25px solid transparent; border-left: 40px solid white; margin-left: 10px; }
         .stop-icon { width: 40px; height: 40px; background-color: white; border-radius: 6px; display: none; }
@@ -55,16 +75,15 @@
         .track-name { font-size: 1.6rem; font-weight: bold; text-align: center; padding: 0 15px; line-height: 1.2; margin-bottom: 5px; }
         .artist-name { font-size: 1.2rem; color: #fa2d48; margin-bottom: 10px; }
 
-        /* ESTIL PER A L'ANY */
         .year-badge {
             background-color: white;
             color: black;
             font-weight: bold;
-            font-size: 1.4rem;
-            padding: 5px 20px;
-            border-radius: 10px;
+            font-size: 1.8rem;
+            padding: 5px 25px;
+            border-radius: 12px;
             margin-bottom: 15px;
-            box-shadow: 0 0 15px rgba(255,255,255,0.3);
+            box-shadow: 0 0 20px rgba(255,255,255,0.4);
         }
 
         .btn {
@@ -128,6 +147,7 @@
     <script>
         const params = new URLSearchParams(window.location.search);
         const appleId = params.get('id'); 
+        const manualYear = params.get('y');
         const audio = document.getElementById('audio-player');
         let songData = null;
 
@@ -144,19 +164,14 @@
                 
                 if (data.results && data.results.length > 0) {
                     songData = data.results[0];
-                    if (songData.previewUrl) {
-                        audio.src = songData.previewUrl;
-                        document.getElementById('loader-text').innerText = "Àudio llest 🔒";
-                    }
+                    if (songData.previewUrl) { audio.src = songData.previewUrl; document.getElementById('loader-text').innerText = "Àudio llest 🔒"; }
                     
                     document.getElementById('album-img').src = songData.artworkUrl100.replace('100x100', '600x600');
                     document.getElementById('song-title').innerText = songData.trackName;
                     document.getElementById('song-artist').innerText = songData.artistName;
                     
-                    // EXTRAIEM L'ANY (els 4 primers caràcters de releaseDate)
-                    const year = songData.releaseDate.substring(0, 4);
-                    document.getElementById('song-year').innerText = year;
-                    
+                    const yearToShow = manualYear ? manualYear : songData.releaseDate.substring(0, 4);
+                    document.getElementById('song-year').innerText = yearToShow;
                 }
             } catch (e) { console.error(e); }
         }
@@ -167,10 +182,21 @@
             else { audio.pause(); updateUI(false); }
         }
 
+        // --- NOVA FUNCIÓ UPDATEUI AMB CONTROL D'ANIMACIÓ ---
         function updateUI(isPlaying) {
             document.getElementById('icon-play').style.display = isPlaying ? 'none' : 'block';
             document.getElementById('icon-stop').style.display = isPlaying ? 'block' : 'none';
+
+            const logo = document.getElementById('logo-header');
+            if (isPlaying) {
+                // Si sona, afegim la classe que té l'animació
+                logo.classList.add('flickering-on');
+            } else {
+                // Si s'atura, treiem la classe
+                logo.classList.remove('flickering-on');
+            }
         }
+        // --------------------------------------------------
 
         function revealSolution() {
             if (!songData) return;
