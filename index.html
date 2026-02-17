@@ -19,7 +19,6 @@
             overflow: hidden;
         }
 
-        /* ESTIL BASE DEL LOGO NEÓ */
         .neon-logo {
             font-weight: bold;
             font-size: 2.8rem;
@@ -28,27 +27,23 @@
             margin-bottom: 20px;
             text-shadow: 0 0 10px #fff, 0 0 20px #ff007f, 0 0 40px #ff007f;
             text-align: center;
-            transition: all 0.1s ease; /* Transició suau per quan s'atura */
+            transition: all 0.1s ease;
         }
 
-        /* --- NOVA ANIMACIÓ PAMPALLUGUES --- */
         @keyframes flickering {
             0%, 18%, 22%, 25%, 53%, 57%, 100% {
                 text-shadow: 0 0 10px #fff, 0 0 20px #ff007f, 0 0 40px #ff007f, 0 0 80px #ff007f;
                 opacity: 1;
             }
             20%, 24%, 55% {
-                text-shadow: none; /* Apagada momentània */
-                opacity: 0.5; /* Una mica més fosc */
+                text-shadow: none;
+                opacity: 0.5;
             }
         }
 
-        /* Classe que aplicarem amb JS quan soni la música */
         .flickering-on {
             animation: flickering 2s infinite alternate-reverse;
         }
-        /* ---------------------------------- */
-
 
         .play-button {
             width: 130px;
@@ -62,7 +57,6 @@
             box-shadow: 0 0 30px rgba(250, 45, 72, 0.5);
             border: none;
             margin: 20px 0;
-            transition: transform 0.2s;
         }
 
         .play-icon { width: 0; height: 0; border-top: 25px solid transparent; border-bottom: 25px solid transparent; border-left: 40px solid white; margin-left: 10px; }
@@ -75,15 +69,17 @@
         .track-name { font-size: 1.6rem; font-weight: bold; text-align: center; padding: 0 15px; line-height: 1.2; margin-bottom: 5px; }
         .artist-name { font-size: 1.2rem; color: #fa2d48; margin-bottom: 10px; }
 
+        /* ESTIL DE L'ANY */
         .year-badge {
             background-color: white;
             color: black;
             font-weight: bold;
-            font-size: 1.8rem;
-            padding: 5px 25px;
+            font-size: 2rem;
+            padding: 5px 30px;
             border-radius: 12px;
             margin-bottom: 15px;
-            box-shadow: 0 0 20px rgba(255,255,255,0.4);
+            box-shadow: 0 0 25px rgba(255,255,255,0.5);
+            display: inline-block;
         }
 
         .btn {
@@ -111,7 +107,7 @@
 </head>
 <body>
 
-    <div id="landing-ui" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+    <div id="landing-ui" style="display: flex; flex-direction: column; align-items: center;">
         <div class="neon-logo">Sona bé!</div>
         <button class="btn btn-start" onclick="startScanner()">Començar a jugar!</button>
     </div>
@@ -121,7 +117,7 @@
         <div id="loader-text" style="color: #666; margin-bottom: 10px;">Preparant àudio...</div>
 
         <div id="solution-card">
-            <div id="song-year" class="year-badge"></div>
+            <div id="song-year" class="year-badge">----</div>
             <img id="album-img" class="album-art" src="" alt="Album Art">
             <div id="song-title" class="track-name"></div>
             <div id="song-artist" class="artist-name"></div>
@@ -147,7 +143,7 @@
     <script>
         const params = new URLSearchParams(window.location.search);
         const appleId = params.get('id'); 
-        const manualYear = params.get('y');
+        const manualYear = params.get('y'); 
         const audio = document.getElementById('audio-player');
         let songData = null;
 
@@ -170,10 +166,19 @@
                     document.getElementById('song-title').innerText = songData.trackName;
                     document.getElementById('song-artist').innerText = songData.artistName;
                     
-                    const yearToShow = manualYear ? manualYear : songData.releaseDate.substring(0, 4);
+                    // --- LÒGICA DE L'ANY MILLORADA ---
+                    let yearToShow = "----";
+                    
+                    if (manualYear && manualYear !== "") {
+                        yearToShow = manualYear;
+                    } else if (songData.releaseDate) {
+                        yearToShow = songData.releaseDate.substring(0, 4);
+                    }
+                    
                     document.getElementById('song-year').innerText = yearToShow;
+                    // ---------------------------------
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Error carregant dades:", e); }
         }
 
         function togglePlay() {
@@ -182,21 +187,13 @@
             else { audio.pause(); updateUI(false); }
         }
 
-        // --- NOVA FUNCIÓ UPDATEUI AMB CONTROL D'ANIMACIÓ ---
         function updateUI(isPlaying) {
             document.getElementById('icon-play').style.display = isPlaying ? 'none' : 'block';
             document.getElementById('icon-stop').style.display = isPlaying ? 'block' : 'none';
-
             const logo = document.getElementById('logo-header');
-            if (isPlaying) {
-                // Si sona, afegim la classe que té l'animació
-                logo.classList.add('flickering-on');
-            } else {
-                // Si s'atura, treiem la classe
-                logo.classList.remove('flickering-on');
-            }
+            if (isPlaying) logo.classList.add('flickering-on');
+            else logo.classList.remove('flickering-on');
         }
-        // --------------------------------------------------
 
         function revealSolution() {
             if (!songData) return;
