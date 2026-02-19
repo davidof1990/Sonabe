@@ -119,9 +119,10 @@
         const params = new URLSearchParams(window.location.search);
         const appleId = params.get('id'); 
         const manualYear = params.get('y'); 
-        const isRandomMode = params.get('mode') === 'rand'; // Detectem si venim del mode online
+        const isRandomMode = params.get('mode') === 'rand'; 
         const audio = document.getElementById('audio-player');
         let songData = null;
+        let fadeInterval = null;
 
         if (appleId) {
             document.getElementById('landing-ui').style.display = 'none';
@@ -150,13 +151,51 @@
             } catch (e) { console.error(e); }
         }
 
+        // --- LÒGICA DE FADE (VOLUM GRADUAL) ---
+        function changeVolume(target, duration) {
+            if (fadeInterval) clearInterval(fadeInterval);
+            const step = 0.05; 
+            const intervalTime = duration / (Math.abs(target - audio.volume) / step);
+
+            fadeInterval = setInterval(() => {
+                if (audio.volume < target) {
+                    audio.volume = Math.min(target, audio.volume + step);
+                } else if (audio.volume > target) {
+                    audio.volume = Math.max(target, audio.volume - step);
+                }
+
+                if (audio.volume === target) {
+                    clearInterval(fadeInterval);
+                    if (target === 0) audio.pause();
+                }
+            }, intervalTime || 50);
+        }
+
+        // Monitoritzem el final de la cançó per fer el Fade Out
+        audio.ontimeupdate = () => {
+            if (audio.duration && audio.duration - audio.currentTime < 2.5 && audio.volume > 0 && !fadeInterval) {
+                changeVolume(0, 2000); // Fa el baixada de volum 2.5 segons abans d'acabar
+            }
+        };
+
+        function togglePlay() {
+            if (!audio.src) return;
+            if (audio.paused) { 
+                audio.volume = 0;
+                audio.play(); 
+                changeVolume(1, 2000); // Fade in de 2 segons
+                updateUI(true); 
+            } else { 
+                changeVolume(0, 1000); // Fade out ràpid si pauses manualment
+                updateUI(false); 
+            }
+        }
+
         // LÒGICA PER AL MODE ONLINE (ALEATORI)
         async function jugarAleatori() {
             const status = document.getElementById('status-msg');
             const urlSheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
-            
             if (status) status.innerText = "TRIANT CANÇÓ ONLINE...";
-            
             try {
                 const resp = await fetch(urlSheet);
                 const text = await resp.text();
@@ -165,39 +204,22 @@
                 files.forEach(fila => {
                     const cols = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                     let link = cols[6] ? cols[6].replace(/"/g, "").trim() : "";
-                    
                     if (link.toLowerCase().includes("davidof1990.github.io/sonabe")) {
                         link = link.replace(/sonabe/i, "Sonabe");
                     }
                     if (link.includes("http")) urls.push(link);
                 });
-
                 if (urls.length > 0) {
                     let finalLink = urls[Math.floor(Math.random() * urls.length)];
-                    // Afegim el paràmetre mode=rand per saber que seguim en mode online
                     const separator = finalLink.includes('?') ? '&' : '?';
                     window.location.href = finalLink + separator + "mode=rand";
                 }
-            } catch (e) { 
-                if (status) status.innerText = "ERROR DE CONNEXIÓ"; 
-            }
+            } catch (e) { if (status) status.innerText = "ERROR DE CONNEXIÓ"; }
         }
 
-        // DETERMINA QUÈ FA EL BOTÓ "SEGÜENT CANÇÓ"
         function proximaAccio() {
-            if (isRandomMode) {
-                // Si estàvem jugant online, busquem una altra cançó directament
-                jugarAleatori();
-            } else {
-                // Si estàvem amb cartes, obrim l'escàner
-                startScanner();
-            }
-        }
-
-        function togglePlay() {
-            if (!audio.src) return;
-            if (audio.paused) { audio.play(); updateUI(true); } 
-            else { audio.pause(); updateUI(false); }
+            if (isRandomMode) jugarAleatori();
+            else startScanner();
         }
 
         function updateUI(isPlaying) {
@@ -218,7 +240,6 @@
         }
 
         function startScanner() {
-            // Netegem la URL per si hi havia paràmetres de cançó anterior
             if (window.location.search) {
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
@@ -235,7 +256,10 @@
                 }); 
             });
         }
-        audio.onended = () => updateUI(false);
+        audio.onended = () => {
+            updateUI(false);
+            fadeInterval = null;
+        };
     </script>
 </body>
 </html>
