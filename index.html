@@ -36,15 +36,15 @@
             padding: 18px 30px; border-radius: 40px; cursor: pointer; font-weight: bold;
             text-transform: uppercase; font-size: 0.9rem; width: 280px; margin-top: 15px;
             text-align: center; display: block; transition: all 0.2s;
+            text-decoration: none;
         }
 
         .btn:active { transform: scale(0.95); }
 
-        /* Estil Botó A: Escanejar */
-        .btn-a { background-color: #fa2d48; border: none; font-size: 1rem; color: white; box-shadow: 0 0 20px rgba(250, 45, 72, 0.4); }
-        
-        /* Estil Botó B: Online */
-        .btn-b { background-color: transparent; border: 2px solid #fa2d48; color: #fa2d48; }
+        /* Estils de botons */
+        .btn-primary { background-color: #fa2d48; border: none; color: white; box-shadow: 0 0 20px rgba(250, 45, 72, 0.4); }
+        .btn-outline { background-color: transparent; border: 2px solid #fa2d48; color: #fa2d48; }
+        .btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid #666; color: #ccc; }
 
         .play-button {
             width: 130px; height: 130px; background-color: #fa2d48; border-radius: 50%;
@@ -68,8 +68,6 @@
             box-shadow: 0 0 30px rgba(255,255,255,0.6);
         }
 
-        .btn-next { background-color: #fa2d48; color: white; border: none; display: none; }
-
         #reader-wrapper { position: relative; width: 320px; display: none; border: 3px solid #ff007f; border-radius: 20px; overflow: hidden; }
         #reader { width: 100%; background: #000; }
         .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #fa2d48; box-shadow: 0 0 15px #fa2d48; z-index: 10; animation: scanning 2s infinite; }
@@ -82,11 +80,8 @@
 
     <div id="landing-ui" style="display: flex; flex-direction: column; align-items: center;">
         <div class="neon-logo flickering-on">Sonabé!</div>
-        
-        <button class="btn btn-a" onclick="startScanner()">Tinc les meves cartes 📷</button>
-        
-        <button class="btn btn-b" onclick="jugarAleatori()">Jugar online 🎲</button>
-        
+        <button class="btn btn-primary" onclick="startScanner()">Tinc les meves cartes 📷</button>
+        <button class="btn btn-outline" onclick="jugarAleatori()">Jugar online 🎲</button>
         <div id="random-status"></div>
     </div>
 
@@ -106,14 +101,18 @@
             <div class="stop-icon" id="icon-stop"></div>
         </button>
 
-        <button class="btn" id="reveal-btn" onclick="revealSolution()">Revelar solució</button>
-        <button class="btn btn-next" id="next-btn" onclick="window.location.href='index.html'">Tornar al menú</button>
+        <button class="btn btn-primary" id="reveal-btn" onclick="revealSolution()">Revelar solució</button>
+        
+        <div id="post-solution-btns" style="display: none;">
+            <button class="btn btn-primary" onclick="startScanner()">Següent cançó 📷</button>
+            <button class="btn btn-secondary" onclick="window.location.href='index.html'">Tornar al menú</button>
+        </div>
     </div>
 
     <div id="scanner-ui" style="display: none; flex-direction: column; align-items: center;">
         <div class="neon-logo" style="font-size: 1.2rem;">Escaneja el QR</div>
         <div id="reader-wrapper"><div id="reader"></div><div class="scan-line"></div></div>
-        <button class="btn" onclick="location.reload()">Tornar</button>
+        <button class="btn btn-secondary" onclick="location.reload()">Tornar</button>
     </div>
 
     <audio id="audio-player" preload="auto"></audio>
@@ -125,7 +124,6 @@
         const audio = document.getElementById('audio-player');
         let songData = null;
 
-        // Si hi ha ID, carregar joc
         if (appleId) {
             document.getElementById('landing-ui').style.display = 'none';
             document.getElementById('game-ui').style.display = 'flex';
@@ -153,40 +151,31 @@
             } catch (e) { console.error(e); }
         }
 
-        // Lògica Jugar Online (Google Sheets)
         async function jugarAleatori() {
             const status = document.getElementById('random-status');
             const urlSheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
-            
             status.innerText = "TRIANT CANÇÓ ONLINE...";
-            
             try {
                 const resp = await fetch(urlSheet);
                 const text = await resp.text();
                 const files = text.split("\n").slice(1);
-                
                 const urls = [];
                 files.forEach(fila => {
                     const cols = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                     let link = cols[6] ? cols[6].replace(/"/g, "").trim() : "";
                     
-                    // Seguretat per la S majúscula de Sonabe
-                    if (link.toLowerCase().includes("davidof1990.github.io/Sonabe")) {
+                    // CORRECCIÓ SONABE -> Sonabe (Case Sensitive GitHub Fix)
+                    if (link.toLowerCase().includes("davidof1990.github.io/sonabe")) {
                         link = link.replace(/sonabe/i, "Sonabe");
                     }
-                    
                     if (link.includes("http")) urls.push(link);
                 });
-
                 if (urls.length > 0) {
-                    const finalLink = urls[Math.floor(Math.random() * urls.length)];
-                    window.location.href = finalLink;
+                    window.location.href = urls[Math.floor(Math.random() * urls.length)];
                 } else {
-                    status.innerText = "CAP CANÇÓ DISPONIBLE";
+                    status.innerText = "ERROR AL CATÀLEG";
                 }
-            } catch (e) {
-                status.innerText = "ERROR DE CONNEXIÓ";
-            }
+            } catch (e) { status.innerText = "ERROR DE CONNEXIÓ"; }
         }
 
         function togglePlay() {
@@ -209,20 +198,27 @@
             document.getElementById('loader-text').style.display = 'none';
             document.getElementById('reveal-btn').style.display = 'none';
             document.getElementById('solution-card').style.display = 'flex';
-            document.getElementById('next-btn').style.display = 'block';
+            document.getElementById('post-solution-btns').style.display = 'block';
         }
 
         function startScanner() {
+            // Netegem la URL actual per si venim d'una cançó
+            if (window.location.search) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
             document.getElementById('landing-ui').style.display = 'none';
             document.getElementById('game-ui').style.display = 'none';
             document.getElementById('scanner-ui').style.display = 'flex';
             document.getElementById('reader-wrapper').style.display = 'block';
             const html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, 
-            (text) => { html5QrCode.stop().then(() => { 
-                const fixedUrl = text.replace(/sonabe/i, "Sonabe");
-                window.location.href = fixedUrl; 
-            }); });
+            (text) => { 
+                html5QrCode.stop().then(() => { 
+                    // CORRECCIÓ SONABE -> Sonabe (Case Sensitive GitHub Fix)
+                    const fixedUrl = text.replace(/sonabe/i, "Sonabe");
+                    window.location.href = fixedUrl; 
+                }); 
+            });
         }
         audio.onended = () => updateUI(false);
     </script>
