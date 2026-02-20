@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonabé! 🎶 - Versió 24</title>
+    <title>Sonabé! 🎶 - Versió 25</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; }
@@ -29,18 +29,19 @@
             background: rgba(255,255,255,0.1); border: 1px solid #444; color: #eee;
             padding: 16px 25px; border-radius: 40px; cursor: pointer; font-weight: bold;
             text-transform: uppercase; font-size: 0.85rem; width: 280px; transition: 0.2s;
+            text-decoration: none;
         }
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
         .btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid #666; color: #ccc; font-size: 0.7rem; width: 180px; }
 
-        /* Llista Jugadors */
+        /* Llista Jugadors i Esborrar */
         .player-tag { 
             display: flex; justify-content: space-between; align-items: center; 
             background: #222; padding: 12px 15px; border-radius: 12px; 
             width: 280px; margin-bottom: 8px; border: 1px solid #444;
         }
-        .del-btn { color: #ff4444; font-weight: bold; cursor: pointer; padding: 5px 10px; font-size: 1.4rem; border: 1px solid #444; border-radius: 8px; margin-left: 10px; }
+        .del-btn { color: #ff4444; font-weight: bold; cursor: pointer; padding: 5px 10px; font-size: 1.4rem; }
 
         /* Tauler */
         .board-container { width: 100%; max-width: 380px; margin-top: 20px; border-top: 1px solid #333; padding-top: 15px; }
@@ -51,7 +52,7 @@
         .slot-btn { background: rgba(255,255,255,0.1); border: 1px dashed #555; color: #999; padding: 3px 8px; border-radius: 4px; font-size: 0.6rem; cursor: pointer; }
 
         /* Joc */
-        #turn-indicator { background: var(--primary); color: white; padding: 10px; border-radius: 10px; font-weight: bold; margin-bottom: 15px; width: 100%; text-transform: uppercase; }
+        #turn-indicator { background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; margin-bottom: 15px; text-transform: uppercase; font-size: 1.1rem; }
         .play-button { width: 90px; height: 90px; background-color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 10px 0; border: none; }
         .play-icon { width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px; }
         .stop-icon { width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none; }
@@ -62,7 +63,7 @@
 
         #winner-screen { display: none; flex-direction: column; align-items: center; justify-content: center; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); z-index: 1000; }
 
-        input[type="number"], input[type="text"] { padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white; text-align: center; font-size: 1rem; width: 220px; outline: none; }
+        input[type="number"], input[type="text"] { padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white; text-align: center; width: 220px; outline: none; }
     </style>
 </head>
 <body>
@@ -79,17 +80,15 @@
     <div id="setup-screen" class="screen">
         <div class="neon-logo" style="font-size: 1.8rem;">Qui juga?</div>
         <div style="display:flex; gap:10px;">
-            <input type="text" id="player-input" placeholder="Escriu un nom..." style="width:160px;">
-            <button class="btn btn-primary" onclick="addPlayer()" style="width:80px; padding:0; border-radius:10px;">Afegir</button>
+            <input type="text" id="player-input" placeholder="Nom...">
+            <button class="btn btn-primary" onclick="addPlayer()" style="width:80px; padding:0;">Afegir</button>
         </div>
-        
-        <div id="player-list-setup" style="width:100%; display:flex; flex-direction:column; align-items:center; margin-top:10px;"></div>
+        <div id="player-list-setup" style="width:100%; margin-top:10px;"></div>
 
         <div id="config-area" style="display:none; width:100%; margin-top:10px; background:rgba(255,255,255,0.05); padding:15px; border-radius:15px; border:1px solid var(--neon);">
-            <p style="font-size:0.7rem; font-weight:bold; color:#aaa;">CARTES PER GUANYAR:</p>
+            <p style="font-size:0.75rem; font-weight:bold; color:#aaa;">CARTES PER GUANYAR:</p>
             <input type="number" id="win-condition" value="5" min="2" max="20" onchange="updateWinCondition()" style="width:80px; margin-bottom:15px;">
-            
-            <p style="font-size:0.7rem; font-weight:bold; color:#aaa;">MODE DE JOC:</p>
+            <p style="font-size:0.75rem; font-weight:bold; color:#aaa;">MODE DE JOC:</p>
             <div class="btn-list">
                 <button id="mode-exact" class="btn btn-outline" style="width:100%;" onclick="setMode('exact')">ANY EXACTE</button>
                 <button id="mode-timeline" class="btn btn-outline" style="width:100%;" onclick="setMode('timeline')">LINIA DEL TEMPS</button>
@@ -105,18 +104,15 @@
             <div class="play-icon" id="icon-play"></div>
             <div class="stop-icon" id="icon-stop"></div>
         </button>
-
         <div id="ui-exact" class="btn-list" style="display:none;">
             <p>Quin any es va publicar?</p>
             <input type="number" id="year-guess" placeholder="Any" pattern="\d*">
             <button class="btn btn-primary" onclick="checkGuessExact()">Endevinar</button>
         </div>
-
         <div id="ui-timeline" class="btn-list" style="display:none;">
             <p>En quina posició va?</p>
             <div id="timeline-slots" class="timeline" style="justify-content: center;"></div>
         </div>
-
         <div id="solution-card">
             <div id="guess-result" style="font-weight: bold; font-size: 1.4rem;"></div>
             <div id="song-year" class="year-badge">----</div>
@@ -125,22 +121,16 @@
             <div id="song-artist" style="color: var(--primary);"></div>
             <button class="btn btn-primary" onclick="nextTurn()">Següent Cançó</button>
         </div>
-        <button class="btn btn-secondary" onclick="goToMenu()" style="width:100px; margin-top:15px;">Menú</button>
     </div>
 
     <div id="winner-screen">
         <div class="neon-logo">GUANYADOR!</div>
-        <h1 id="winner-name" style="color:var(--neon); font-size: 3rem; margin:0;">NOM</h1>
+        <h1 id="winner-name" style="color:var(--neon); font-size: 3rem;">NOM</h1>
         <button class="btn btn-primary" style="margin-top:20px;" onclick="resetGame()">REINICIAR</button>
     </div>
 
-    <div id="scanner-screen" class="screen">
-        <div id="reader" style="width:100%;"></div>
-        <button class="btn btn-secondary" onclick="goToMenu()">Tornar</button>
-    </div>
-
+    <div id="scanner-screen" class="screen"><div id="reader" style="width:100%;"></div><button class="btn btn-secondary" onclick="goToMenu()">Tornar</button></div>
     <div id="all-boards" class="board-container" style="display:none;"></div>
-
     <audio id="audio-player" preload="auto"></audio>
 
     <script>
@@ -149,24 +139,18 @@
         const appleId = params.get('id');
         const isRandom = params.get('mode') === 'rand';
 
-        // MEMÒRIA v24
         let gameState = { players: [], currentTurn: 0, mode: 'exact', playedIds: [], winCondition: 5 };
         let fadeInterval = null;
 
+        // CARREGA CRÍTICA AL PRINCIPI
         function load() {
-            const saved = localStorage.getItem('sonabe_v24');
-            if (saved) {
-                gameState = JSON.parse(saved);
-                // Actualitzem l'input amb el valor guardat
-                if(document.getElementById('win-condition')) {
-                    document.getElementById('win-condition').value = gameState.winCondition;
-                }
-            }
+            const saved = localStorage.getItem('sonabe_v25');
+            if (saved) gameState = JSON.parse(saved);
         }
-        function save() { localStorage.setItem('sonabe_v24', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v25', JSON.stringify(gameState)); }
 
         window.onload = () => {
-            load();
+            load(); // 1. Llegim David i Mireia
             if (appleId) {
                 if (!gameState.playedIds.includes(appleId)) gameState.playedIds.push(appleId);
                 save();
@@ -184,6 +168,7 @@
                 renderBoards();
                 const actual = gameState.players[gameState.currentTurn];
                 if (actual && id === 'game-screen') {
+                    // ARA SÍ: Escrivim el nom amb seguretat
                     document.getElementById('turn-indicator').innerText = `TORN DE: ${actual.name.toUpperCase()}`;
                     document.getElementById('ui-exact').style.display = (gameState.mode === 'exact') ? 'flex' : 'none';
                     document.getElementById('ui-timeline').style.display = (gameState.mode === 'timeline') ? 'flex' : 'none';
@@ -192,16 +177,15 @@
             }
         }
 
-        // --- SETUP ---
         function goToSetup() { showScreen('setup-screen'); updateSetupList(); }
-
+        
         function addPlayer() {
             const input = document.getElementById('player-input');
-            if (input.value.trim()) {
+            const name = input.value.trim();
+            if (name) {
                 const startYear = Math.floor(Math.random() * (2025 - 1930 + 1)) + 1930;
-                gameState.players.push({ name: input.value.trim(), cards: [startYear] });
-                input.value = "";
-                save(); updateSetupList(); renderBoards();
+                gameState.players.push({ name: name, cards: [startYear] });
+                input.value = ""; save(); updateSetupList(); renderBoards();
             }
         }
 
@@ -210,43 +194,31 @@
             save(); updateSetupList(); renderBoards();
         }
 
-        function updateWinCondition() {
-            const val = parseInt(document.getElementById('win-condition').value);
-            gameState.winCondition = val || 5;
-            save();
-            renderBoards(); // Perquè s'actualitzi el (X/5)
-        }
-
         function updateSetupList() {
             const list = document.getElementById('player-list-setup');
             list.innerHTML = gameState.players.map((p, i) => `
                 <div class="player-tag">
-                    <span>👤 ${p.name.toUpperCase()} (Inici: ${p.cards[0]})</span>
+                    <span>👤 ${p.name.toUpperCase()} (${p.cards[0]})</span>
                     <span class="del-btn" onclick="deletePlayer(${i})">✕</span>
                 </div>
             `).join('');
             document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none';
+            if (document.getElementById('win-condition')) document.getElementById('win-condition').value = gameState.winCondition;
         }
 
-        function setMode(m) {
-            gameState.mode = m;
-            document.getElementById('mode-exact').style.borderColor = (m==='exact') ? 'var(--neon)' : '#444';
-            document.getElementById('mode-timeline').style.borderColor = (m==='timeline') ? 'var(--neon)' : '#444';
-            save();
-        }
+        function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-condition').value) || 5; save(); renderBoards(); }
+        function setMode(m) { gameState.mode = m; save(); showScreen('setup-screen'); }
 
-        // --- JOC ---
         function renderBoards() {
             const container = document.getElementById('all-boards');
             container.style.display = 'block';
-            container.innerHTML = "<h3>Línies del temps</h3>";
+            container.innerHTML = "<h3>Taulers</h3>";
             gameState.players.forEach((p, i) => {
-                const isTurn = (i === gameState.currentTurn && appleId);
-                const activeClass = isTurn ? 'active-player-row' : '';
+                const active = (i === gameState.currentTurn && appleId) ? 'active-player-row' : '';
                 const sorted = [...p.cards].sort((a,b) => a-b);
                 container.innerHTML += `
-                    <div class="player-row ${activeClass}">
-                        <div style="font-size: 0.8rem; font-weight: bold; color: var(--primary);">${p.name.toUpperCase()} (${p.cards.length}/${gameState.winCondition})</div>
+                    <div class="player-row ${active}">
+                        <div style="font-size:0.8rem; font-weight:bold; color:var(--primary);">${p.name.toUpperCase()} (${p.cards.length}/${gameState.winCondition})</div>
                         <div class="timeline">${sorted.map(y => `<div class="year-card">${y}</div>`).join('')}</div>
                     </div>`;
             });
@@ -257,10 +229,9 @@
             container.innerHTML = "";
             const sorted = [...player.cards].sort((a,b) => a-b);
             container.innerHTML += `<button class="slot-btn" onclick="checkTimelineGuess(-1)">ANTIC</button>`;
-            sorted.forEach((year, index) => {
-                container.innerHTML += `<div class="year-card">${year}</div>`;
-                const label = (index === sorted.length - 1) ? "NOU" : "ENTRE";
-                container.innerHTML += `<button class="slot-btn" onclick="checkTimelineGuess(${index})">${label}</button>`;
+            sorted.forEach((y, i) => {
+                container.innerHTML += `<div class="year-card">${y}</div>`;
+                container.innerHTML += `<button class="slot-btn" onclick="checkTimelineGuess(${i})">${(i === sorted.length - 1) ? "NOU" : "ENTRE"}</button>`;
             });
         }
 
@@ -275,72 +246,44 @@
                     document.getElementById('song-artist').innerText = s.artistName;
                     document.getElementById('song-year').innerText = s.releaseDate.substring(0, 4);
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) {}
         }
 
-        // --- AUDIO ---
-        function fadeIn() {
-            clearInterval(fadeInterval); audio.volume = 0; audio.play();
-            fadeInterval = setInterval(() => {
-                if (audio.volume < 0.9) audio.volume += 0.1; else { audio.volume = 1; clearInterval(fadeInterval); }
-            }, 60);
-        }
-        function fadeOut(cb) {
-            clearInterval(fadeInterval);
-            fadeInterval = setInterval(() => {
-                if (audio.volume > 0.1) audio.volume -= 0.1;
-                else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); if (cb) cb(); }
-            }, 60);
-        }
         function handlePlayClick() {
-            if (audio.paused) { document.getElementById('icon-play').style.display='none'; document.getElementById('icon-stop').style.display='block'; fadeIn(); }
-            else { document.getElementById('icon-play').style.display='block'; document.getElementById('icon-stop').style.display='none'; fadeOut(); }
+            if (audio.paused) { 
+                document.getElementById('icon-play').style.display='none'; document.getElementById('icon-stop').style.display='block';
+                audio.volume = 0; audio.play();
+                let f = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else { audio.volume = 1; clearInterval(f); } }, 50);
+            } else { 
+                document.getElementById('icon-play').style.display='block'; document.getElementById('icon-stop').style.display='none';
+                let f = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); clearInterval(f); } }, 50);
+            }
         }
 
-        function checkGuessExact() {
-            const g = parseInt(document.getElementById('year-guess').value);
-            const r = parseInt(document.getElementById('song-year').innerText);
-            showResult(g === r);
-        }
-
+        function checkGuessExact() { showResult(parseInt(document.getElementById('year-guess').value) === parseInt(document.getElementById('song-year').innerText)); }
         function checkTimelineGuess(idx) {
             const r = parseInt(document.getElementById('song-year').innerText);
-            const p = gameState.players[gameState.currentTurn];
-            const s = [...p.cards].sort((a,b) => a-b);
+            const s = [...gameState.players[gameState.currentTurn].cards].sort((a,b) => a-b);
             let ok = (idx === -1) ? (r <= s[0]) : (idx === s.length - 1) ? (r >= s[s.length-1]) : (r >= s[idx] && r <= s[idx+1]);
             showResult(ok);
         }
 
         function showResult(ok) {
-            fadeOut();
-            const year = parseInt(document.getElementById('song-year').innerText);
+            audio.pause();
+            const y = parseInt(document.getElementById('song-year').innerText);
             const p = gameState.players[gameState.currentTurn];
             if (ok) {
-                p.cards.push(year); save(); renderBoards();
+                p.cards.push(y); save(); renderBoards();
                 document.getElementById('guess-result').innerText = "✅ ENCERTAT!";
                 document.getElementById('guess-result').style.color = "#28a745";
-                if (p.cards.length >= gameState.winCondition) {
-                    setTimeout(() => { document.getElementById('winner-name').innerText = p.name.toUpperCase(); document.getElementById('winner-screen').style.display = 'flex'; }, 800);
-                }
-            } else {
-                document.getElementById('guess-result').innerText = "❌ INCORRECTE";
-                document.getElementById('guess-result').style.color = "#fa2d48";
-            }
-            document.getElementById('ui-exact').style.display = 'none';
-            document.getElementById('ui-timeline').style.display = 'none';
-            document.getElementById('solution-card').style.display = 'flex';
+                if (p.cards.length >= gameState.winCondition) setTimeout(() => { document.getElementById('winner-name').innerText = p.name.toUpperCase(); document.getElementById('winner-screen').style.display = 'flex'; }, 800);
+            } else { document.getElementById('guess-result').innerText = "❌ INCORRECTE"; document.getElementById('guess-result').style.color = "#fa2d48"; }
+            document.getElementById('ui-exact').style.display = 'none'; document.getElementById('ui-timeline').style.display = 'none'; document.getElementById('solution-card').style.display = 'flex';
         }
 
-        function nextTurn() {
-            fadeOut(() => {
-                gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
-                save();
-                if (isRandom) jugarAleatori(); else goToMenu();
-            });
-        }
-
+        function nextTurn() { gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length; save(); if (isRandom) jugarAleatori(); else goToMenu(); }
         async function jugarAleatori() {
-            updateWinCondition(); // Ens assegurem que el valor és l'últim de l'input
+            updateWinCondition();
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
             try {
                 const r = await fetch(sheet); const t = await r.text();
@@ -353,19 +296,12 @@
                 }).filter(s => s.url.includes("http") && !gameState.playedIds.includes(s.id));
                 if (avail.length > 0) window.location.href = avail[Math.floor(Math.random()*avail.length)].url + "&mode=rand";
                 else alert("Fi de les cançons!");
-            } catch (e) { alert("Error de xarxa"); }
+            } catch (e) {}
         }
 
-        function goToMenu() { fadeOut(() => window.location.href = window.location.pathname); }
-        function startScanner() {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('scanner-screen').classList.add('active');
-            const q = new Html5Qrcode("reader");
-            q.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => {
-                q.stop().then(() => { window.location.href = t; });
-            });
-        }
-        function resetGame() { if(confirm("Reiniciar tot?")) { localStorage.removeItem('sonabe_v24'); goToMenu(); } }
+        function goToMenu() { window.location.href = window.location.pathname; }
+        function startScanner() { showScreen('scanner-screen'); const q = new Html5Qrcode("reader"); q.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => { q.stop().then(() => { window.location.href = t; }); }); }
+        function resetGame() { if(confirm("Reiniciar tot?")) { localStorage.removeItem('sonabe_v25'); goToMenu(); } }
     </script>
 </body>
 </html>
