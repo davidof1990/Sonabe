@@ -36,7 +36,7 @@
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
         .btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid #666; color: #ccc; font-size: 0.7rem; width: 180px; }
 
-        /* Indicador de Torn (Molt visible) */
+        /* Indicador de Torn */
         #turn-indicator { 
             background: var(--primary); color: white; padding: 15px; border-radius: 12px; 
             font-weight: 900; width: 100%; margin-bottom: 10px; font-size: 1.3rem;
@@ -51,6 +51,7 @@
         .play-icon { width: 0; height: 0; border-top: 20px solid transparent; border-bottom: 20px solid transparent; border-left: 30px solid white; margin-left: 8px; }
         .stop-icon { width: 35px; height: 35px; background-color: white; border-radius: 6px; display: none; }
 
+        /* Solució i Album Art */
         #solution-card { display: none; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
         .album-art { width: 180px; height: 180px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.2rem; padding: 5px 30px; border-radius: 15px; }
@@ -93,7 +94,7 @@
     </div>
 
     <div id="game-screen" class="screen">
-        <div id="turn-indicator">CARREGANT TORN...</div>
+        <div id="turn-indicator">TORN DE: ---</div>
         
         <button class="play-button" onclick="togglePlay()">
             <div class="play-icon" id="icon-play"></div>
@@ -137,23 +138,22 @@
         const appleId = params.get('id');
         const isRandom = params.get('mode') === 'rand';
 
-        // LÒGICA DE MEMÒRIA (v12)
+        // LÒGICA DE MEMÒRIA (v13)
         let gameState = { players: [], currentTurn: 0 };
         
         function loadGame() {
-            const saved = localStorage.getItem('sonabe_v12');
+            const saved = localStorage.getItem('sonabe_v13');
             if (saved) {
                 gameState = JSON.parse(saved);
-                console.log("Dades carregades:", gameState);
             }
         }
 
         function saveGame() {
-            localStorage.setItem('sonabe_v12', JSON.stringify(gameState));
+            localStorage.setItem('sonabe_v13', JSON.stringify(gameState));
         }
 
         window.onload = () => {
-            loadGame(); // El primer que fem és llegir David i Mireia
+            loadGame();
 
             if (appleId) {
                 switchScreen('game-screen');
@@ -172,7 +172,7 @@
                 document.getElementById('all-boards').style.display = 'block';
                 renderBoards();
                 
-                // Forçar l'escriptura del nom
+                // CORREGIT: Ara busquem l'ID correcte (turn-indicator)
                 const actual = gameState.players[gameState.currentTurn];
                 if (actual) {
                     document.getElementById('turn-indicator').innerText = `TORN DE: ${actual.name.toUpperCase()}`;
@@ -282,7 +282,7 @@
                 qrcode.stop().then(() => { window.location.href = text; });
             });
         }
-        function resetGame() { if(confirm("Esborrar la partida actual?")) { localStorage.removeItem('sonabe_v12'); goToMenu(); } }
+        function resetGame() { if(confirm("Esborrar la partida actual?")) { localStorage.removeItem('sonabe_v13'); goToMenu(); } }
         function togglePlay() {
             if (audio.paused) { audio.play(); document.getElementById('icon-play').style.display='none'; document.getElementById('icon-stop').style.display='block'; }
             else { audio.pause(); document.getElementById('icon-play').style.display='block'; document.getElementById('icon-stop').style.display='none'; }
