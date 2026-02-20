@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonabé! 🎶 - Versió 37</title>
+    <title>Sonabé! 🎶 - Versió 38</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; }
@@ -53,7 +53,7 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2rem; padding: 5px 25px; border-radius: 10px; }
 
-        /* Tauler Inferior (Sempre Actiu) */
+        /* Tauler Inferior (Sempre Visible si hi ha jugadors) */
         .board-container { width: 100%; max-width: 400px; margin-top: 30px; border-top: 1px solid #444; padding-top: 20px; }
         .player-row { background: #1e1e1e; padding: 10px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; }
         .active-row { border: 2px solid white !important; box-shadow: 0 0 10px var(--primary); background: #222; }
@@ -102,15 +102,18 @@
             <div class="play-icon" id="icon-play"></div>
             <div class="stop-icon" id="icon-stop"></div>
         </button>
+
         <div id="ui-exact" class="btn-list" style="display:none;">
             <p>Quin any es va publicar?</p>
             <input type="number" id="year-guess" placeholder="Any" pattern="\d*">
             <button class="btn btn-primary" onclick="checkGuessExact()">Endevinar</button>
         </div>
+
         <div id="ui-timeline" class="btn-list" style="display:none;">
             <p>On va aquesta cançó?</p>
             <div id="timeline-slots" class="timeline" style="justify-content: center;"></div>
         </div>
+
         <div id="solution-card">
             <div id="guess-result" style="font-weight: bold; font-size: 1.4rem;"></div>
             <div id="song-year" class="year-badge">----</div>
@@ -135,24 +138,23 @@
         const appleId = params.get('id');
         const isRandom = params.get('mode') === 'rand';
 
-        // MEMÒRIA v37 - LINIA TEMPS PREDETERMINADA
+        // MEMÒRIA v38
         let gameState = { players: [], currentTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5 };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v37');
+            const saved = localStorage.getItem('sonabe_v38');
             if (saved) gameState = JSON.parse(saved);
         }
-        function save() { localStorage.setItem('sonabe_v37', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v38', JSON.stringify(gameState)); }
 
-        // CÀRREGA CRÍTICA
         window.onload = () => {
             load(); 
-            renderBoards(); // 1. Dibuixa el tauler sempre
+            if (gameState.players.length > 0) renderBoards();
 
             if (appleId) {
                 if (!gameState.playedIds.includes(appleId)) gameState.playedIds.push(appleId);
                 save();
-                renderGameUI(); // 2. Activa pantalla de joc i torn
+                renderGameUI();
                 loadSong(appleId);
             }
         };
@@ -162,8 +164,11 @@
             document.getElementById('game-screen').classList.add('active');
             
             const actual = gameState.players[gameState.currentTurn];
-            if (actual) {
+            
+            // PRIORITAT ABSOLUTA A LA PARTIDA ONLINE
+            if (gameState.players.length > 0 && actual) {
                 document.getElementById('turn-indicator').innerText = `TORN DE: ${actual.name.toUpperCase()}`;
+                
                 if (gameState.mode === 'timeline') {
                     document.getElementById('ui-timeline').style.display = 'flex';
                     document.getElementById('ui-exact').style.display = 'none';
@@ -173,10 +178,12 @@
                     document.getElementById('ui-exact').style.display = 'flex';
                 }
             } else {
+                // NOMÉS SI NO HI HA NINGÚ A LA LLISTA (MODE SOLO)
                 document.getElementById('turn-indicator').innerText = "ESCOLTA I ENDEVINA";
                 document.getElementById('ui-exact').style.display = 'flex';
                 document.getElementById('ui-timeline').style.display = 'none';
             }
+            renderBoards();
         }
 
         function openSetup() {
@@ -245,7 +252,8 @@
             container.innerHTML += `<button class="slot-btn" onclick="checkTimelineGuess(-1)">ANTIC</button>`;
             sorted.forEach((y, i) => {
                 container.innerHTML += `<div class="year-card">${y}</div>`;
-                container.innerHTML += `<button class="slot-btn" onclick="checkTimelineGuess(${i})">${(i === sorted.length - 1) ? "NOU" : "ENTRE"}</button>`;
+                // CORREGIT: Ús de l'index correcte en la funció
+                container.innerHTML += `<button class="slot-btn" onclick="checkTimelineGuess(${i})">${(i === sorted.length - 1) ? "MÉS NOU" : "ENTRE"}</button>`;
             });
         }
 
@@ -275,10 +283,12 @@
         }
 
         function checkGuessExact() { showResult(parseInt(document.getElementById('year-guess').value) === parseInt(document.getElementById('song-year').innerText)); }
+        
         function checkTimelineGuess(idx) {
             const r = parseInt(document.getElementById('song-year').innerText);
             const p = gameState.players[gameState.currentTurn];
             const s = [...p.cards].sort((a,b) => a-b);
+            // Lògica inclusiva: si l'any és IGUAL, també és correcte en la posició adjacent
             let ok = (idx === -1) ? (r <= s[0]) : (idx === s.length - 1) ? (r >= s[s.length-1]) : (r >= s[idx] && r <= s[idx+1]);
             showResult(ok);
         }
@@ -296,8 +306,13 @@
                 }
                 document.getElementById('guess-result').innerText = "✅ ENCERTAT!";
                 document.getElementById('guess-result').style.color = "#28a745";
-            } else { document.getElementById('guess-result').innerText = "❌ INCORRECTE"; document.getElementById('guess-result').style.color = "#fa2d48"; }
-            document.getElementById('ui-exact').style.display = 'none'; document.getElementById('ui-timeline').style.display = 'none'; document.getElementById('solution-card').style.display = 'flex';
+            } else {
+                document.getElementById('guess-result').innerText = "❌ INCORRECTE";
+                document.getElementById('guess-result').style.color = "#fa2d48";
+            }
+            document.getElementById('ui-exact').style.display = 'none';
+            document.getElementById('ui-timeline').style.display = 'none';
+            document.getElementById('solution-card').style.display = 'flex';
         }
 
         function nextTurn() {
@@ -314,8 +329,8 @@
                 const avail = lines.map(l => {
                     const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                     const url = c[6] ? c[6].replace(/"/g, "").trim() : "";
-                    const idMatch = url.match(/id=(\d+)/);
-                    return { url, id: idMatch ? idMatch[1] : null };
+                    const id = (url.match(/id=(\d+)/) || [])[1];
+                    return { url, id };
                 }).filter(s => s.url.includes("http") && !gameState.playedIds.includes(s.id));
                 window.location.href = avail[Math.floor(Math.random()*avail.length)].url + "&mode=rand";
             } catch (e) {}
@@ -328,7 +343,7 @@
             const q = new Html5Qrcode("reader");
             q.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => { q.stop().then(() => { window.location.href = t; }); });
         }
-        function resetGame() { if(confirm("Reiniciar tot?")) { localStorage.removeItem('sonabe_v37'); goToMenu(); } }
+        function resetGame() { if(confirm("Reiniciar tot?")) { localStorage.removeItem('sonabe_v38'); goToMenu(); } }
     </script>
 </body>
 </html>
