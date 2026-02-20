@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonabé! 🎶 - Versió 40</title>
+    <title>Sonabé! 🎶 - Versió 41</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; }
@@ -32,7 +32,7 @@
         }
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
-        .mode-selected { border-color: var(--neon) !important; color: white !important; background: rgba(255, 0, 127, 0.4) !important; box-shadow: 0 0 15px var(--neon); }
+        .mode-selected { border-color: var(--neon) !important; color: white !important; background: rgba(255, 0, 127, 0.5) !important; box-shadow: 0 0 15px var(--neon); }
         .btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid #666; color: #ccc; font-size: 0.75rem; width: 180px; margin-top: 10px; }
 
         /* Llista Jugadors */
@@ -117,7 +117,7 @@
             <div id="guess-result" style="font-weight: bold; font-size: 1.4rem;"></div>
             <div id="song-year" class="year-badge">----</div>
             <img id="album-img" class="album-art" src="">
-            <div id="song-title" style="font-weight: bold; font-size: 1rem;"></div>
+            <div id="song-title" style="font-weight: bold; font-size: 1rem; padding:0 10px;"></div>
             <div id="song-artist" style="color: var(--primary);"></div>
             <button class="btn btn-primary" onclick="nextTurn()">Següent Cançó</button>
         </div>
@@ -136,16 +136,24 @@
         const params = new URLSearchParams(window.location.search);
         const appleId = params.get('id');
 
-        // MEMÒRIA v40 - PRIORITAT ABSOLUTA
+        // MEMÒRIA v41
         let gameState = { players: [], currentTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5 };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v40');
-            if (saved) gameState = JSON.parse(saved);
+            const saved = localStorage.getItem('sonabe_v41');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // Ens assegurem de carregar el mode guardat abans de res
+                gameState.mode = parsed.mode || 'timeline';
+                gameState.players = parsed.players || [];
+                gameState.currentTurn = parsed.currentTurn || 0;
+                gameState.playedIds = parsed.playedIds || [];
+                gameState.winCondition = parsed.winCondition || 5;
+            }
         }
-        function save() { localStorage.setItem('sonabe_v40', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v41', JSON.stringify(gameState)); }
 
-        // EXECUTAR CARREGA ABANS DE RES
+        // EXECUTEM LA CÀRREGA IMMEDIATA
         load();
 
         window.onload = () => {
@@ -166,10 +174,9 @@
             const actual = gameState.players[gameState.currentTurn];
             
             if (gameState.players.length > 0 && actual) {
-                // PARTIDA ONLINE ACTIVA
                 document.getElementById('turn-indicator').innerText = `TORN DE: ${actual.name.toUpperCase()}`;
                 
-                // FORÇAR EL MODE QUE DIU LA MEMÒRIA
+                // CONTROL TOTAL DEL MODE (Sense excepcions)
                 if (gameState.mode === 'timeline') {
                     document.getElementById('ui-timeline').style.display = 'flex';
                     document.getElementById('ui-exact').style.display = 'none';
@@ -179,11 +186,11 @@
                     document.getElementById('ui-exact').style.display = 'flex';
                 }
             } else {
-                // MODE SOLO
                 document.getElementById('turn-indicator').innerText = "ESCOLTA I ENDEVINA";
                 document.getElementById('ui-exact').style.display = 'flex';
                 document.getElementById('ui-timeline').style.display = 'none';
             }
+            renderBoards();
         }
 
         function openSetup() {
@@ -202,10 +209,7 @@
             }
         }
 
-        function deletePlayer(i) {
-            gameState.players.splice(i, 1);
-            save(); updateSetupList(); renderBoards();
-        }
+        function deletePlayer(i) { gameState.players.splice(i, 1); save(); updateSetupList(); renderBoards(); }
 
         function updateSetupList() {
             const list = document.getElementById('player-list-setup');
@@ -299,10 +303,7 @@
                 if (p) {
                     p.cards.push(year); save(); renderBoards();
                     if (p.cards.length >= gameState.winCondition) {
-                        setTimeout(() => { 
-                            document.getElementById('winner-name').innerText = p.name.toUpperCase();
-                            document.getElementById('winner-screen').style.display = 'flex'; 
-                        }, 800);
+                        setTimeout(() => { document.getElementById('winner-name').innerText = p.name.toUpperCase(); document.getElementById('winner-screen').style.display = 'flex'; }, 800);
                     }
                 }
                 document.getElementById('guess-result').innerText = "✅ ENCERTAT!";
@@ -317,15 +318,13 @@
         }
 
         function nextTurn() {
-            if (gameState.players.length > 0) {
-                gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
-            }
-            save(); // GUARDEM EL NOU TORN ABANS DE SALTAR
+            if (gameState.players.length > 0) gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
+            save(); // ASSEGUREM EL GUARDAT DEL MODE I EL TORN
             
-            // Forcem un retard de 100ms per assegurar que el save() s'ha fet al disc del mòbil
+            // Forcem 150ms per garantir la memòria abans de saltar a la següent URL
             setTimeout(() => {
-                if (params.get('mode') === 'rand') jugarAleatori(); else goToMenu();
-            }, 100);
+                jugarAleatori();
+            }, 150);
         }
 
         async function jugarAleatori() {
@@ -350,7 +349,7 @@
             const q = new Html5Qrcode("reader");
             q.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => { q.stop().then(() => { window.location.href = t; }); });
         }
-        function resetGame() { if(confirm("Reiniciar tot?")) { localStorage.removeItem('sonabe_v40'); goToMenu(); } }
+        function resetGame() { if(confirm("Reiniciar tot?")) { localStorage.removeItem('sonabe_v41'); goToMenu(); } }
     </script>
 </body>
 </html>
