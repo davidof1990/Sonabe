@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonabé! 🎶 - Versió 41</title>
+    <title>Sonabé! 🎶 - Versió 42</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; }
@@ -35,25 +35,22 @@
         .mode-selected { border-color: var(--neon) !important; color: white !important; background: rgba(255, 0, 127, 0.5) !important; box-shadow: 0 0 15px var(--neon); }
         .btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid #666; color: #ccc; font-size: 0.75rem; width: 180px; margin-top: 10px; }
 
-        /* Llista Jugadors */
+        /* Setup */
         .player-item { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 12px 15px; border-radius: 12px; width: 280px; margin-bottom: 8px; border: 1px solid #444; }
         .del-btn { color: var(--primary); font-weight: bold; cursor: pointer; font-size: 1.4rem; padding: 0 10px; }
 
-        /* Torn */
+        /* Joc */
         #turn-indicator { background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; margin-bottom: 15px; text-transform: uppercase; font-size: 1.1rem; }
-        
-        /* Reproductor */
         .play-button { width: 90px; height: 90px; background-color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 10px 0; border: none; }
         .play-icon { width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px; }
         .stop-icon { width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none; }
         
-        /* Solució */
         #solution-card { display: none; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2rem; padding: 5px 25px; border-radius: 10px; }
 
         /* Tauler Inferior */
-        .board-container { width: 100%; max-width: 400px; margin-top: 30px; border-top: 1px solid #444; padding-top: 20px; }
+        .board-container { width: 100%; max-width: 400px; margin-top: 30px; border-top: 1px solid #444; padding-top: 20px; display: none; }
         .player-row { background: #1e1e1e; padding: 10px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; }
         .active-row { border: 2px solid white !important; box-shadow: 0 0 10px var(--primary); background: #222; }
         .timeline { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; align-items: center; }
@@ -128,7 +125,6 @@
     <div id="winner-screen"><div class="neon-logo">GUANYADOR!</div><h1 id="winner-name" style="color:var(--neon); font-size: 3.5rem;">NOM</h1><button class="btn btn-primary" style="margin-top:25px;" onclick="resetGame()">REINICIAR TOT</button></div>
 
     <div id="all-boards" class="board-container"></div>
-
     <audio id="audio-player" preload="auto"></audio>
 
     <script>
@@ -136,14 +132,13 @@
         const params = new URLSearchParams(window.location.search);
         const appleId = params.get('id');
 
-        // MEMÒRIA v41
+        // MEMÒRIA v42 - Forçat Línia del Temps per defecte
         let gameState = { players: [], currentTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5 };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v41');
+            const saved = localStorage.getItem('sonabe_v42');
             if (saved) {
                 const parsed = JSON.parse(saved);
-                // Ens assegurem de carregar el mode guardat abans de res
                 gameState.mode = parsed.mode || 'timeline';
                 gameState.players = parsed.players || [];
                 gameState.currentTurn = parsed.currentTurn || 0;
@@ -151,7 +146,7 @@
                 gameState.winCondition = parsed.winCondition || 5;
             }
         }
-        function save() { localStorage.setItem('sonabe_v41', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v42', JSON.stringify(gameState)); }
 
         // EXECUTEM LA CÀRREGA IMMEDIATA
         load();
@@ -173,10 +168,11 @@
             
             const actual = gameState.players[gameState.currentTurn];
             
+            // PRIORITAT TOTAL AL MODE ONLINE
             if (gameState.players.length > 0 && actual) {
                 document.getElementById('turn-indicator').innerText = `TORN DE: ${actual.name.toUpperCase()}`;
                 
-                // CONTROL TOTAL DEL MODE (Sense excepcions)
+                // NO PERMETRE EL MODE "ANY" SI ELS JUGADORS HAN TRIAT "TIMELINE"
                 if (gameState.mode === 'timeline') {
                     document.getElementById('ui-timeline').style.display = 'flex';
                     document.getElementById('ui-exact').style.display = 'none';
@@ -186,6 +182,7 @@
                     document.getElementById('ui-exact').style.display = 'flex';
                 }
             } else {
+                // NOMÉS MODE SOLO SI NO HI HA NINGÚ A LA LLISTA
                 document.getElementById('turn-indicator').innerText = "ESCOLTA I ENDEVINA";
                 document.getElementById('ui-exact').style.display = 'flex';
                 document.getElementById('ui-timeline').style.display = 'none';
@@ -319,12 +316,12 @@
 
         function nextTurn() {
             if (gameState.players.length > 0) gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
-            save(); // ASSEGUREM EL GUARDAT DEL MODE I EL TORN
+            save();
             
-            // Forcem 150ms per garantir la memòria abans de saltar a la següent URL
+            // Forcem un retard mínim per garantir l'escriptura a memòria
             setTimeout(() => {
                 jugarAleatori();
-            }, 150);
+            }, 180);
         }
 
         async function jugarAleatori() {
@@ -349,7 +346,7 @@
             const q = new Html5Qrcode("reader");
             q.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => { q.stop().then(() => { window.location.href = t; }); });
         }
-        function resetGame() { if(confirm("Reiniciar tot?")) { localStorage.removeItem('sonabe_v41'); goToMenu(); } }
+        function resetGame() { if(confirm("Reiniciar tot?")) { localStorage.removeItem('sonabe_v42'); goToMenu(); } }
     </script>
 </body>
 </html>
