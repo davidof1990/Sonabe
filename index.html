@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonabé! 🎶 - Versió 54</title>
+    <title>Sonabé! 🎶 - Versió 55</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; }
@@ -109,14 +109,14 @@
         const params = new URLSearchParams(window.location.search);
         const appleId = params.get('id');
 
-        // MEMÒRIA v54
+        // MEMÒRIA v55
         let gameState = { players: [], currentTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5 };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v54');
+            const saved = localStorage.getItem('sonabe_v55');
             if (saved) gameState = JSON.parse(saved);
         }
-        function save() { localStorage.setItem('sonabe_v54', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v55', JSON.stringify(gameState)); }
 
         load();
 
@@ -132,11 +132,14 @@
         function renderGameUI() {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('game-screen').classList.add('active');
+            
+            // BLINDATGE: Si hi ha algun jugador, ignora el mode solo
             if (gameState.players.length > 0) {
                 const actual = gameState.players[gameState.currentTurn];
                 document.getElementById('ui-online-mode').style.display = 'block';
                 document.getElementById('ui-cards-mode').style.display = 'none';
                 document.getElementById('turn-indicator').innerText = `TORN DE: ${actual.name.toUpperCase()}`;
+                
                 if (gameState.mode === 'timeline') {
                     document.getElementById('ui-timeline').style.display = 'flex';
                     document.getElementById('ui-exact').style.display = 'none';
@@ -174,11 +177,10 @@
             const list = document.getElementById('player-list-setup');
             list.innerHTML = gameState.players.map((p, i) => `<div class="player-item"><span>👤 ${p.name.toUpperCase()}</span><span class="del-btn" onclick="deletePlayer(${i})">✕</span></div>`).join('');
             document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none';
-            document.getElementById('win-input').value = gameState.winCondition; // Mostrar valor guardat
+            document.getElementById('win-input').value = gameState.winCondition;
             setMode(gameState.mode);
         }
 
-        // FUNCIO RECUPERADA: Actualitzar cartes per guanyar
         function updateWinCondition() {
             gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5;
             save();
@@ -233,7 +235,13 @@
 
         function showResultOnline(ok) {
             audio.pause(); const p = gameState.players[gameState.currentTurn];
-            if (ok) { p.cards.push(parseInt(document.getElementById('song-year').innerText)); save(); renderBoards(); if (p.cards.length >= gameState.winCondition) { setTimeout(() => { document.getElementById('winner-name').innerText = p.name.toUpperCase(); document.getElementById('winner-screen').style.display = 'flex'; }, 800); } document.getElementById('guess-result').innerText = "✅ ENCERTAT!"; document.getElementById('guess-result').style.color = "#28a745"; }
+            if (ok) {
+                p.cards.push(parseInt(document.getElementById('song-year').innerText)); save(); renderBoards(); 
+                if (p.cards.length >= gameState.winCondition) { 
+                    setTimeout(() => { document.getElementById('winner-name').innerText = p.name.toUpperCase(); document.getElementById('winner-screen').style.display = 'flex'; }, 800); 
+                } 
+                document.getElementById('guess-result').innerText = "✅ ENCERTAT!"; document.getElementById('guess-result').style.color = "#28a745"; 
+            }
             else { document.getElementById('guess-result').innerText = "❌ INCORRECTE"; document.getElementById('guess-result').style.color = "#fa2d48"; }
             document.getElementById('ui-online-mode').style.display = 'none'; document.getElementById('solution-card').style.display = 'flex';
         }
@@ -248,9 +256,10 @@
             } else { startScanner(); }
         }
 
-        function resetGame() { if(confirm("Segur que vols reiniciar-ho tot?")) { localStorage.removeItem('sonabe_v54'); goToMenu(); } }
+        function resetGame() { if(confirm("Reiniciar tot?")) { localStorage.removeItem('sonabe_v55'); goToMenu(); } }
         function goToMenu() { window.location.href = window.location.pathname; }
         function startScanner() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('scanner-screen').classList.add('active'); const q = new Html5Qrcode("reader"); q.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => { q.stop().then(() => { window.location.href = t; }); }); }
+        
         async function jugarAleatori() {
             save();
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
