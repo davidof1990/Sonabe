@@ -24,7 +24,7 @@
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; gap: 20px; }
         .active { display: flex; }
 
-        /* Botons Centrats */
+        /* Botons */
         .btn-list { display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center; }
         .btn {
             background: rgba(255,255,255,0.1); border: 1px solid #444; color: #eee;
@@ -42,7 +42,13 @@
             background: #222; color: white; text-align: center; font-size: 1.2rem; width: 220px; outline: none;
         }
 
-        /* Reproductor i Solució */
+        /* Joc */
+        #turn-indicator { 
+            background: var(--primary); color: white; padding: 12px; border-radius: 10px; 
+            font-weight: 900; width: 90%; margin-bottom: 20px; font-size: 1.2rem;
+            box-shadow: 0 0 15px var(--primary);
+        }
+
         .play-button {
             width: 100px; height: 100px; background-color: var(--primary); border-radius: 50%;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
@@ -55,11 +61,10 @@
         .album-art { width: 180px; height: 180px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.2rem; padding: 5px 30px; border-radius: 15px; }
 
-        /* Tauler i Torn (Millorat) */
-        #turn-indicator { background: var(--primary); padding: 10px; border-radius: 10px; font-weight: bold; margin-bottom: 15px; width: 100%; }
-        .board-container { width: 100%; max-width: 380px; margin-top: 25px; border-top: 1px solid #333; padding-top: 20px; }
+        /* Tauler de jugadors (Línia del temps) */
+        .board-container { width: 100%; max-width: 380px; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
         .player-row { background: #1e1e1e; padding: 12px; border-radius: 15px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; }
-        .active-turn { border: 2px solid white; box-shadow: 0 0 15px var(--primary); }
+        .active-turn { border: 2px solid white; box-shadow: 0 0 20px var(--primary); background: #252525; }
         .timeline { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
         .year-card { background: white; color: black; font-size: 0.8rem; font-weight: bold; padding: 3px 10px; border-radius: 5px; }
 
@@ -119,12 +124,12 @@
     </div>
 
     <div id="scanner-screen" class="screen">
-        <div class="neon-logo" style="font-size: 1.5rem;">Escaneja el QR</div>
+        <div class="neon-logo" style="font-size: 1.5rem;">Escaneja</div>
         <div id="reader"></div>
         <button class="btn btn-secondary" onclick="goToMenu()">Tornar</button>
     </div>
 
-    <div id="all-boards" class="board-container"></div>
+    <div id="all-boards" class="board-container" style="display:none;"></div>
 
     <audio id="audio-player" preload="auto"></audio>
 
@@ -134,38 +139,45 @@
         const appleId = params.get('id');
         const isRandom = params.get('mode') === 'rand';
 
-        // Carregar dades de forma ultra-segura
+        // Lògica de memòria blindada (v11)
         let gameState = { players: [], currentTurn: 0 };
-        const savedData = localStorage.getItem('sonabe_v10');
-        if (savedData) {
-            gameState = JSON.parse(savedData);
-        }
+        const loadState = () => {
+            const saved = localStorage.getItem('sonabe_v11');
+            if (saved) gameState = JSON.parse(saved);
+        };
+        const saveState = () => {
+            localStorage.setItem('sonabe_v11', JSON.stringify(gameState));
+        };
 
         window.onload = () => {
+            loadState();
             if (appleId) {
                 switchScreen('game-screen');
                 loadSong(appleId);
-            }
-            if (gameState.players.length > 0) {
-                renderBoards();
+            } else if (gameState.players.length > 0) {
+                // Si estem al menú però ja hi ha jugadors, mostrem el tauler a sota
                 document.getElementById('all-boards').style.display = 'block';
+                renderBoards();
             }
         };
-
-        function save() {
-            localStorage.setItem('sonabe_v10', JSON.stringify(gameState));
-        }
 
         function switchScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
+            
             if (gameState.players.length > 0) {
-                const player = gameState.players[gameState.currentTurn];
-                document.getElementById('turn-indicator').innerText = `TORN DE: ${player.name.toUpperCase()}`;
+                document.getElementById('all-boards').style.display = 'block';
+                renderBoards();
+                updateTurnText();
             }
         }
 
-        function showSetup() { switchScreen('setup-screen'); updateSetupList(); }
+        function updateTurnText() {
+            const player = gameState.players[gameState.currentTurn];
+            if (player) {
+                document.getElementById('turn-indicator').innerText = `TORN DE: ${player.name.toUpperCase()}`;
+            }
+        }
 
         function addPlayer() {
             const input = document.getElementById('player-input');
@@ -173,7 +185,7 @@
             if (name) {
                 gameState.players.push({ name: name, cards: [] });
                 input.value = "";
-                save(); // Guardem immediatament
+                saveState();
                 updateSetupList();
                 renderBoards();
                 document.getElementById('all-boards').style.display = 'block';
@@ -188,15 +200,16 @@
 
         function renderBoards() {
             const container = document.getElementById('all-boards');
-            container.innerHTML = "";
+            container.innerHTML = "<h3>Línies del temps</h3>";
             gameState.players.forEach((p, i) => {
-                const activeClass = (i === gameState.currentTurn && appleId) ? 'active-turn' : '';
+                const isMyTurn = (i === gameState.currentTurn && appleId);
+                const activeClass = isMyTurn ? 'active-turn' : '';
                 const sortedCards = [...p.cards].sort((a,b) => a-b);
                 container.innerHTML += `
                     <div class="player-row ${activeClass}">
-                        <div style="font-size: 0.75rem; font-weight: bold; color: var(--primary);">${p.name.toUpperCase()}</div>
+                        <div style="font-size: 0.8rem; font-weight: bold; color: var(--primary);">${p.name.toUpperCase()} ${isMyTurn ? '◀' : ''}</div>
                         <div class="timeline">
-                            ${sortedCards.map(y => `<div class="year-card">${y}</div>`).join('') || '<small style="color:#444">Sense cartes</small>'}
+                            ${sortedCards.map(y => `<div class="year-card">${y}</div>`).join('') || '<small style="color:#444">Cap carta encara</small>'}
                         </div>
                     </div>
                 `;
@@ -222,13 +235,12 @@
             const guess = document.getElementById('year-guess').value;
             const realYear = parseInt(document.getElementById('song-year').innerText);
             
-            if (!guess) { alert("Posa un any!"); return; }
+            if (!guess) { alert("Escriu un any!"); return; }
 
-            if (parseInt(guess) === realYear) {
-                // Afegim la carta al jugador actual
+            if (parseInt(guess) === realYear && gameState.players.length > 0) {
                 gameState.players[gameState.currentTurn].cards.push(realYear);
-                save(); // Guardem dades al mòbil
-                renderBoards(); // Actualitzem visualment
+                saveState();
+                renderBoards();
                 document.getElementById('guess-result').innerText = "✅ ENCERTAT!";
                 document.getElementById('guess-result').style.color = "#28a745";
             } else {
@@ -241,21 +253,20 @@
         }
 
         function nextTurn() {
-            // Passem el torn
-            gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
-            save(); // Guardem el nou torn abans de recarregar
-            
-            if (isRandom) jugarAleatori(); 
-            else goToMenu();
+            if (gameState.players.length > 0) {
+                gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
+                saveState();
+            }
+            if (isRandom) jugarAleatori(); else goToMenu();
         }
 
         async function jugarAleatori() {
-            const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&v=" + Math.random();
+            const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&cache=" + Math.random();
             try {
                 const r = await fetch(sheet);
                 const t = await r.text();
                 const urls = t.split("\n").slice(1).map(l => {
-                    const c = l.split(/,(?=(?:(?:[^[]*"){2})*[^"]*$)/);
+                    const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                     return c[6] ? c[6].replace(/"/g, "").trim() : "";
                 }).filter(u => u.includes("http"));
                 window.location.href = urls[Math.floor(Math.random()*urls.length)] + "&mode=rand";
@@ -270,7 +281,7 @@
                 qrcode.stop().then(() => { window.location.href = text; });
             });
         }
-        function resetGame() { if(confirm("Vols esborrar-ho tot?")) { localStorage.removeItem('sonabe_v10'); location.reload(); } }
+        function resetGame() { if(confirm("Vols reiniciar el joc i esborrar els jugadors?")) { localStorage.removeItem('sonabe_v11'); goToMenu(); } }
         function togglePlay() {
             if (audio.paused) { audio.play(); document.getElementById('icon-play').style.display='none'; document.getElementById('icon-stop').style.display='block'; }
             else { audio.pause(); document.getElementById('icon-play').style.display='block'; document.getElementById('icon-stop').style.display='none'; }
