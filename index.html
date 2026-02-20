@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonabé! 🎶 - Versió 48</title>
+    <title>Sonabé! 🎶 - Versió 49</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; }
@@ -32,6 +32,7 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
+        /* TAULELL SAGRAT */
         .board-container { width: 100%; max-width: 400px; margin-top: 30px; border-top: 1px solid #444; padding-top: 20px; display: none; }
         .player-row { background: #1e1e1e; padding: 10px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; }
         .active-row { border: 2px solid white !important; box-shadow: 0 0 10px var(--primary); background: #222; }
@@ -69,13 +70,14 @@
                 <button id="mode-timeline" class="btn btn-outline" onclick="setMode('timeline')">LINIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn btn-outline" onclick="setMode('exact')">ANY EXACTE</button>
             </div>
-            <button class="btn btn-primary" style="width:100%; margin-top:20px; border:2px solid white;" onclick="jugarAleatori()">COMENÇAR</button>
+            <button class="btn btn-primary" style="width:100%; margin-top:20px; border:2px solid white;" onclick="jugarAleatori()">COMENÇAR PARTIDA</button>
         </div>
         <button class="btn btn-secondary" onclick="goToMenu()">Tornar</button>
     </div>
 
     <div id="game-screen" class="screen">
         <div id="turn-indicator">CARREGANT...</div>
+        
         <button class="play-button" onclick="handlePlayClick()">
             <div class="play-icon" id="icon-play"></div>
             <div class="stop-icon" id="icon-stop"></div>
@@ -119,23 +121,25 @@
         const params = new URLSearchParams(window.location.search);
         const appleId = params.get('id');
 
-        // MEMÒRIA v48
+        // MEMÒRIA v49
         let gameState = { players: [], currentTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5 };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v48');
+            const saved = localStorage.getItem('sonabe_v49');
             if (saved) gameState = JSON.parse(saved);
         }
-        function save() { localStorage.setItem('sonabe_v48', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v49', JSON.stringify(gameState)); }
 
+        // EXECUTEM LA CÀRREGA IMMEDIATA ABANS QUE EL DOM ESTIGUI LLEST
         load();
 
         window.onload = () => {
+            // Si hi ha jugadors, dibuixem el tauler sí o sí
+            if (gameState.players.length > 0) renderBoards();
+
             if (appleId) {
-                renderGameUI(); // Determina quina UI mostrar segons jugadors
+                renderGameUI(); // Decideix quina interfície mostrar
                 loadSong(appleId);
-            } else if (gameState.players.length > 0) {
-                renderBoards();
             }
         };
 
@@ -143,8 +147,9 @@
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('game-screen').classList.add('active');
             
-            // LA CLAU: Si hi ha jugadors, FORÇAR el mode Online
+            // LA LÒGICA DEFINITIVA
             if (gameState.players.length > 0) {
+                // PARTIDA ONLINE ACTIVA (David / Carla)
                 const actual = gameState.players[gameState.currentTurn];
                 
                 document.getElementById('ui-online-mode').style.display = 'block';
@@ -160,12 +165,11 @@
                     document.getElementById('ui-timeline').style.display = 'none';
                     document.getElementById('ui-exact').style.display = 'flex';
                 }
-                renderBoards();
             } else {
-                // NOMÉS SI NO HI HA NINGÚ: Mode Lliure
+                // NOMÉS ENTRA AQUÍ SI NO HI HA JUGADORS (Mode Cartes Físiques)
                 document.getElementById('ui-online-mode').style.display = 'none';
                 document.getElementById('ui-cards-mode').style.display = 'block';
-                document.getElementById('turn-indicator').innerText = "MODE ESCANEIG";
+                document.getElementById('turn-indicator').innerText = "ESCOLTA I REVELA";
                 document.getElementById('btn-next').innerText = "Escanejar Següent";
             }
         }
@@ -221,7 +225,7 @@
             sorted.forEach((y, i) => { container.innerHTML += `<div class="year-card">${y}</div>`; container.innerHTML += `<button class="slot-btn" onclick="checkTimelineGuess(${i})">${(i === sorted.length-1) ? "NOU" : "ENTRE"}</button>`; });
         }
 
-        // JOC I SOLUCIONS
+        // REPRODUCTOR
         async function loadSong(id) {
             try {
                 const r = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
@@ -242,6 +246,7 @@
             else { pi.style.display='block'; si.style.display='none'; let f = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); clearInterval(f); } }, 50); }
         }
 
+        // SOLUCIONS
         function checkGuessExact() { showResultOnline(parseInt(document.getElementById('year-guess').value) === parseInt(document.getElementById('song-year').innerText)); }
         function checkTimelineGuess(idx) {
             const r = parseInt(document.getElementById('song-year').innerText); const s = [...gameState.players[gameState.currentTurn].cards].sort((a,b) => a-b);
@@ -265,12 +270,12 @@
             } else { startScanner(); }
         }
 
-        // REDIRECCIONS
+        // NAVEGACIÓ
         function goToMenu() { window.location.href = window.location.pathname; }
         function startScanner() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('scanner-screen').classList.add('active'); const q = new Html5Qrcode("reader"); q.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => { q.stop().then(() => { window.location.href = t; }); }); }
-        function resetGame() { if(confirm("Vols esborrar tota la partida?")) { localStorage.removeItem('sonabe_v48'); goToMenu(); } }
+        function resetGame() { if(confirm("Vols esborrar tota la partida?")) { localStorage.removeItem('sonabe_v49'); goToMenu(); } }
         async function jugarAleatori() {
-            save(); // Forcem el guardat de la llista David/Carla abans de marxar
+            save(); // Forcem guardat del David i la Carla abans de marxar
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
             try {
                 const r = await fetch(sheet); const t = await r.text();
