@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonabé! 🎶 - Versió 67</title>
+    <title>Sonabé! 🎶 - Versió 68</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; }
+        :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; --gold: #ffd700; }
         body { background-color: var(--bg); color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; text-align: center; overflow-x: hidden; }
         .neon-logo { font-weight: bold; font-size: 3rem; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px var(--neon); margin-bottom: 20px; }
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; gap: 15px; }
@@ -21,6 +21,7 @@
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
         .mode-selected { background-color: var(--primary) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon); }
+        .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 20px var(--gold); border: none; }
         .btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid #666; color: #ccc; font-size: 0.75rem; width: 180px; margin-top: 10px; }
 
         .player-item { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 12px 15px; border-radius: 12px; width: 280px; margin-bottom: 8px; border: 1px solid #444; }
@@ -53,7 +54,7 @@
 </head>
 <body>
 
-    <div id="loading-overlay"><div class="spinner"></div><p style="margin-top:15px;">CARREGANT...</p></div>
+    <div id="loading-overlay"><div class="spinner"></div><p style="margin-top:15px;">CARREGANT CANÇÓ...</p></div>
 
     <div id="landing-screen" class="screen active">
         <div class="neon-logo">Sonabé!</div>
@@ -125,7 +126,8 @@
         const appleId = params.get('id');
         let html5QrCode = null;
 
-        let gameState = { players: [], currentTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5 };
+        // MEMÒRIA PERMANENT
+        let gameState = { players: [], currentTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isGameOver: false };
 
         function load() {
             const saved = localStorage.getItem('sonabe_permanencia_total');
@@ -162,72 +164,32 @@
             }
         }
 
-        // --- FADE IN / FADE OUT LOGIC ---
+        // --- AUDIO FADES ---
         function handlePlayClick() {
             const pi = document.getElementById('icon-play');
             const si = document.getElementById('icon-stop');
-
             if (audio.paused) {
-                pi.style.display = 'none';
-                si.style.display = 'block';
-                audio.volume = 0;
-                audio.play();
-                let fade = setInterval(() => {
-                    if (audio.volume < 0.9) audio.volume += 0.1;
-                    else { audio.volume = 1; clearInterval(fade); }
-                }, 50);
+                pi.style.display = 'none'; si.style.display = 'block';
+                audio.volume = 0; audio.play();
+                let f = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else { audio.volume = 1; clearInterval(f); } }, 50);
             } else {
-                let fade = setInterval(() => {
-                    if (audio.volume > 0.1) audio.volume -= 0.1;
-                    else {
-                        audio.volume = 0;
-                        audio.pause();
-                        pi.style.display = 'block';
-                        si.style.display = 'none';
-                        clearInterval(fade);
-                    }
-                }, 50);
+                let f = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(f); } }, 50);
             }
-        }
-
-        function nextAction() {
-            let fade = setInterval(() => {
-                if (audio.volume > 0.1) audio.volume -= 0.1;
-                else {
-                    audio.volume = 0;
-                    audio.pause();
-                    clearInterval(fade);
-                    if(gameState.players.length > 0) { 
-                        gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length; 
-                        save();
-                        jugarAleatori(); 
-                    } else { startScanner(); }
-                }
-            }, 30);
         }
 
         // --- SCANNER ---
         function startScanner() {
             document.getElementById('scanner-screen').style.display = 'flex';
             html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 15 }, (decodedText) => {
-                html5QrCode.stop().then(() => { window.location.href = decodedText; });
-            }).catch(err => { console.error(err); });
+            html5QrCode.start({ facingMode: "environment" }, { fps: 15 }, (t) => {
+                html5QrCode.stop().then(() => { window.location.href = t; });
+            }).catch(e => console.error(e));
         }
-        function cancelScanner() {
-            if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); }
-            else { document.getElementById('scanner-screen').style.display = 'none'; }
-        }
+        function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); } else { document.getElementById('scanner-screen').style.display = 'none'; } }
 
         // --- SETUP ---
         function openSetup() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('setup-screen').classList.add('active'); updateSetupList(); }
-        function addPlayer() { 
-            const n = document.getElementById('player-input').value.trim(); 
-            if(n){ 
-                gameState.players.push({name:n, cards:[Math.floor(Math.random()*95)+1930]}); 
-                document.getElementById('player-input').value=""; save(); updateSetupList(); 
-            }
-        }
+        function addPlayer() { const n = document.getElementById('player-input').value.trim(); if(n){ gameState.players.push({name:n, cards:[Math.floor(Math.random()*95)+1930]}); document.getElementById('player-input').value=""; save(); updateSetupList(); renderBoards(); }}
         function updateSetupList() {
             const list = document.getElementById('player-list-setup');
             list.innerHTML = gameState.players.map((p, i) => `<div class="player-item"><span>👤 ${p.name.toUpperCase()}</span><span class="del-btn" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span></div>`).join('');
@@ -280,32 +242,64 @@
             const p = gameState.players[gameState.currentTurn];
             const s = [...p.cards].sort();
             let ok = (idx === -1) ? (r <= s[0]) : (idx === s.length-1) ? (r >= s[s.length-1]) : (r >= s[idx] && r <= s[idx+1]);
+            
             if(ok) { 
-                p.cards.push(r); save(); 
+                p.cards.push(r); 
+                // COMPROVACIÓ DE VICTÒRIA v68
                 if(p.cards.length >= gameState.winCondition) { 
-                    audio.pause(); document.getElementById('winner-name').innerText=p.name.toUpperCase(); 
-                    document.getElementById('winner-screen').classList.add('active'); return; 
+                    gameState.isGameOver = true;
                 }
+                save(); 
                 revealSolutionSolo(true);
             } else { revealSolutionSolo(false); }
         }
 
         function revealSolutionSolo(correct) { 
             const res = document.getElementById('guess-result');
+            const btn = document.getElementById('btn-next');
+            
             if (correct === true) { res.innerText = "✅ ENCERTAT!"; res.style.color = "#28a745"; }
             else if (correct === false) { res.innerText = "❌ INCORRECTE"; res.style.color = "#fa2d48"; }
-            else { res.innerText = ""; }
+            
+            // CANVI DE BOTÓ SI HI HA GUANYADOR v68
+            if (gameState.isGameOver) {
+                btn.innerText = "🏆 VEURE GUANYADOR";
+                btn.className = "btn btn-gold";
+            } else {
+                btn.innerText = "Següent Cançó";
+                btn.className = "btn btn-primary";
+            }
+
             document.getElementById('ui-online-mode').style.display='none'; 
             document.getElementById('ui-cards-mode').style.display='none'; 
             document.getElementById('solution-card').style.display='flex'; 
         }
+        
+        function nextAction() {
+            // FADE OUT ABANS DE TANCAR
+            let f = setInterval(() => { 
+                if (audio.volume > 0.1) audio.volume -= 0.1; 
+                else { 
+                    audio.volume = 0; audio.pause(); clearInterval(f); 
+                    
+                    // SI LA PARTIDA S'HA ACABAT v68
+                    if (gameState.isGameOver) {
+                        const p = gameState.players[gameState.currentTurn];
+                        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                        document.getElementById('winner-name').innerText = p.name.toUpperCase();
+                        document.getElementById('winner-screen').classList.add('active');
+                        return;
+                    }
 
-        function resetGame() { 
-            if(confirm("Reiniciar jugadors i partida?")) { 
-                localStorage.removeItem('sonabe_permanencia_total'); 
-                window.location.href = window.location.pathname; 
-            } 
+                    if(gameState.players.length > 0) { 
+                        gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length; 
+                        save(); jugarAleatori(); 
+                    } else { startScanner(); }
+                }
+            }, 30);
         }
+
+        function resetGame() { if(confirm("Netejar tot?")){ localStorage.removeItem('sonabe_permanencia_total'); window.location.href = window.location.pathname; } }
         function goToMenu() { window.location.href = window.location.pathname; }
 
         async function jugarAleatori() {
