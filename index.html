@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonabé! 🎶 - Versió 65</title>
+    <title>Sonabé! 🎶 - Versió 66</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; }
@@ -12,12 +12,10 @@
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; gap: 15px; }
         .active { display: flex; }
 
-        /* Loader */
         #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: var(--bg); z-index: 4000; justify-content: center; align-items: center; flex-direction: column; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Botons */
         .btn-list { display: flex; flex-direction: column; gap: 10px; width: 100%; align-items: center; }
         .btn { background: rgba(255,255,255,0.1); border: 1px solid #444; color: #eee; padding: 16px 25px; border-radius: 40px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; width: 280px; transition: 0.2s; outline: none; }
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
@@ -25,20 +23,19 @@
         .mode-selected { background-color: var(--primary) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon); }
         .btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid #666; color: #ccc; font-size: 0.75rem; width: 180px; margin-top: 10px; }
 
-        /* Setup */
         .player-item { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 12px 15px; border-radius: 12px; width: 280px; margin-bottom: 8px; border: 1px solid #444; }
         .del-btn { color: var(--primary); font-weight: bold; cursor: pointer; font-size: 1.4rem; padding: 0 10px; }
 
-        /* Joc */
         #turn-indicator { background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; margin-bottom: 15px; text-transform: uppercase; font-size: 1.1rem; }
         .play-button { width: 90px; height: 90px; background-color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 10px 0; border: none; }
         .play-icon { width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px; }
         .stop-icon { width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none; }
+        
         #solution-card { display: none; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+        #guess-result { font-weight: bold; font-size: 1.8rem; margin-bottom: 5px; }
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
-        /* Scanner Professional */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader * { border: none !important; }
@@ -47,7 +44,6 @@
         .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--neon); box-shadow: 0 0 15px var(--neon); animation: scanMove 2s ease-in-out infinite; }
         @keyframes scanMove { 0%, 100% { top: 5%; } 50% { top: 95%; } }
 
-        /* Tauler Online */
         .board-container { width: 100%; max-width: 400px; margin-top: 30px; border-top: 1px solid #444; padding-top: 20px; display: none; }
         .player-row { background: #1e1e1e; padding: 10px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; }
         .active-row { border: 2px solid white !important; box-shadow: 0 0 15px var(--primary); background: #222; }
@@ -57,7 +53,7 @@
 </head>
 <body>
 
-    <div id="loading-overlay"><div class="spinner"></div><p style="margin-top:15px;">CARREGANT CANÇÓ...</p></div>
+    <div id="loading-overlay"><div class="spinner"></div><p style="margin-top:15px;">CARREGANT...</p></div>
 
     <div id="landing-screen" class="screen active">
         <div class="neon-logo">Sonabé!</div>
@@ -100,9 +96,10 @@
             </div>
         </div>
         <div id="ui-cards-mode" class="btn-list" style="display:none;">
-            <button class="btn btn-primary" style="margin-top:20px;" onclick="revealSolutionSolo()">REVELAR SOLUCIÓ</button>
+            <button class="btn btn-primary" style="margin-top:20px;" onclick="revealSolutionSolo(null)">REVELAR SOLUCIÓ</button>
         </div>
         <div id="solution-card">
+            <div id="guess-result"></div>
             <div id="song-year" class="year-badge">----</div>
             <img id="album-img" class="album-art" src="">
             <div id="song-title" style="font-weight: bold; font-size: 1rem; padding: 0 10px;"></div>
@@ -128,7 +125,6 @@
         const appleId = params.get('id');
         let html5QrCode = null;
 
-        // MEMÒRIA BLINDADA (Clau fixa que no canvia amb les versions)
         let gameState = { players: [], currentTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5 };
 
         function load() {
@@ -152,7 +148,6 @@
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('game-screen').classList.add('active');
             
-            // SI HI HA JUGADORS, FORÇAR MODE ONLINE
             if (gameState.players.length > 0) {
                 const actual = gameState.players[gameState.currentTurn];
                 document.getElementById('ui-online-mode').style.display = 'block';
@@ -180,7 +175,13 @@
         }
 
         function openSetup() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('setup-screen').classList.add('active'); updateSetupList(); }
-        function addPlayer() { const n = document.getElementById('player-input').value.trim(); if(n){ gameState.players.push({name:n, cards:[Math.floor(Math.random()*95)+1930]}); document.getElementById('player-input').value=""; save(); updateSetupList(); renderBoards(); }}
+        function addPlayer() { 
+            const n = document.getElementById('player-input').value.trim(); 
+            if(n){ 
+                gameState.players.push({name:n, cards:[Math.floor(Math.random()*95)+1930]}); 
+                document.getElementById('player-input').value=""; save(); updateSetupList(); 
+            }
+        }
         function updateSetupList() {
             const list = document.getElementById('player-list-setup');
             list.innerHTML = gameState.players.map((p, i) => `<div class="player-item"><span>👤 ${p.name.toUpperCase()}</span><span class="del-btn" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span></div>`).join('');
@@ -241,21 +242,41 @@
                     audio.pause(); document.getElementById('winner-name').innerText=p.name.toUpperCase(); 
                     document.getElementById('winner-screen').classList.add('active'); return; 
                 }
+                revealSolutionSolo(true);
+            } else {
+                revealSolutionSolo(false);
             }
-            revealSolutionSolo();
         }
-        function revealSolutionSolo() { document.getElementById('ui-online-mode').style.display='none'; document.getElementById('ui-cards-mode').style.display='none'; document.getElementById('solution-card').style.display='flex'; }
+
+        function revealSolutionSolo(correct) { 
+            const res = document.getElementById('guess-result');
+            if (correct === true) { res.innerText = "✅ ENCERTAT!"; res.style.color = "#28a745"; }
+            else if (correct === false) { res.innerText = "❌ INCORRECTE"; res.style.color = "#fa2d48"; }
+            else { res.innerText = ""; }
+
+            document.getElementById('ui-online-mode').style.display='none'; 
+            document.getElementById('ui-cards-mode').style.display='none'; 
+            document.getElementById('solution-card').style.display='flex'; 
+        }
         
         function nextAction() {
             audio.pause();
             if(gameState.players.length > 0) { 
                 gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length; 
-                save(); // GUARDEM EL NOU TORN ABANS DEL SALT
+                save();
                 jugarAleatori(); 
             } else { startScanner(); }
         }
 
-        function resetGame() { if(confirm("Netejar tota la partida?")){ localStorage.removeItem('sonabe_permanencia_total'); window.location.href = window.location.pathname; } }
+        // REINICI TOTAL v66
+        function resetGame() { 
+            if(confirm("Vols esborrar tota la partida i els jugadors?")) { 
+                localStorage.removeItem('sonabe_permanencia_total'); 
+                gameState = { players: [], currentTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5 };
+                window.location.href = window.location.pathname; 
+            } 
+        }
+
         function goToMenu() { window.location.href = window.location.pathname; }
 
         async function jugarAleatori() {
