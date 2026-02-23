@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonabé! 🎶 - Versió 80</title>
+    <title>Sonabé! 🎶 - Versió 81</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -25,6 +25,9 @@
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 20px var(--gold); border: none; }
         .btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid #666; color: #ccc; font-size: 0.75rem; width: 180px; margin-top: 10px; }
 
+        .player-item { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 12px 15px; border-radius: 12px; width: 280px; margin-bottom: 8px; border: 1px solid #444; }
+        .del-btn { color: var(--primary); font-weight: bold; cursor: pointer; font-size: 1.4rem; padding: 0 10px; }
+
         #turn-indicator { background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; margin-bottom: 15px; text-transform: uppercase; font-size: 1.1rem; }
         .play-button { width: 90px; height: 90px; background-color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 10px 0; border: none; }
         .play-icon { width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px; }
@@ -34,16 +37,15 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
-        /* ESCÀNER PRO */
+        /* --- ESCÀNER v81 --- */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+        
         .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 260px; height: 260px; border: 4px solid var(--neon); border-radius: 30px; box-shadow: 0 0 25px var(--neon); pointer-events: none; z-index: 3001; }
         .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--neon); box-shadow: 0 0 15px var(--neon); animation: scanMove 2s ease-in-out infinite; }
         @keyframes scanMove { 0%, 100% { top: 5%; } 50% { top: 95%; } }
 
-        .player-item { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 12px 15px; border-radius: 12px; width: 280px; margin-bottom: 8px; border: 1px solid #444; }
-        .del-btn { color: var(--primary); font-weight: bold; cursor: pointer; font-size: 1.4rem; padding: 0 10px; }
         .board-container { width: 100%; max-width: 400px; margin-top: 30px; border-top: 1px solid #444; padding-top: 20px; display: none; }
         .player-row { background: #1e1e1e; padding: 10px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; }
         .active-row { border: 2px solid white !important; box-shadow: 0 0 15px var(--primary); background: #222; }
@@ -130,19 +132,14 @@
         const audio = document.getElementById('audio-player');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let html5QrCode = null;
-
-        // INICIALITZACIÓ BLINDADA v80
         let gameState = { players: [], currentTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isGameOver: false };
 
-        function load() { 
-            try {
-                const saved = localStorage.getItem('sonabe_permanencia_total');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    // Validació per si venim de versions incompatibles
-                    if (Array.isArray(parsed.players)) gameState = parsed;
-                }
-            } catch(e) { console.error("Error carregant memòria"); }
+        function load() {
+            const saved = localStorage.getItem('sonabe_permanencia_total');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed && Array.isArray(parsed.players)) gameState = parsed;
+            }
         }
         function save() { localStorage.setItem('sonabe_permanencia_total', JSON.stringify(gameState)); }
         load();
@@ -154,13 +151,12 @@
             else if (gameState.players.length > 0) { renderBoards(); } 
         };
 
-        // --- FUNCIONS ONLINE (ARREGLADES v80) ---
+        // --- SETUP (AFEGIR JUGADORS ARREGLAT) ---
         function addPlayer() {
-            const input = document.getElementById('player-input');
-            const name = input.value.trim();
-            if (name) {
-                gameState.players.push({ name: name, cards: [Math.floor(Math.random() * 95) + 1930] });
-                input.value = "";
+            const n = document.getElementById('player-input').value.trim();
+            if (n) {
+                gameState.players.push({ name: n, cards: [Math.floor(Math.random() * 95) + 1930] });
+                document.getElementById('player-input').value = "";
                 save();
                 updateSetupList();
                 renderBoards();
@@ -173,19 +169,12 @@
             list.innerHTML = gameState.players.map((p, i) => `
                 <div class="player-item">
                     <span>👤 ${p.name.toUpperCase()}</span>
-                    <span class="del-btn" onclick="removePlayer(${i})">✕</span>
+                    <span class="del-btn" onclick="gameState.players.splice(${i},1);save();updateSetupList();renderBoards();">✕</span>
                 </div>
             `).join('');
             document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none';
             document.getElementById('win-input').value = gameState.winCondition;
             setMode(gameState.mode);
-        }
-
-        function removePlayer(index) {
-            gameState.players.splice(index, 1);
-            save();
-            updateSetupList();
-            renderBoards();
         }
 
         function setMode(m) {
@@ -215,7 +204,7 @@
         }
         function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); } else { document.getElementById('scanner-screen').style.display = 'none'; } }
 
-        // --- UI JOC ---
+        // --- UI ---
         function renderGameUI() {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('game-screen').classList.add('active');
@@ -236,6 +225,7 @@
             }
         }
 
+        // --- LÒGICA JOC ---
         function checkTimelineGuess(idx) {
             const r = parseInt(document.getElementById('song-year').innerText);
             const p = gameState.players[gameState.currentTurn];
@@ -256,7 +246,6 @@
             if (gameState.isGameOver) { btn.innerText = "🏆 VEURE GUANYADOR"; btn.className = "btn btn-gold"; }
             else { btn.innerText = "Següent Cançó"; btn.className = "btn btn-primary"; }
             document.getElementById('ui-online-mode').style.display='none'; 
-            document.getElementById('ui-cards-mode').style.display='none'; 
             document.getElementById('solution-card').style.display='flex'; 
         }
 
@@ -309,7 +298,7 @@
             });
         }
 
-        // --- ALTRES ---
+        // --- HELPERS ---
         async function loadSong(id) {
             if (!gameState.playedIds.includes(id)) { gameState.playedIds.push(id); save(); }
             const r = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
@@ -325,7 +314,7 @@
         function openSetup() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('setup-screen').classList.add('active'); updateSetupList(); }
         function renderBoards() {
             const container = document.getElementById('all-boards');
-            if (gameState.players.length === 0) { container.style.display = 'none'; return; }
+            if (!container) return;
             container.style.display = 'block'; container.innerHTML = "<h3>Taulers de joc</h3>";
             gameState.players.forEach((p, i) => {
                 const active = (i === gameState.currentTurn) ? 'active-row' : '';
@@ -333,8 +322,8 @@
             });
         }
         function renderTimelineSlots(player) {
-            const container = document.getElementById('timeline-slots'); container.innerHTML = "";
-            const sorted = [...player.cards].sort();
+            const container = document.getElementById('timeline-slots'); if (!container) return;
+            container.innerHTML = ""; const sorted = [...player.cards].sort();
             container.innerHTML += `<button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(-1)">ANTIC</button>`;
             sorted.forEach((y, i) => {
                 container.innerHTML += `<div style="background:white;color:black;padding:5px 10px;border-radius:6px;font-weight:bold;">${y}</div>`;
@@ -360,8 +349,8 @@
             if (avail.length > 0) { window.location.href = avail[Math.floor(Math.random()*avail.length)].url + "&mode=rand"; } 
             else { alert("S'han acabat les cançons!"); resetGame(); }
         }
-        function resetGame() { localStorage.removeItem('sonabe_permanencia_total'); window.location.href = window.location.origin + window.location.pathname; }
-        function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
+        function resetGame() { localStorage.removeItem('sonabe_permanencia_total'); window.location.href = window.location.pathname; }
+        function goToMenu() { window.location.href = window.location.pathname; }
     </script>
 </body>
 </html>
