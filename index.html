@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 95</title>
+    <title>Sonabé! 🎶 - Versió 96</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -34,10 +34,10 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
-        /* ESCÀNER v95 - SENSE MARC BLANC */
+        /* ESCÀNER v96 - NOMÉS ROSA */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
-        #reader__scan_region { border: none !important; }
+        #reader__scan_region { border: none !important; box-shadow: none !important; }
         #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
         .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 250px; border: 5px solid var(--neon); border-radius: 30px; box-shadow: 0 0 40px var(--neon); pointer-events: none; z-index: 3001; }
         .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--neon); box-shadow: 0 0 15px var(--neon); animation: scanMove 2s ease-in-out infinite; }
@@ -133,7 +133,7 @@
         const audio = document.getElementById('audio-player');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let html5QrCode = null;
-        let fadeInterval = null; // CONTROL DEL FADE
+        let fadeInterval = null;
         
         let gameState = { 
             players: [], currentTurn: 0, originalTurn: 0, 
@@ -183,43 +183,26 @@
             save();
         }
 
-        // --- AUDIO v95 (FADE IN/OUT RESTAURAT) ---
+        // --- AUDIO v96 ---
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
             clearInterval(fadeInterval);
-
             if (audio.paused) {
                 pi.style.display = 'none'; si.style.display = 'block';
-                audio.volume = 0;
-                audio.play();
-                fadeInterval = setInterval(() => {
-                    if (audio.volume < 0.9) audio.volume += 0.1;
-                    else { audio.volume = 1; clearInterval(fadeInterval); }
-                }, 50);
+                audio.volume = 0; audio.play();
+                fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else { audio.volume = 1; clearInterval(fadeInterval); } }, 50);
             } else {
-                fadeInterval = setInterval(() => {
-                    if (audio.volume > 0.1) audio.volume -= 0.1;
-                    else {
-                        audio.volume = 0;
-                        audio.pause();
-                        pi.style.display = 'block'; si.style.display = 'none';
-                        clearInterval(fadeInterval);
-                    }
-                }, 50);
+                fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(fadeInterval); } }, 50);
             }
         }
 
         function nextAction() {
             clearInterval(fadeInterval);
-            // FADE OUT RÀPID ABANS DE CANVIAR
             fadeInterval = setInterval(() => {
                 if (audio.volume > 0.1) audio.volume -= 0.1;
                 else {
-                    audio.volume = 0;
-                    audio.pause();
-                    clearInterval(fadeInterval);
-                    
+                    audio.volume = 0; audio.pause(); clearInterval(fadeInterval);
                     if (gameState.isGameOver) {
                         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                         document.getElementById('winner-name').innerText = gameState.players[gameState.currentTurn].name.toUpperCase();
@@ -227,7 +210,6 @@
                         triggerConfetti(); playWinFanfare();
                         return;
                     }
-
                     if (gameState.players.length > 0) {
                         if (gameState.robbersTried.length > 0) { gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; }
                         else { gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length; }
@@ -252,7 +234,7 @@
                 html5QrCode.stop().then(() => { window.location.href = t; });
             }).catch(e => console.error(e));
         }
-        function cancelScanner() { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); }
+        function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); } }
 
         // --- LÒGICA JOC ---
         async function loadSong(id) {
@@ -281,6 +263,7 @@
             const turnBox = document.getElementById('turn-indicator');
             if (gameState.players.length > 0) {
                 document.getElementById('ui-online-mode').style.display = 'block';
+                document.getElementById('ui-cards-mode').style.display = 'none';
                 const actual = gameState.players[gameState.currentTurn];
                 if (gameState.isRobberyActive) {
                     turnBox.innerText = `🚨 ROBATORI: ${actual.name.toUpperCase()}`;
@@ -292,6 +275,7 @@
                 renderTimelineSlots(actual); renderBoards();
             } else {
                 document.getElementById('ui-online-mode').style.display = 'none';
+                document.getElementById('ui-cards-mode').style.display = 'block';
                 turnBox.innerText = "TINC LES CARTES!";
                 turnBox.style.background = "var(--primary)";
             }
@@ -304,11 +288,12 @@
             if(correct !== null) {
                 res.innerText = correct ? "✅ ENCERTAT!" : "❌ INCORRECTE";
                 res.style.color = correct ? "#28a745" : "#fa2d48";
-            }
+            } else { res.innerText = ""; }
             btnS.style.display = canSteal ? 'block' : 'none';
-            if (gameState.isGameOver) { btnN.innerText = "🏆 VEURE GUANYADOR"; btnN.className = "btn btn-gold"; }
-            else { btnN.innerText = "Següent Cançó"; btnN.className = "btn btn-primary"; }
+            btnN.innerText = gameState.isGameOver ? "🏆 VEURE GUANYADOR" : "Següent Cançó";
+            btnN.className = gameState.isGameOver ? "btn btn-gold" : "btn btn-primary";
             document.getElementById('ui-online-mode').style.display='none'; 
+            document.getElementById('ui-cards-mode').style.display='none';
             document.getElementById('solution-card').style.display='flex'; 
         }
 
@@ -323,10 +308,8 @@
                 gameState.isRobberyActive = false; gameState.robbersTried = [];
                 save(); revealSolution(true);
             } else { 
-                if (!gameState.isRobberyActive) {
-                    gameState.originalTurn = gameState.currentTurn;
-                    gameState.robbersTried = [gameState.currentTurn];
-                } else { gameState.robbersTried.push(gameState.currentTurn); }
+                if (!gameState.isRobberyActive) { gameState.originalTurn = gameState.currentTurn; gameState.robbersTried = [gameState.currentTurn]; } 
+                else { gameState.robbersTried.push(gameState.currentTurn); }
                 const nextRobberIndex = findNextRobber();
                 revealSolution(false, nextRobberIndex !== -1);
             }
@@ -342,14 +325,10 @@
 
         function startStealAttempt() {
             const nextIdx = findNextRobber();
-            if (nextIdx !== -1) {
-                gameState.currentTurn = nextIdx;
-                gameState.isRobberyActive = true; 
-                save(); renderGameUI();
-            }
+            if (nextIdx !== -1) { gameState.currentTurn = nextIdx; gameState.isRobberyActive = true; save(); renderGameUI(); }
         }
 
-        // --- EFECTES ---
+        // --- EXTRAS ---
         function triggerConfetti() {
             const count = 200, defaults = { origin: { y: 0.7 }, zIndex: 9999 };
             function fire(particleRatio, opts) { confetti({ ...defaults, ...opts, particleCount: Math.floor(count * particleRatio) }); }
@@ -378,7 +357,7 @@
                 return { url, id };
             }).filter(s => s.url.includes("http") && !gameState.playedIds.includes(s.id));
             if (avail.length > 0) { window.location.href = avail[Math.floor(Math.random()*avail.length)].url + "&mode=rand"; } 
-            else { alert("Fi llista!"); resetGame(); }
+            else { alert("Fi!"); resetGame(); }
         }
         function playAgainSamePlayers() {
             gameState.players.forEach(p => { p.cards = [Math.floor(Math.random() * 95) + 1930]; });
