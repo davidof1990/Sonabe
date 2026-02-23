@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 85</title>
+    <title>Sonabé! 🎶 - Versió 86</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -21,13 +21,13 @@
         .btn { background: rgba(255,255,255,0.1); border: 1px solid #444; color: #eee; padding: 16px 25px; border-radius: 40px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; width: 280px; transition: 0.2s; outline: none; box-sizing: border-box; }
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
-        .btn-robbery { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 15px var(--purple); border: none; }
-        .mode-selected { background-color: var(--primary) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon); }
+        .btn-robbery { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 15px var(--purple); border: 2px solid white; }
+        .mode-selected { background-color: var(--primary) !important; color: white !important; border: 2px solid white !important; }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 20px var(--gold); border: none; }
 
         .player-item { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 12px 15px; border-radius: 12px; width: 280px; margin-bottom: 8px; border: 1px solid #444; }
         
-        #turn-indicator { background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; margin-bottom: 15px; text-transform: uppercase; font-size: 1.1rem; }
+        #turn-indicator { background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; margin-bottom: 15px; text-transform: uppercase; font-size: 1.1rem; transition: 0.3s; }
         .play-button { width: 90px; height: 90px; background-color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 10px 0; border: none; }
         .play-icon { width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px; }
         .stop-icon { width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none; }
@@ -89,7 +89,7 @@
         </button>
 
         <div id="ui-online-mode" class="btn-list" style="display:none;">
-            <p>On col·loques la cançó?</p>
+            <p id="game-instruction">On col·loques la cançó?</p>
             <div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div>
         </div>
 
@@ -143,8 +143,7 @@
 
         window.onload = () => { 
             const urlParams = new URLSearchParams(window.location.search);
-            const appleId = urlParams.get('id');
-            if (appleId) { renderGameUI(); loadSong(appleId); } 
+            if (urlParams.get('id')) { renderGameUI(); loadSong(urlParams.get('id')); } 
             else if (gameState.players.length > 0) { renderBoards(); } 
         };
 
@@ -176,7 +175,7 @@
         }
         function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); renderBoards(); }
 
-        // --- ESCÀNER VISOR QUADRAT ---
+        // --- ESCÀNER ---
         function startScanner() {
             document.getElementById('scanner-screen').style.display = 'flex';
             html5QrCode = new Html5Qrcode("reader");
@@ -186,7 +185,7 @@
         }
         function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); } else { document.getElementById('scanner-screen').style.display = 'none'; } }
 
-        // --- AUDIO ---
+        // --- AUDIO & PARTY ---
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
@@ -197,8 +196,6 @@
                 let f = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(f); } }, 50);
             }
         }
-
-        // --- EFECTES RECUPERATS v85 ---
         function playWinFanfare() {
             const notes = [523.25, 659.25, 783.99, 1046.50];
             notes.forEach((freq, i) => {
@@ -216,7 +213,7 @@
             fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 }); fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
         }
 
-        // --- JOC ---
+        // --- LÒGICA JOC (ROBATORI v86) ---
         async function loadSong(id) {
             document.getElementById('loading-overlay').style.display = 'flex';
             if (!gameState.playedIds.includes(id)) { gameState.playedIds.push(id); save(); }
@@ -230,7 +227,7 @@
                     document.getElementById('song-title').innerText = s.trackName;
                     document.getElementById('song-artist').innerText = s.artistName;
                 }
-            } catch (e) { console.error("Error caràrrega cançó"); }
+            } catch (e) { console.error(e); }
             document.getElementById('loading-overlay').style.display = 'none';
         }
 
@@ -238,17 +235,22 @@
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('game-screen').classList.add('active');
             document.getElementById('solution-card').style.display = 'none';
+            document.getElementById('ui-online-mode').style.display = 'block';
             document.getElementById('play-btn-main').style.display = 'flex';
+            
             if (gameState.players.length > 0) {
                 const actual = gameState.players[gameState.currentTurn];
-                document.getElementById('ui-online-mode').style.display = 'block';
                 const turnBox = document.getElementById('turn-indicator');
+                const instruction = document.getElementById('game-instruction');
+                
                 if (gameState.isRobberyActive) {
                     turnBox.innerText = `🚨 ROBATORI: ${actual.name.toUpperCase()}`;
                     turnBox.style.background = "var(--purple)";
+                    instruction.innerText = "🚨 Estàs intentant robar la carta!";
                 } else {
                     turnBox.innerText = `TORN DE: ${actual.name.toUpperCase()}`;
                     turnBox.style.background = "var(--primary)";
+                    instruction.innerText = "On col·loques la cançó?";
                 }
                 renderTimelineSlots(actual); renderBoards();
             } else {
@@ -261,30 +263,40 @@
             const p = gameState.players[gameState.currentTurn];
             const sorted = [...p.cards].sort();
             let ok = (idx === -1) ? (year <= sorted[0]) : (idx === sorted.length-1) ? (year >= sorted[sorted.length-1]) : (year >= sorted[idx] && year <= sorted[idx+1]);
+            
             if(ok) { 
                 p.cards.push(year); 
                 if(p.cards.length >= gameState.winCondition) gameState.isGameOver = true;
                 gameState.isRobberyActive = false; save(); revealSolution(true);
             } else { 
-                if (gameState.players.length > 1 && !gameState.isRobberyActive) revealSolution(false, true);
-                else { gameState.isRobberyActive = false; revealSolution(false, false); }
+                // Si falla i hi ha algú més per robar, i no estàvem ja robant
+                if (gameState.players.length > 1 && !gameState.isRobberyActive) {
+                    revealSolution(false, true); 
+                } else {
+                    gameState.isRobberyActive = false; 
+                    revealSolution(false, false); 
+                }
             }
         }
 
         function startStealAttempt() {
             gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
-            gameState.isRobberyActive = true; save(); renderGameUI();
+            gameState.isRobberyActive = true; 
+            save(); renderGameUI();
         }
 
         function revealSolution(correct, canSteal = false) { 
             const res = document.getElementById('guess-result');
             const btnN = document.getElementById('btn-next');
             const btnS = document.getElementById('btn-steal');
+            
             res.innerText = correct ? "✅ ENCERTAT!" : "❌ INCORRECTE";
             res.style.color = correct ? "#28a745" : "#fa2d48";
             btnS.style.display = canSteal ? 'block' : 'none';
+            
             if (gameState.isGameOver) { btnN.innerText = "🏆 VEURE GUANYADOR"; btnN.className = "btn btn-gold"; }
             else { btnN.innerText = "Següent Cançó"; btnN.className = "btn btn-primary"; }
+            
             document.getElementById('ui-online-mode').style.display='none'; 
             document.getElementById('solution-card').style.display='flex'; 
         }
@@ -298,7 +310,7 @@
                         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                         document.getElementById('winner-name').innerText = gameState.players[gameState.currentTurn].name.toUpperCase();
                         document.getElementById('winner-screen').classList.add('active');
-                        playWinFanfare(); setTimeout(triggerConfetti, 100); // FESTA RECUPERADA!
+                        playWinFanfare(); setTimeout(triggerConfetti, 100); 
                         return;
                     }
                     if (!gameState.isRobberyActive) gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
@@ -307,7 +319,7 @@
             }, 30);
         }
 
-        // --- ALTRES ---
+        // --- HELPERS ---
         async function jugarAleatori() {
             document.getElementById('loading-overlay').style.display = 'flex';
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
@@ -320,15 +332,15 @@
                 return { url, id };
             }).filter(s => s.url.includes("http") && !gameState.playedIds.includes(s.id));
             if (avail.length > 0) { window.location.href = avail[Math.floor(Math.random()*avail.length)].url + "&mode=rand"; } 
-            else { alert("Fi de la llista!"); resetGame(); }
+            else { alert("Llista buida!"); resetGame(); }
         }
         function playAgainSamePlayers() {
             gameState.players.forEach(p => { p.cards = [Math.floor(Math.random() * 95) + 1930]; });
             gameState.currentTurn = 0; gameState.isGameOver = false; gameState.playedIds = [];
             save(); jugarAleatori();
         }
-        function resetGame() { localStorage.removeItem('sonabe_permanencia_total'); window.location.href = window.location.origin + window.location.pathname; }
-        function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
+        function resetGame() { localStorage.removeItem('sonabe_permanencia_total'); window.location.href = window.location.pathname; }
+        function goToMenu() { window.location.href = window.location.pathname; }
         function openSetup() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('setup-screen').classList.add('active'); updateSetupList(); }
         function renderBoards() {
             const container = document.getElementById('all-boards'); if (!container) return;
