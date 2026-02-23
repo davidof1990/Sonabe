@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 107</title>
+    <title>Sonabé! 🎶 - Versió 108</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -34,7 +34,7 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
-        /* ESCÀNER v107 - NET */
+        /* ESCÀNER v108 - VISOR NET v94 */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader__scan_region, #reader__border { border: none !important; box-shadow: none !important; }
@@ -51,7 +51,7 @@
 </head>
 <body>
 
-    <div id="loading-overlay"><div class="spinner"></div><p id="status-text" style="margin-top:15px;">CARREGANT...</p></div>
+    <div id="loading-overlay"><div class="spinner"></div><p id="status-text" style="margin-top:15px;">PREPARANT JOC...</p></div>
 
     <div id="landing-screen" class="screen">
         <div class="neon-logo">Sonabé!</div>
@@ -76,7 +76,7 @@
                 <button id="mode-timeline" class="btn btn-outline" onclick="setMode('timeline')">LINIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn btn-outline" onclick="setMode('exact')">ANY EXACTE</button>
             </div>
-            <button class="btn btn-primary" style="width:280px; margin-top:20px; border:2px solid white;" onclick="comencarOnline()">COMENÇAR</button>
+            <button class="btn btn-primary" style="width:280px; margin-top:20px; border:2px solid white;" onclick="jugarAleatori('online')">COMENÇAR</button>
         </div>
         <button class="btn btn-secondary" onclick="goToMenu()">Tornar</button>
     </div>
@@ -134,34 +134,35 @@
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let html5QrCode = null, fadeInterval = null;
         
+        // ESTAT DEL JOC
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isGameOver: false, isRobberyActive: false, robbersTried: [] };
 
+        // CARREGA INICIAL BLINDADA v108
         function load() {
-            const saved = localStorage.getItem('sonabe_v107_master');
+            const saved = localStorage.getItem('sonabe_v108_final');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_v107_master', JSON.stringify(gameState)); }
-        load();
+        function save() { localStorage.setItem('sonabe_v108_final', JSON.stringify(gameState)); }
+        
+        load(); // Executem load() immediatament al carregar el script
 
         window.onload = () => { 
             const urlParams = new URLSearchParams(window.location.search);
             const appleId = urlParams.get('id');
+            const urlMode = urlParams.get('mode');
             
-            // PRIORITAT ABSOLUTA AL JOC
-            if (appleId) {
+            // PRIORITAT AL JOC SI HI HA ID O VENIM DE MODE ONLINE
+            if (appleId || urlMode === 'online') {
                 document.getElementById('loading-overlay').style.display = 'flex';
                 renderGameUI(); 
-                loadSong(appleId); 
-            } else if (gameState.players.length > 0) {
-                // Si hi ha jugadors, anem a Setup o Joc, mai a Landing
-                document.getElementById('loading-overlay').style.display = 'none';
-                openSetup();
+                if (appleId) loadSong(appleId); 
             } else {
                 document.getElementById('loading-overlay').style.display = 'none';
                 document.getElementById('landing-screen').classList.add('active');
+                if (gameState.players.length > 0) renderBoards();
             }
         };
 
@@ -191,9 +192,8 @@
             }
             save();
         }
-        function comencarOnline() { updateWinCondition(); jugarAleatori(); }
 
-        // --- AUDIO ---
+        // --- AUDIO FADES ---
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
@@ -206,7 +206,6 @@
             }
         }
 
-        // --- LÒGICA JOC ---
         function performFadeOut(callback) {
             clearInterval(fadeInterval);
             document.getElementById('loading-overlay').style.display = 'flex';
@@ -217,13 +216,14 @@
             }, 30);
         }
 
+        // --- LÒGICA JOC ---
         function nextAction() {
             performFadeOut(() => {
                 if (gameState.players.length > 0) {
                     if (gameState.robbersTried.length > 0) { gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; }
                     else { gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length; }
                     gameState.isRobberyActive = false; gameState.robbersTried = [];
-                    jugarAleatori(); 
+                    jugarAleatori('online'); 
                 } else {
                     window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
                     startScanner();
@@ -233,10 +233,9 @@
 
         function playAgain() {
             performFadeOut(() => {
-                // RESET TOTAL v107
                 gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]);
                 gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.isGameOver = false; gameState.playedIds = [];
-                jugarAleatori();
+                jugarAleatori('online');
             });
         }
 
@@ -262,6 +261,7 @@
             document.getElementById('game-screen').classList.add('active');
             document.getElementById('solution-card').style.display = 'none';
             const turnBox = document.getElementById('turn-indicator');
+            
             if (gameState.players.length > 0) {
                 document.getElementById('ui-online-mode').style.display = 'block';
                 document.getElementById('ui-cards-mode').style.display = 'none';
@@ -327,8 +327,8 @@
         }
 
         // --- HELPERS ---
-        async function jugarAleatori() {
-            save(); // ASSEGUREM GUARDAT v107
+        async function jugarAleatori(type) {
+            save(); // Guardat forçat v108
             document.getElementById('loading-overlay').style.display = 'flex';
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
             try {
@@ -343,12 +343,13 @@
                 if (avail.length > 0) { 
                     const song = avail[Math.floor(Math.random()*avail.length)];
                     gameState.playedIds.push(song.id); save();
-                    window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id;
-                } else { alert("Fi de la llista!"); resetGame(); }
+                    // Salt de cançó amb flag de mode v108
+                    window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id + "&mode=" + (type || 'online');
+                } else { alert("Fi llista!"); resetGame(); }
             } catch(e) { alert("Error de conexió"); }
         }
 
-        function resetGame() { localStorage.removeItem('sonabe_v107_master'); window.location.href = window.location.origin + window.location.pathname; }
+        function resetGame() { localStorage.removeItem('sonabe_v108_final'); window.location.href = window.location.origin + window.location.pathname; }
         function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
         function openSetup() { 
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
