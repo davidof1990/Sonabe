@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 108</title>
+    <title>Sonabé! 🎶 - Versió 110</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -34,7 +34,7 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
-        /* ESCÀNER v108 - VISOR NET v94 */
+        /* ESCÀNER v94 - VISOR NET */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader__scan_region, #reader__border { border: none !important; box-shadow: none !important; }
@@ -98,11 +98,15 @@
         </div>
 
         <div id="solution-card">
-            <div id="guess-result" style="font-weight:bold; font-size:1.8rem; margin-bottom:5px;"></div>
-            <div id="song-year" class="year-badge">----</div>
-            <img id="album-img" class="album-art" src="">
-            <div id="song-title" style="font-weight: bold; font-size: 1rem; padding: 0 10px;"></div>
-            <div id="song-artist" style="color: var(--primary);"></div>
+            <div id="guess-result" style="font-weight:bold; font-size:1.8rem; margin-bottom:10px;"></div>
+            
+            <div id="song-details" style="display:flex; flex-direction:column; align-items:center; gap:10px; width:100%;">
+                <div id="song-year" class="year-badge">----</div>
+                <img id="album-img" class="album-art" src="">
+                <div id="song-title" style="font-weight: bold; font-size: 1rem; padding: 0 10px;"></div>
+                <div id="song-artist" style="color: var(--primary);"></div>
+            </div>
+
             <div class="btn-list" style="margin-top: 15px;">
                 <button id="btn-steal" class="btn btn-robbery" style="display:none;" onclick="startStealAttempt()">😈 ROBAR CARTA</button>
                 <button id="btn-next" class="btn btn-primary" onclick="nextAction()">Següent Cançó</button>
@@ -134,27 +138,23 @@
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let html5QrCode = null, fadeInterval = null;
         
-        // ESTAT DEL JOC
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isGameOver: false, isRobberyActive: false, robbersTried: [] };
 
-        // CARREGA INICIAL BLINDADA v108
         function load() {
-            const saved = localStorage.getItem('sonabe_v108_final');
+            const saved = localStorage.getItem('sonabe_v110_final');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_v108_final', JSON.stringify(gameState)); }
-        
-        load(); // Executem load() immediatament al carregar el script
+        function save() { localStorage.setItem('sonabe_v110_final', JSON.stringify(gameState)); }
+        load();
 
         window.onload = () => { 
             const urlParams = new URLSearchParams(window.location.search);
             const appleId = urlParams.get('id');
             const urlMode = urlParams.get('mode');
             
-            // PRIORITAT AL JOC SI HI HA ID O VENIM DE MODE ONLINE
             if (appleId || urlMode === 'online') {
                 document.getElementById('loading-overlay').style.display = 'flex';
                 renderGameUI(); 
@@ -210,16 +210,14 @@
             clearInterval(fadeInterval);
             document.getElementById('loading-overlay').style.display = 'flex';
             if (audio.paused || audio.volume === 0) { callback(); return; }
-            fadeInterval = setInterval(() => {
-                if (audio.volume > 0.1) audio.volume -= 0.1;
-                else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); }
-            }, 30);
+            fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); } }, 30);
         }
 
         // --- LÒGICA JOC ---
         function nextAction() {
             performFadeOut(() => {
                 if (gameState.players.length > 0) {
+                    // Si passem cançó, el torn següent és el del següent jugador de la llista original
                     if (gameState.robbersTried.length > 0) { gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; }
                     else { gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length; }
                     gameState.isRobberyActive = false; gameState.robbersTried = [];
@@ -301,13 +299,41 @@
             }
         }
 
+        // --- ARREGLAT v110: EL BOTÓ "NEXT" SEMPRE HI ÉS ---
         function revealSolution(correct, canSteal = false) { 
             const res = document.getElementById('guess-result');
-            if(correct !== null) {
-                res.innerText = correct ? "✅ ENCERTAT!" : "❌ INCORRECTE";
-                res.style.color = correct ? "#28a745" : "#fa2d48";
+            const details = document.getElementById('song-details');
+            const btnS = document.getElementById('btn-steal');
+            const btnN = document.getElementById('btn-next');
+
+            if(correct === true) {
+                res.innerText = "✅ ENCERTAT!";
+                res.style.color = "#28a745";
+                details.style.display = "flex";
+                btnS.style.display = "none";
+            } else if (correct === false) {
+                res.innerText = "❌ INCORRECTE";
+                res.style.color = "#fa2d48";
+                
+                if (canSteal) {
+                    details.style.display = "none"; // AMAGAT PER AL ROBATORI
+                    btnS.style.display = "block";
+                } else {
+                    // Si ja ningú pot robar, ensenyem la solució
+                    details.style.display = "flex";
+                    btnS.style.display = "none";
+                }
+            } else {
+                res.innerText = "";
+                details.style.display = "flex";
+                btnS.style.display = "none";
             }
-            document.getElementById('btn-steal').style.display = canSteal ? 'block' : 'none';
+
+            // El botó de Següent sempre visible David!
+            btnN.style.display = "block";
+            btnN.innerText = gameState.isGameOver ? "🏆 VEURE GUANYADOR" : "Següent Cançó";
+            btnN.className = gameState.isGameOver ? "btn btn-gold" : "btn btn-primary";
+            
             document.getElementById('ui-online-mode').style.display='none'; 
             document.getElementById('ui-cards-mode').style.display='none';
             document.getElementById('solution-card').style.display='flex'; 
@@ -328,7 +354,7 @@
 
         // --- HELPERS ---
         async function jugarAleatori(type) {
-            save(); // Guardat forçat v108
+            save(); 
             document.getElementById('loading-overlay').style.display = 'flex';
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
             try {
@@ -343,13 +369,12 @@
                 if (avail.length > 0) { 
                     const song = avail[Math.floor(Math.random()*avail.length)];
                     gameState.playedIds.push(song.id); save();
-                    // Salt de cançó amb flag de mode v108
                     window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id + "&mode=" + (type || 'online');
                 } else { alert("Fi llista!"); resetGame(); }
             } catch(e) { alert("Error de conexió"); }
         }
 
-        function resetGame() { localStorage.removeItem('sonabe_v108_final'); window.location.href = window.location.origin + window.location.pathname; }
+        function resetGame() { localStorage.removeItem('sonabe_v110_final'); window.location.href = window.location.origin + window.location.pathname; }
         function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
         function openSetup() { 
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
