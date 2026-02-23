@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 114</title>
+    <title>Sonabé! 🎶 - Versió 115</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -14,7 +14,8 @@
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; gap: 15px; }
         .active { display: flex; }
 
-        #loading-overlay { display: flex; position: fixed; top:0; left:0; width:100%; height:100%; background: var(--bg); z-index: 9000; justify-content: center; align-items: center; flex-direction: column; }
+        /* LOADING BLOCKER */
+        #loading-overlay { display: flex; position: fixed; top:0; left:0; width:100%; height:100%; background: var(--bg); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
@@ -53,8 +54,8 @@
 
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <p id="loading-text" style="margin-top:15px;">CARREGANT PARTIDA...</p>
-        <button id="retry-btn" class="btn btn-outline" style="display:none; margin-top:20px;" onclick="goToMenu()">TORNAR AL MENÚ</button>
+        <p id="loading-text" style="margin-top:15px;">CARREGANT...</p>
+        <button id="rescue-btn" class="btn btn-outline" style="display:none; margin-top:20px;" onclick="hideLoader()">SALTA ERROR</button>
     </div>
 
     <div id="landing-screen" class="screen">
@@ -74,7 +75,7 @@
         </div>
         <div id="player-list-setup" style="width:100%; margin-top:10px;"></div>
         <div id="config-area" style="display:none; width:100%; margin-top:10px;">
-            <p style="font-size:0.7rem; font-weight:bold; color:#888;">CARTA DE VICTÒRIA:</p>
+            <p style="font-size:0.7rem; font-weight:bold; color:#888;">OBJECTIU DE CARTES:</p>
             <input type="number" id="win-input" min="2" max="20" onchange="updateWinCondition()" style="width:80px; margin-bottom:15px; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white; text-align: center;">
             <div class="btn-list">
                 <button id="mode-timeline" class="btn btn-outline" onclick="setMode('timeline')">LINIA DEL TEMPS</button>
@@ -91,10 +92,12 @@
             <div class="play-icon" id="icon-play"></div>
             <div class="stop-icon" id="icon-stop"></div>
         </button>
+
         <div id="ui-online-mode" class="btn-list" style="display:none;">
             <p id="game-instruction">On col·loques la cançó?</p>
             <div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div>
         </div>
+
         <div id="solution-card">
             <div id="guess-result" style="font-weight:bold; font-size:1.8rem; margin-bottom:10px;"></div>
             <div id="song-details" style="display:none; flex-direction:column; align-items:center; gap:10px; width:100%;">
@@ -132,18 +135,18 @@
     <script>
         const audio = document.getElementById('audio-player');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let html5QrCode = null, fadeInterval = null, loadTimeout = null;
+        let html5QrCode = null, fadeInterval = null, safetyTimer = null;
         
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isGameOver: false, isRobberyActive: false, robbersTried: [] };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v114_final');
+            const saved = localStorage.getItem('sonabe_v115_final');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_v114_final', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v115_final', JSON.stringify(gameState)); }
         load();
 
         window.onload = () => { 
@@ -151,60 +154,117 @@
             const appleId = urlParams.get('id');
             const urlMode = urlParams.get('mode');
             
-            if (appleId || urlMode === 'online' || gameState.players.length > 0) {
-                if (appleId) {
-                    showLoader("CARREGANT CANÇÓ...");
-                    renderGameUI(); 
-                    loadSong(appleId); 
-                } else {
-                    hideLoader();
-                    openSetup();
-                }
+            if (appleId || urlMode === 'online') {
+                showLoader("Sincronitzant partida...");
+                renderGameUI(); 
+                if (appleId) loadSong(appleId); 
+            } else if (gameState.players.length > 0) {
+                hideLoader();
+                openSetup();
             } else {
                 hideLoader();
                 document.getElementById('landing-screen').classList.add('active');
             }
         };
 
-        // --- SISTEMA DE CARREGA v114 ---
-        function showLoader(msg) {
+        // --- SISTEMA DE CARREGA v115 ---
+        function showLoader(txt) {
+            clearTimeout(safetyTimer);
             document.getElementById('loading-overlay').style.display = 'flex';
-            document.getElementById('loading-text').innerText = msg;
-            document.getElementById('retry-btn').style.display = 'none';
-            // Si triga més de 8 segons, oferim sortida David!
-            clearTimeout(loadTimeout);
-            loadTimeout = setTimeout(() => {
-                document.getElementById('loading-text').innerText = "ERROR DE CONNEXIÓ...";
-                document.getElementById('retry-btn').style.display = 'block';
-            }, 8000);
+            document.getElementById('loading-text').innerText = txt || "CARREGANT...";
+            document.getElementById('rescue-btn').style.display = 'none';
+            // Failsafe de 6 segons
+            safetyTimer = setTimeout(() => {
+                document.getElementById('loading-text').innerText = "Connexió lenta...";
+                document.getElementById('rescue-btn').style.display = 'block';
+            }, 6000);
+        }
+        function hideLoader() {
+            clearTimeout(safetyTimer);
+            document.getElementById('loading-overlay').style.display = 'none';
         }
 
-        function hideLoader() {
-            clearTimeout(loadTimeout);
-            document.getElementById('loading-overlay').style.display = 'none';
+        // --- AUDIO ---
+        function handlePlayClick() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
+            clearInterval(fadeInterval);
+            if (audio.paused) {
+                pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play();
+                fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.05; else { audio.volume = 1; clearInterval(fadeInterval); } }, 40);
+            } else {
+                fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(fadeInterval); } }, 40);
+            }
+        }
+
+        function performFadeOut(callback) {
+            clearInterval(fadeInterval);
+            showLoader("PREPARANT SEGÜENT...");
+            if (audio.paused || audio.volume === 0) { callback(); return; }
+            fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); } }, 30);
+        }
+
+        // --- LÒGICA JOC v115 ---
+        function nextAction() {
+            performFadeOut(() => {
+                if (gameState.players.length > 0) {
+                    // NETEJA D'ESTAT DE ROBATORI ABANS DEL SALT
+                    gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
+                    gameState.originalTurn = gameState.currentTurn;
+                    gameState.isRobberyActive = false;
+                    gameState.robbersTried = [];
+                    save(); // Guardat forçat v115
+                    jugarAleatori('online'); 
+                } else {
+                    window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+                    startScanner();
+                }
+            });
         }
 
         async function loadSong(id) {
             try {
                 const r = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
                 const d = await r.json();
-                if (d && d.results && d.results.length > 0) {
-                    const s = d.results[0];
-                    audio.src = s.previewUrl;
+                if (d.results.length > 0) {
+                    const s = d.results[0]; audio.src = s.previewUrl;
                     document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600');
                     document.getElementById('song-year').innerText = s.releaseDate.substring(0,4);
                     document.getElementById('song-title').innerText = s.trackName;
                     document.getElementById('song-artist').innerText = s.artistName;
                     hideLoader();
-                } else { throw new Error("No trobat"); }
-            } catch (e) {
+                }
+            } catch (e) { 
                 console.error(e);
-                document.getElementById('loading-text').innerText = "CANÇÓ NO TROBADA";
-                document.getElementById('retry-btn').style.display = 'block';
+                document.getElementById('loading-text').innerText = "ERROR AL CARREGAR";
+                document.getElementById('rescue-btn').style.display = 'block';
             }
         }
 
-        // --- SETUP ---
+        async function jugarAleatori(type) {
+            save();
+            const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
+            try {
+                const r = await fetch(sheet); const t = await r.text();
+                const lines = t.split("\n").slice(1);
+                const avail = lines.map(l => {
+                    const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                    const id = (c[6] ? c[6].match(/id=(\d+)/) || [] : [])[1];
+                    return { id };
+                }).filter(s => s.id && !gameState.playedIds.includes(s.id));
+                
+                if (avail.length > 0) { 
+                    const song = avail[Math.floor(Math.random()*avail.length)];
+                    gameState.playedIds.push(song.id); save();
+                    window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id + "&mode=" + (type || 'online');
+                } else { alert("Fi de la llista!"); resetGame(); }
+            } catch(e) { 
+                alert("Error de conexió. Reintenta-ho."); 
+                hideLoader();
+            }
+        }
+
+        // --- RESTA DE FUNCIONS SENSE CANVIS ---
         function addPlayer() {
             const n = document.getElementById('player-input').value.trim();
             if (n) {
@@ -230,43 +290,6 @@
             }
             save();
         }
-
-        // --- AUDIO ---
-        function handlePlayClick() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
-            clearInterval(fadeInterval);
-            if (audio.paused) {
-                pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play();
-                fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.05; else { audio.volume = 1; clearInterval(fadeInterval); } }, 40);
-            } else {
-                fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(fadeInterval); } }, 40);
-            }
-        }
-
-        function performFadeOut(callback) {
-            clearInterval(fadeInterval);
-            showLoader("PREPARANT SEGÜENT...");
-            if (audio.paused || audio.volume === 0) { callback(); return; }
-            fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); } }, 30);
-        }
-
-        // --- LÒGICA JOC ---
-        function nextAction() {
-            performFadeOut(() => {
-                if (gameState.players.length > 0) {
-                    gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
-                    gameState.originalTurn = gameState.currentTurn;
-                    gameState.isRobberyActive = false;
-                    gameState.robbersTried = [];
-                    jugarAleatori('online'); 
-                } else {
-                    window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
-                    startScanner();
-                }
-            });
-        }
-
         function playAgain() {
             performFadeOut(() => {
                 gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]);
@@ -274,7 +297,6 @@
                 jugarAleatori('online');
             });
         }
-
         function renderGameUI() {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('game-screen').classList.add('active');
@@ -288,13 +310,11 @@
                 renderTimelineSlots(actual); renderBoards();
             }
         }
-
         function checkTimelineGuess(idx) {
             const year = parseInt(document.getElementById('song-year').innerText);
             const p = gameState.players[gameState.currentTurn];
             const sorted = [...p.cards].sort();
             let ok = (idx === -1) ? (year <= sorted[0]) : (idx === sorted.length-1) ? (year >= sorted[sorted.length-1]) : (year >= sorted[idx] && year <= sorted[idx+1]);
-            
             if(ok) { 
                 p.cards.push(year); 
                 if(p.cards.length >= gameState.winCondition) { 
@@ -318,13 +338,11 @@
                 revealSolution(false, nextIdx !== -1);
             }
         }
-
         function revealSolution(correct, canSteal = false) { 
             const res = document.getElementById('guess-result');
             const details = document.getElementById('song-details');
             const btnS = document.getElementById('btn-steal');
             const btnN = document.getElementById('btn-next');
-
             if(correct === true) {
                 res.innerText = "✅ ENCERTAT!";
                 res.style.color = "#28a745";
@@ -333,19 +351,13 @@
             } else if (correct === false) {
                 res.innerText = "❌ INCORRECTE";
                 res.style.color = "#fa2d48";
-                if (canSteal) {
-                    details.style.display = "none"; 
-                    btnS.style.display = "block";
-                } else {
-                    details.style.display = "flex";
-                    btnS.style.display = "none";
-                }
+                if (canSteal) { details.style.display = "none"; btnS.style.display = "block"; } 
+                else { details.style.display = "flex"; btnS.style.display = "none"; }
             }
             btnN.style.display = "block";
             document.getElementById('ui-online-mode').style.display='none'; 
             document.getElementById('solution-card').style.display='flex'; 
         }
-
         function findNextInCircle() {
             for (let i = 1; i < gameState.players.length; i++) {
                 let candidate = (gameState.currentTurn + i) % gameState.players.length;
@@ -353,57 +365,20 @@
             }
             return -1;
         }
-
         function startStealAttempt() {
             const next = findNextInCircle();
-            if (next !== -1) { 
-                gameState.currentTurn = next; 
-                gameState.isRobberyActive = true; 
-                save(); renderGameUI(); 
-            }
+            if (next !== -1) { gameState.currentTurn = next; gameState.isRobberyActive = true; save(); renderGameUI(); }
         }
-
-        // --- HELPERS ---
-        async function jugarAleatori(type) {
-            save(); 
-            const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
-            try {
-                const r = await fetch(sheet); const t = await r.text();
-                const lines = t.split("\n").slice(1);
-                const avail = lines.map(l => {
-                    const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                    const id = (c[6] ? c[6].match(/id=(\d+)/) || [] : [])[1];
-                    return { id };
-                }).filter(s => s.id && !gameState.playedIds.includes(s.id));
-                if (avail.length > 0) { 
-                    const song = avail[Math.floor(Math.random()*avail.length)];
-                    gameState.playedIds.push(song.id); save();
-                    window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id + "&mode=" + (type || 'online');
-                } else { alert("Fi de la llista!"); resetGame(); }
-            } catch(e) { 
-                alert("Error de conexió"); 
-                hideLoader();
-            }
-        }
-
-        function resetGame() { localStorage.removeItem('sonabe_v114_final'); window.location.href = window.location.origin + window.location.pathname; }
+        function resetGame() { localStorage.removeItem('sonabe_v115_final'); window.location.href = window.location.origin + window.location.pathname; }
         function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
-        function openSetup() { 
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
-            document.getElementById('setup-screen').classList.add('active'); 
-            updateSetupList(); 
-        }
-        
+        function openSetup() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('setup-screen').classList.add('active'); updateSetupList(); }
         function startScanner() {
             document.getElementById('loading-overlay').style.display = 'none';
             document.getElementById('scanner-screen').style.display = 'flex';
             html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => {
-                html5QrCode.stop().then(() => { window.location.href = t; });
-            }).catch(e => console.error(e));
+            html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => { html5QrCode.stop().then(() => { window.location.href = t; }); }).catch(e => console.error(e));
         }
         function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); } }
-
         function triggerConfetti() {
             const count = 200, defaults = { origin: { y: 0.7 }, zIndex: 9999 };
             function fire(particleRatio, opts) { confetti({ ...defaults, ...opts, particleCount: Math.floor(count * particleRatio) }); }
