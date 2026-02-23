@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 105</title>
+    <title>Sonabé! 🎶 - Versió 106</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -34,10 +34,10 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
-        /* ESCÀNER v105 - RESTAURACIÓ v94 */
+        /* ESCÀNER v106 - NOMÉS ROSA */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
-        #reader__scan_region { border: none !important; }
+        #reader__scan_region, #reader__border { border: none !important; box-shadow: none !important; }
         #reader__dashboard, #reader__header_message, #reader__camera_selection, #reader__status_span { display: none !important; }
         video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
 
@@ -52,7 +52,7 @@
 </head>
 <body>
 
-    <div id="loading-overlay"><div class="spinner"></div><p id="loading-text" style="margin-top:15px;">CARREGANT...</p></div>
+    <div id="loading-overlay"><div class="spinner"></div><p style="margin-top:15px;">CARREGANT PARTIDA...</p></div>
 
     <div id="landing-screen" class="screen">
         <div class="neon-logo">Sonabé!</div>
@@ -138,22 +138,21 @@
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isGameOver: false, isRobberyActive: false, robbersTried: [] };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v105_final');
+            const saved = localStorage.getItem('sonabe_v106_final');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_v105_final', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v106_final', JSON.stringify(gameState)); }
         load();
 
         window.onload = () => { 
             const urlParams = new URLSearchParams(window.location.search);
             const appleId = urlParams.get('id');
-            
-            // LÒGICA DE CARREGA v105 (BLINDADA)
             if (appleId) {
                 document.getElementById('loading-overlay').style.display = 'flex';
+                document.getElementById('game-screen').classList.add('active');
                 renderGameUI(); 
                 loadSong(appleId); 
             } else {
@@ -190,7 +189,7 @@
             save();
         }
 
-        // --- AUDIO ---
+        // --- AUDIO FADES ---
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
@@ -203,39 +202,47 @@
             }
         }
 
-        // --- LÒGICA JOC ---
-        function nextAction() {
+        function performFadeOut(callback) {
             clearInterval(fadeInterval);
             document.getElementById('loading-overlay').style.display = 'flex';
+            if (audio.paused || audio.volume === 0) { callback(); return; }
             fadeInterval = setInterval(() => {
                 if (audio.volume > 0.1) audio.volume -= 0.1;
-                else {
-                    audio.volume = 0; audio.pause(); clearInterval(fadeInterval);
-                    if (gameState.players.length > 0) {
-                        if (gameState.robbersTried.length > 0) { gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; }
-                        else { gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length; }
-                        gameState.isRobberyActive = false; gameState.robbersTried = [];
-                        save(); jugarAleatori(); 
-                    } else {
-                        window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
-                        startScanner();
-                    }
-                }
+                else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); }
             }, 30);
         }
 
+        // --- REINICI TOTAL DE CARTES v106 ---
         function playAgain() {
-            clearInterval(fadeInterval);
-            document.getElementById('loading-overlay').style.display = 'flex';
-            fadeInterval = setInterval(() => {
-                if (audio.volume > 0.1) audio.volume -= 0.1;
-                else {
-                    audio.volume = 0; audio.pause(); clearInterval(fadeInterval);
-                    gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]);
-                    gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.isGameOver = false; gameState.playedIds = [];
-                    save(); jugarAleatori();
+            performFadeOut(() => {
+                // Netegem les línies del temps de tots els jugadors
+                gameState.players.forEach(p => {
+                    p.cards = [Math.floor(Math.random() * 95) + 1930]; // Una única carta nova per començar
+                });
+                gameState.currentTurn = 0;
+                gameState.originalTurn = 0;
+                gameState.isGameOver = false;
+                gameState.playedIds = []; // Buidem historial per si volen repetir cançons
+                gameState.isRobberyActive = false;
+                gameState.robbersTried = [];
+                
+                save(); // Guardem abans del salt
+                jugarAleatori();
+            });
+        }
+
+        function nextAction() {
+            performFadeOut(() => {
+                if (gameState.players.length > 0) {
+                    if (gameState.robbersTried.length > 0) { gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; }
+                    else { gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length; }
+                    gameState.isRobberyActive = false; gameState.robbersTried = [];
+                    save(); jugarAleatori(); 
+                } else {
+                    window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+                    startScanner();
                 }
-            }, 30);
+            });
         }
 
         async function loadSong(id) {
@@ -254,7 +261,6 @@
         }
 
         function renderGameUI() {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('game-screen').classList.add('active');
             document.getElementById('solution-card').style.display = 'none';
             const turnBox = document.getElementById('turn-indicator');
@@ -324,7 +330,7 @@
 
         // --- HELPERS ---
         async function jugarAleatori() {
-            save(); 
+            save();
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
             try {
                 const r = await fetch(sheet); const t = await r.text();
@@ -340,11 +346,11 @@
                     const song = avail[Math.floor(Math.random()*avail.length)];
                     gameState.playedIds.push(song.id); save();
                     window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id;
-                } else { alert("Fi llista!"); resetGame(); }
+                } else { alert("Fi de la llista!"); resetGame(); }
             } catch(e) { alert("Error de conexió"); }
         }
 
-        function resetGame() { localStorage.removeItem('sonabe_v105_final'); window.location.href = window.location.origin + window.location.pathname; }
+        function resetGame() { localStorage.removeItem('sonabe_v106_final'); window.location.href = window.location.origin + window.location.pathname; }
         function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
         function openSetup() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('setup-screen').classList.add('active'); updateSetupList(); }
         
