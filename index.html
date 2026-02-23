@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 88</title>
+    <title>Sonabé! 🎶 - Versió 89</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -21,10 +21,10 @@
         .btn { background: rgba(255,255,255,0.1); border: 1px solid #444; color: #eee; padding: 16px 25px; border-radius: 40px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; width: 280px; transition: 0.2s; outline: none; box-sizing: border-box; }
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
-        .btn-robbery { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 15px var(--purple); border: 2px solid white; }
+        .btn-robbery { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple); border: 2px solid white; }
         
-        /* BOTÓ NEÓ RESTAURAT v88 */
-        .mode-selected { background-color: var(--primary) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon); }
+        /* BOTÓ NEÓ RESTAURAT v89 */
+        .mode-selected { background-color: var(--primary) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 25px var(--neon); }
         
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 20px var(--gold); border: none; }
 
@@ -148,8 +148,7 @@
 
         window.onload = () => { 
             const urlParams = new URLSearchParams(window.location.search);
-            const appleId = urlParams.get('id');
-            if (appleId) { renderGameUI(); loadSong(appleId); } 
+            if (urlParams.get('id')) { renderGameUI(); loadSong(urlParams.get('id')); } 
             else if (gameState.players.length > 0) { renderBoards(); } 
         };
 
@@ -178,75 +177,8 @@
             }
             save();
         }
-        function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); renderBoards(); }
 
-        // --- ESCÀNER ---
-        function startScanner() {
-            document.getElementById('scanner-screen').style.display = 'flex';
-            html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 250 } }, (t) => {
-                html5QrCode.stop().then(() => { window.location.href = t; });
-            }).catch(e => { cancelScanner(); });
-        }
-        function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); } else { document.getElementById('scanner-screen').style.display = 'none'; } }
-
-        // --- AUDIO ---
-        function handlePlayClick() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
-            if (audio.paused) {
-                pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play();
-                let f = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else { audio.volume = 1; clearInterval(f); } }, 50);
-            } else {
-                let f = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(f); } }, 50);
-            }
-        }
-
-        // --- LÒGICA JOC (ROBATORI EN CADENA REVISAT v88) ---
-        async function loadSong(id) {
-            document.getElementById('loading-overlay').style.display = 'flex';
-            if (!gameState.playedIds.includes(id)) { gameState.playedIds.push(id); save(); }
-            try {
-                const r = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
-                const d = await r.json();
-                if (d.results.length > 0) {
-                    const s = d.results[0]; audio.src = s.previewUrl;
-                    document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600');
-                    document.getElementById('song-year').innerText = s.releaseDate.substring(0,4);
-                    document.getElementById('song-title').innerText = s.trackName;
-                    document.getElementById('song-artist').innerText = s.artistName;
-                }
-            } catch (e) { console.error(e); }
-            document.getElementById('loading-overlay').style.display = 'none';
-        }
-
-        function renderGameUI() {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('game-screen').classList.add('active');
-            document.getElementById('solution-card').style.display = 'none';
-            document.getElementById('ui-online-mode').style.display = 'block';
-            document.getElementById('play-btn-main').style.display = 'flex';
-            
-            if (gameState.players.length > 0) {
-                const actual = gameState.players[gameState.currentTurn];
-                const turnBox = document.getElementById('turn-indicator');
-                const instruction = document.getElementById('game-instruction');
-                
-                if (gameState.isRobberyActive) {
-                    turnBox.innerText = `🚨 ROBATORI: ${actual.name.toUpperCase()}`;
-                    turnBox.style.background = "var(--purple)";
-                    instruction.innerText = "🚨 Estàs intentant robar la carta!";
-                } else {
-                    turnBox.innerText = `TORN DE: ${actual.name.toUpperCase()}`;
-                    turnBox.style.background = "var(--primary)";
-                    instruction.innerText = "On col·loques la cançó?";
-                }
-                renderTimelineSlots(actual); renderBoards();
-            } else {
-                document.getElementById('turn-indicator').innerText = "TINC LES CARTES!";
-            }
-        }
-
+        // --- LÒGICA JOC (ROBATORI EN CADENA REVISAT v89) ---
         function checkTimelineGuess(idx) {
             const year = parseInt(document.getElementById('song-year').innerText);
             const p = gameState.players[gameState.currentTurn];
@@ -259,20 +191,23 @@
                 gameState.isRobberyActive = false; gameState.robbersTried = [];
                 save(); revealSolution(true);
             } else { 
+                // FALLADA
                 if (!gameState.isRobberyActive) {
                     gameState.originalTurn = gameState.currentTurn;
                     gameState.robbersTried = [gameState.currentTurn];
                 } else {
-                    gameState.robbersTried.push(gameState.currentTurn);
+                    if (!gameState.robbersTried.includes(gameState.currentTurn)) {
+                        gameState.robbersTried.push(gameState.currentTurn);
+                    }
                 }
 
                 const nextRobberIndex = findNextRobber();
-                if (nextRobberIndex !== -1) { revealSolution(false, true); } 
-                else { gameState.isRobberyActive = false; gameState.robbersTried = []; revealSolution(false, false); }
+                revealSolution(false, nextRobberIndex !== -1);
             }
         }
 
         function findNextRobber() {
+            // Busquem qui queda per robar de forma circular
             for (let i = 1; i < gameState.players.length; i++) {
                 let candidate = (gameState.currentTurn + i) % gameState.players.length;
                 if (!gameState.robbersTried.includes(candidate)) return candidate;
@@ -281,9 +216,9 @@
         }
 
         function startStealAttempt() {
-            const nextRobber = findNextRobber();
-            if (nextRobber !== -1) {
-                gameState.currentTurn = nextRobber;
+            const nextIdx = findNextRobber();
+            if (nextIdx !== -1) {
+                gameState.currentTurn = nextIdx;
                 gameState.isRobberyActive = true; 
                 save(); renderGameUI();
             }
@@ -311,30 +246,34 @@
                 triggerConfetti(); playWinFanfare();
                 return;
             }
-            
-            // Tornar al torn original + 1
+            // Si hem estat robant o provant, tornem al torn real + 1
             if (gameState.robbersTried.length > 0) {
                 gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
             } else {
                 gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
             }
-
             gameState.isRobberyActive = false;
             gameState.robbersTried = [];
             save(); 
-            
-            // ARREGLAT v88: No obrir escàner en mode Online
-            if (gameState.players.length > 0) { jugarAleatori(); } 
-            else { startScanner(); }
+            if (gameState.players.length > 0) jugarAleatori(); else startScanner();
         }
 
+        // --- AUDIO I EFECTES ---
+        function handlePlayClick() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
+            if (audio.paused) {
+                pi.style.display = 'none'; si.style.display = 'block'; audio.play();
+            } else {
+                pi.style.display = 'block'; si.style.display = 'none'; audio.pause();
+            }
+        }
         function triggerConfetti() {
             const count = 200, defaults = { origin: { y: 0.7 }, zIndex: 9999 };
             function fire(particleRatio, opts) { confetti({ ...defaults, ...opts, particleCount: Math.floor(count * particleRatio) }); }
             fire(0.25, { spread: 26, startVelocity: 55 }); fire(0.2, { spread: 60 });
             fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 }); fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
         }
-
         function playWinFanfare() {
             const notes = [523.25, 659.25, 783.99, 1046.50];
             notes.forEach((freq, i) => {
@@ -346,6 +285,22 @@
             });
         }
 
+        // --- HELPERS ---
+        async function loadSong(id) {
+            document.getElementById('loading-overlay').style.display = 'flex';
+            try {
+                const r = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
+                const d = await r.json();
+                if (d.results.length > 0) {
+                    const s = d.results[0]; audio.src = s.previewUrl;
+                    document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600');
+                    document.getElementById('song-year').innerText = s.releaseDate.substring(0,4);
+                    document.getElementById('song-title').innerText = s.trackName;
+                    document.getElementById('song-artist').innerText = s.artistName;
+                }
+            } catch (e) { console.error(e); }
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
         async function jugarAleatori() {
             document.getElementById('loading-overlay').style.display = 'flex';
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
@@ -358,18 +313,28 @@
                 return { url, id };
             }).filter(s => s.url.includes("http") && !gameState.playedIds.includes(s.id));
             if (avail.length > 0) { window.location.href = avail[Math.floor(Math.random()*avail.length)].url + "&mode=rand"; } 
-            else { alert("Llista buida!"); resetGame(); }
+            else { alert("Fi de la llista!"); resetGame(); }
         }
-
-        function playAgainSamePlayers() {
-            gameState.players.forEach(p => { p.cards = [Math.floor(Math.random() * 95) + 1930]; });
-            gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.isGameOver = false; gameState.playedIds = [];
-            save(); jugarAleatori();
+        function renderGameUI() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('game-screen').classList.add('active');
+            document.getElementById('solution-card').style.display = 'none';
+            document.getElementById('ui-online-mode').style.display = 'block';
+            document.getElementById('play-btn-main').style.display = 'flex';
+            const actual = gameState.players[gameState.currentTurn];
+            const turnBox = document.getElementById('turn-indicator');
+            const instruction = document.getElementById('game-instruction');
+            if (gameState.isRobberyActive) {
+                turnBox.innerText = `🚨 ROBATORI: ${actual.name.toUpperCase()}`;
+                turnBox.style.background = "var(--purple)";
+                instruction.innerText = "🚨 Estàs intentant robar la carta!";
+            } else {
+                turnBox.innerText = `TORN DE: ${actual.name.toUpperCase()}`;
+                turnBox.style.background = "var(--primary)";
+                instruction.innerText = "On col·loques la cançó?";
+            }
+            renderTimelineSlots(actual); renderBoards();
         }
-        function resetGame() { localStorage.removeItem('sonabe_permanencia_total'); window.location.href = window.location.pathname; }
-        function goToMenu() { window.location.href = window.location.pathname; }
-        function openSetup() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('setup-screen').classList.add('active'); updateSetupList(); }
-        
         function renderBoards() {
             const container = document.getElementById('all-boards'); if (!container) return;
             container.style.display = 'block'; container.innerHTML = "<h3>Taulers</h3>";
@@ -387,6 +352,11 @@
                 container.innerHTML += `<button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(${i})">${(i === sorted.length-1) ? 'NOU' : 'ENTRE'}</button>`;
             });
         }
+        function startScanner() { document.getElementById('scanner-screen').style.display = 'flex'; html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 250 } }, (t) => { html5QrCode.stop().then(() => { window.location.href = t; }); }).catch(e => cancelScanner()); }
+        function cancelScanner() { if (html5QrCode) html5QrCode.stop(); document.getElementById('scanner-screen').style.display = 'none'; }
+        function resetGame() { localStorage.removeItem('sonabe_permanencia_total'); window.location.href = window.location.pathname; }
+        function goToMenu() { window.location.href = window.location.pathname; }
+        function openSetup() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('setup-screen').classList.add('active'); updateSetupList(); }
     </script>
 </body>
 </html>
