@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 86</title>
+    <title>Sonabé! 🎶 - Versió 87</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -25,9 +25,7 @@
         .mode-selected { background-color: var(--primary) !important; color: white !important; border: 2px solid white !important; }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 20px var(--gold); border: none; }
 
-        .player-item { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 12px 15px; border-radius: 12px; width: 280px; margin-bottom: 8px; border: 1px solid #444; }
-        
-        #turn-indicator { background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; margin-bottom: 15px; text-transform: uppercase; font-size: 1.1rem; transition: 0.3s; }
+        #turn-indicator { background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; margin-bottom: 15px; text-transform: uppercase; font-size: 1.1rem; }
         .play-button { width: 90px; height: 90px; background-color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 10px 0; border: none; }
         .play-icon { width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px; }
         .stop-icon { width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none; }
@@ -36,11 +34,8 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
-        /* ESCÀNER PRO */
-        #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        #reader { width: 100% !important; height: 100% !important; border: none !important; }
         .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 260px; height: 260px; border: 4px solid var(--neon); border-radius: 30px; box-shadow: 0 0 25px var(--neon); pointer-events: none; z-index: 3001; }
-        .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--neon); box-shadow: 0 0 15px var(--neon); animation: scanMove 2s ease-in-out infinite; }
+        .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--neon); animation: scanMove 2s ease-in-out infinite; }
         @keyframes scanMove { 0%, 100% { top: 5%; } 50% { top: 95%; } }
 
         .board-container { width: 100%; max-width: 400px; margin-top: 30px; border-top: 1px solid #444; padding-top: 20px; display: none; }
@@ -129,7 +124,19 @@
         const audio = document.getElementById('audio-player');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let html5QrCode = null;
-        let gameState = { players: [], currentTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isGameOver: false, isRobberyActive: false };
+        
+        // ESTAT DEL JOC (v87)
+        let gameState = { 
+            players: [], 
+            currentTurn: 0, 
+            originalTurn: 0, // Per recordar qui ha començat la ronda
+            mode: 'timeline', 
+            playedIds: [], 
+            winCondition: 5, 
+            isGameOver: false, 
+            isRobberyActive: false,
+            robbersTried: [] // Llista d'índexs que ja han intentat robar aquesta carta
+        };
 
         function load() {
             const saved = localStorage.getItem('sonabe_permanencia_total');
@@ -165,8 +172,7 @@
         }
         function setMode(m) {
             gameState.mode = m || 'timeline';
-            const btnT = document.getElementById('mode-timeline');
-            const btnE = document.getElementById('mode-exact');
+            const btnT = document.getElementById('mode-timeline'), btnE = document.getElementById('mode-exact');
             if (btnT && btnE) {
                 btnT.className = (gameState.mode === 'timeline') ? 'btn mode-selected' : 'btn btn-outline';
                 btnE.className = (gameState.mode === 'exact') ? 'btn mode-selected' : 'btn btn-outline';
@@ -185,7 +191,7 @@
         }
         function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); } else { document.getElementById('scanner-screen').style.display = 'none'; } }
 
-        // --- AUDIO & PARTY ---
+        // --- AUDIO ---
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
@@ -213,7 +219,7 @@
             fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 }); fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
         }
 
-        // --- LÒGICA JOC (ROBATORI v86) ---
+        // --- LÒGICA JOC (ROBATORI EN CADENA v87) ---
         async function loadSong(id) {
             document.getElementById('loading-overlay').style.display = 'flex';
             if (!gameState.playedIds.includes(id)) { gameState.playedIds.push(id); save(); }
@@ -267,22 +273,51 @@
             if(ok) { 
                 p.cards.push(year); 
                 if(p.cards.length >= gameState.winCondition) gameState.isGameOver = true;
-                gameState.isRobberyActive = false; save(); revealSolution(true);
+                // Si s'encerta (sigui robatori o no), netegem l'estat de robatori
+                gameState.isRobberyActive = false;
+                gameState.robbersTried = [];
+                save(); revealSolution(true);
             } else { 
-                // Si falla i hi ha algú més per robar, i no estàvem ja robant
-                if (gameState.players.length > 1 && !gameState.isRobberyActive) {
-                    revealSolution(false, true); 
+                // FALLADA
+                if (!gameState.isRobberyActive) {
+                    // Si és el jugador original qui falla, marquem qui era
+                    gameState.originalTurn = gameState.currentTurn;
+                    gameState.robbersTried = [gameState.currentTurn];
                 } else {
-                    gameState.isRobberyActive = false; 
-                    revealSolution(false, false); 
+                    // Si és un lladre qui falla, l'afegim a la llista de qui ha provat
+                    gameState.robbersTried.push(gameState.currentTurn);
+                }
+
+                // Mirem si queda algun jugador que encara no hagi intentat robar
+                const nextRobberIndex = findNextRobber();
+                if (nextRobberIndex !== -1) {
+                    revealSolution(false, true); // Pot robar el següent
+                } else {
+                    gameState.isRobberyActive = false;
+                    gameState.robbersTried = [];
+                    revealSolution(false, false); // Tothom ha fallat
                 }
             }
         }
 
+        function findNextRobber() {
+            // Busquem en ordre circular qui no ha intentat robar encara
+            for (let i = 1; i < gameState.players.length; i++) {
+                let candidate = (gameState.currentTurn + i) % gameState.players.length;
+                if (!gameState.robbersTried.includes(candidate)) {
+                    return candidate;
+                }
+            }
+            return -1;
+        }
+
         function startStealAttempt() {
-            gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
-            gameState.isRobberyActive = true; 
-            save(); renderGameUI();
+            const nextRobber = findNextRobber();
+            if (nextRobber !== -1) {
+                gameState.currentTurn = nextRobber;
+                gameState.isRobberyActive = true; 
+                save(); renderGameUI();
+            }
         }
 
         function revealSolution(correct, canSteal = false) { 
@@ -313,8 +348,17 @@
                         playWinFanfare(); setTimeout(triggerConfetti, 100); 
                         return;
                     }
-                    if (!gameState.isRobberyActive) gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
-                    gameState.isRobberyActive = false; save(); jugarAleatori(); 
+                    
+                    // Si ningú ha robat o s'ha acabat la carta, el torn següent és el del següent de l'original
+                    if (gameState.isRobberyActive || gameState.robbersTried.length > 0) {
+                        gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
+                    } else {
+                        gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
+                    }
+
+                    gameState.isRobberyActive = false;
+                    gameState.robbersTried = [];
+                    save(); jugarAleatori(); 
                 }
             }, 30);
         }
