@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonabé! 🎶 - Versió 72</title>
+    <title>Sonabé! 🎶 - Versió 73 (Party Edition)</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; --gold: #ffd700; }
         body { background-color: var(--bg); color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; text-align: center; overflow-x: hidden; }
@@ -143,20 +144,31 @@
 
         window.onload = () => { if (appleId) { renderGameUI(); loadSong(appleId); } else if (gameState.players.length > 0) { renderBoards(); } };
 
-        // CELEBRATION FANFARE v72
+        // CELEBRATION FANFARE
         function playWinFanfare() {
             const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
             notes.forEach((freq, i) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
+                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                 osc.connect(gain); gain.connect(audioCtx.destination);
                 osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (i * 0.15));
                 gain.gain.setValueAtTime(0, audioCtx.currentTime + (i * 0.15));
                 gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + (i * 0.15) + 0.05);
                 gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + (i * 0.15) + 0.3);
-                osc.start(audioCtx.currentTime + (i * 0.15));
-                osc.stop(audioCtx.currentTime + (i * 0.15) + 0.3);
+                osc.start(audioCtx.currentTime + (i * 0.15)); osc.stop(audioCtx.currentTime + (i * 0.15) + 0.3);
             });
+        }
+
+        // AFEGIT: FUNCIÓ DE CONFETI v73
+        function triggerConfetti() {
+            const duration = 3000; const animationEnd = Date.now() + duration;
+            const colors = ['#ff007f', '#fa2d48', '#ffd700', '#ffffff'];
+            (function frame() {
+                const timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return;
+                const particleCount = 50 * (timeLeft / duration);
+                confetti({ particleCount, spread: 70, origin: { y: 0.6 }, colors: colors, disableForReducedMotion: true });
+                requestAnimationFrame(frame);
+            }());
         }
 
         function renderGameUI() {
@@ -213,7 +225,8 @@
                 else { 
                     audio.volume = 0; audio.pause(); clearInterval(f); 
                     if (gameState.isGameOver) {
-                        playWinFanfare(); // SO DE CELEBRACIÓ v72
+                        playWinFanfare(); // SO
+                        triggerConfetti(); // CONFETI v73
                         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                         document.getElementById('winner-name').innerText = gameState.players[gameState.currentTurn].name.toUpperCase();
                         document.getElementById('winner-screen').classList.add('active');
@@ -226,16 +239,10 @@
             }, 30);
         }
 
-        // PLAY AGAIN SAME PLAYERS v72
         function playAgainSamePlayers() {
-            gameState.players.forEach(p => {
-                p.cards = [Math.floor(Math.random() * 95) + 1930];
-            });
-            gameState.currentTurn = 0;
-            gameState.isGameOver = false;
-            gameState.playedIds = [];
-            save();
-            jugarAleatori();
+            gameState.players.forEach(p => { p.cards = [Math.floor(Math.random() * 95) + 1930]; });
+            gameState.currentTurn = 0; gameState.isGameOver = false; gameState.playedIds = [];
+            save(); jugarAleatori();
         }
 
         function startScanner() {
