@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 96</title>
+    <title>Sonabé! 🎶 - Versió 97</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -34,10 +34,9 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
-        /* ESCÀNER v96 - NOMÉS ROSA */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
-        #reader__scan_region { border: none !important; box-shadow: none !important; }
+        #reader__scan_region { border: none !important; }
         #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
         .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 250px; border: 5px solid var(--neon); border-radius: 30px; box-shadow: 0 0 40px var(--neon); pointer-events: none; z-index: 3001; }
         .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--neon); box-shadow: 0 0 15px var(--neon); animation: scanMove 2s ease-in-out infinite; }
@@ -71,12 +70,12 @@
         <div id="player-list-setup" style="width:100%; margin-top:10px;"></div>
         <div id="config-area" style="display:none; width:100%; margin-top:10px;">
             <p style="font-size:0.7rem; font-weight:bold; color:#888;">CARTES PER GUANYAR:</p>
-            <input type="number" id="win-input" value="5" min="2" max="20" onchange="updateWinCondition()" style="width:80px; margin-bottom:15px;">
+            <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:15px;">
             <div class="btn-list">
                 <button id="mode-timeline" class="btn btn-outline" onclick="setMode('timeline')">LINIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn btn-outline" onclick="setMode('exact')">ANY EXACTE</button>
             </div>
-            <button class="btn btn-primary" style="width:280px; margin-top:20px; border:2px solid white;" onclick="jugarAleatori()">COMENÇAR</button>
+            <button class="btn btn-primary" style="width:280px; margin-top:20px; border:2px solid white;" onclick="comencarPartidaOnline()">COMENÇAR</button>
         </div>
         <button class="btn btn-secondary" onclick="goToMenu()">Tornar</button>
     </div>
@@ -173,6 +172,10 @@
             document.getElementById('win-input').value = gameState.winCondition;
             setMode(gameState.mode);
         }
+        function updateWinCondition() {
+            gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5;
+            save(); renderBoards();
+        }
         function setMode(m) {
             gameState.mode = m || 'timeline';
             const btnT = document.getElementById('mode-timeline'), btnE = document.getElementById('mode-exact');
@@ -182,8 +185,12 @@
             }
             save();
         }
+        function comencarPartidaOnline() {
+            updateWinCondition(); // Ens assegurem que l'últim valor és el bo
+            jugarAleatori();
+        }
 
-        // --- AUDIO v96 ---
+        // --- AUDIO v97 ---
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
@@ -191,9 +198,9 @@
             if (audio.paused) {
                 pi.style.display = 'none'; si.style.display = 'block';
                 audio.volume = 0; audio.play();
-                fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else { audio.volume = 1; clearInterval(fadeInterval); } }, 50);
+                fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.05; else { audio.volume = 1; clearInterval(fadeInterval); } }, 40);
             } else {
-                fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(fadeInterval); } }, 50);
+                fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(fadeInterval); } }, 40);
             }
         }
 
@@ -281,22 +288,6 @@
             }
         }
 
-        function revealSolution(correct, canSteal = false) { 
-            const res = document.getElementById('guess-result');
-            const btnN = document.getElementById('btn-next');
-            const btnS = document.getElementById('btn-steal');
-            if(correct !== null) {
-                res.innerText = correct ? "✅ ENCERTAT!" : "❌ INCORRECTE";
-                res.style.color = correct ? "#28a745" : "#fa2d48";
-            } else { res.innerText = ""; }
-            btnS.style.display = canSteal ? 'block' : 'none';
-            btnN.innerText = gameState.isGameOver ? "🏆 VEURE GUANYADOR" : "Següent Cançó";
-            btnN.className = gameState.isGameOver ? "btn btn-gold" : "btn btn-primary";
-            document.getElementById('ui-online-mode').style.display='none'; 
-            document.getElementById('ui-cards-mode').style.display='none';
-            document.getElementById('solution-card').style.display='flex'; 
-        }
-
         function checkTimelineGuess(idx) {
             const year = parseInt(document.getElementById('song-year').innerText);
             const p = gameState.players[gameState.currentTurn];
@@ -313,6 +304,22 @@
                 const nextRobberIndex = findNextRobber();
                 revealSolution(false, nextRobberIndex !== -1);
             }
+        }
+
+        function revealSolution(correct, canSteal = false) { 
+            const res = document.getElementById('guess-result');
+            const btnN = document.getElementById('btn-next');
+            const btnS = document.getElementById('btn-steal');
+            if(correct !== null) {
+                res.innerText = correct ? "✅ ENCERTAT!" : "❌ INCORRECTE";
+                res.style.color = correct ? "#28a745" : "#fa2d48";
+            }
+            btnS.style.display = canSteal ? 'block' : 'none';
+            btnN.innerText = gameState.isGameOver ? "🏆 VEURE GUANYADOR" : "Següent Cançó";
+            btnN.className = gameState.isGameOver ? "btn btn-gold" : "btn btn-primary";
+            document.getElementById('ui-online-mode').style.display='none'; 
+            document.getElementById('ui-cards-mode').style.display='none';
+            document.getElementById('solution-card').style.display='flex'; 
         }
 
         function findNextRobber() {
@@ -357,7 +364,7 @@
                 return { url, id };
             }).filter(s => s.url.includes("http") && !gameState.playedIds.includes(s.id));
             if (avail.length > 0) { window.location.href = avail[Math.floor(Math.random()*avail.length)].url + "&mode=rand"; } 
-            else { alert("Fi!"); resetGame(); }
+            else { alert("Fi llista!"); resetGame(); }
         }
         function playAgainSamePlayers() {
             gameState.players.forEach(p => { p.cards = [Math.floor(Math.random() * 95) + 1930]; });
