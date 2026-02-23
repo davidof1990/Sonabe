@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 112</title>
+    <title>Sonabé! 🎶 - Versió 113</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -51,7 +51,7 @@
 </head>
 <body>
 
-    <div id="loading-overlay"><div class="spinner"></div><p id="status-text" style="margin-top:15px;">ACTUALITZANT PARTIDA...</p></div>
+    <div id="loading-overlay"><div class="spinner"></div><p style="margin-top:15px;">ACTUALITZANT...</p></div>
 
     <div id="landing-screen" class="screen">
         <div class="neon-logo">Sonabé!</div>
@@ -135,14 +135,15 @@
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isGameOver: false, isRobberyActive: false, robbersTried: [] };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v112_stable');
+            const saved = localStorage.getItem('sonabe_v113_final');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_v112_stable', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v113_final', JSON.stringify(gameState)); }
         
+        // CARREGUEM IMMEDIATAMENT v113
         load();
 
         window.onload = () => { 
@@ -150,14 +151,16 @@
             const appleId = urlParams.get('id');
             const urlMode = urlParams.get('mode');
             
-            // PRIORITAT AL JOC SI HI HA JUGADORS O ID
-            if (appleId || urlMode === 'online') {
-                document.getElementById('loading-overlay').style.display = 'flex';
-                renderGameUI(); 
-                if (appleId) loadSong(appleId); 
-            } else if (gameState.players.length > 0) {
-                document.getElementById('loading-overlay').style.display = 'none';
-                openSetup(); // Si hi ha jugadors però no ID, anem a Setup
+            // PRIORITAT AL JOC SI HI HA JUGADORS O ID (ADÉU MODE LLIURE)
+            if (appleId || urlMode === 'online' || gameState.players.length > 0) {
+                if (appleId) {
+                    document.getElementById('loading-overlay').style.display = 'flex';
+                    renderGameUI(); 
+                    loadSong(appleId); 
+                } else {
+                    document.getElementById('loading-overlay').style.display = 'none';
+                    openSetup();
+                }
             } else {
                 document.getElementById('loading-overlay').style.display = 'none';
                 document.getElementById('landing-screen').classList.add('active');
@@ -211,16 +214,15 @@
             fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); } }, 30);
         }
 
-        // --- LÒGICA JOC v112 ---
+        // --- LÒGICA JOC v113 ---
         function nextAction() {
             performFadeOut(() => {
                 if (gameState.players.length > 0) {
-                    // Calculat segons l'origen del torn David!
                     gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
                     gameState.originalTurn = gameState.currentTurn;
                     gameState.isRobberyActive = false;
                     gameState.robbersTried = [];
-                    save(); // Guardat forçat
+                    save(); // GUARDAT ATÒMIC v113
                     jugarAleatori('online'); 
                 } else {
                     window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
@@ -264,9 +266,6 @@
                 turnBox.innerText = gameState.isRobberyActive ? `🚨 ROBATORI: ${actual.name.toUpperCase()}` : `TORN DE: ${actual.name.toUpperCase()}`;
                 turnBox.style.background = gameState.isRobberyActive ? "var(--purple)" : "var(--primary)";
                 renderTimelineSlots(actual); renderBoards();
-            } else {
-                document.getElementById('ui-online-mode').style.display = 'none';
-                turnBox.innerText = "MODE LLIURE";
             }
         }
 
@@ -360,11 +359,11 @@
                     const song = avail[Math.floor(Math.random()*avail.length)];
                     gameState.playedIds.push(song.id); save();
                     window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id + "&mode=" + (type || 'online');
-                } else { alert("Fi llista!"); resetGame(); }
+                } else { alert("Fi de la llista!"); resetGame(); }
             } catch(e) { alert("Error de conexió"); }
         }
 
-        function resetGame() { localStorage.removeItem('sonabe_v112_stable'); window.location.href = window.location.origin + window.location.pathname; }
+        function resetGame() { localStorage.removeItem('sonabe_v113_final'); window.location.href = window.location.origin + window.location.pathname; }
         function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
         function openSetup() { 
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
