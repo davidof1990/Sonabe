@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 90</title>
+    <title>Sonabé! 🎶 - Versió 91</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -23,7 +23,7 @@
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
         .btn-robbery { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple); border: 2px solid white; }
         
-        /* BOTÓ NEÓ GLOW */
+        /* BOTÓ NEÓ GLOW FIX */
         .mode-selected { background-color: var(--primary) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 25px var(--neon); }
         
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 20px var(--gold); border: none; }
@@ -37,9 +37,9 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
-        /* ESCÀNER FIXAT v90 */
+        /* ESCÀNER v91 - MIDA FIXA */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        #reader { width: 100% !important; height: 100% !important; border: none !important; }
+        #reader { width: 100% !important; max-width: 500px; height: 100% !important; border: none !important; }
         .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 250px; border: 4px solid var(--neon); border-radius: 30px; box-shadow: 0 0 25px var(--neon); pointer-events: none; z-index: 3001; }
         .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--neon); animation: scanMove 2s ease-in-out infinite; }
         @keyframes scanMove { 0%, 100% { top: 5%; } 50% { top: 95%; } }
@@ -124,7 +124,7 @@
     <div id="scanner-screen">
         <div id="reader"></div>
         <div class="scanner-overlay"><div class="scan-line"></div></div>
-        <button class="btn btn-secondary" style="position:absolute; bottom:50px; width:200px;" onclick="cancelScanner()">CANCEL·LAR</button>
+        <button class="btn btn-secondary" style="position:absolute; bottom:50px; width:200px; z-index:3005;" onclick="cancelScanner()">CANCEL·LAR</button>
     </div>
 
     <div id="all-boards" class="board-container"></div>
@@ -187,15 +187,23 @@
             }
             save();
         }
-        function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); renderBoards(); }
 
-        // --- ESCÀNER (QUADRAT FIX v90) ---
+        // --- ESCÀNER v91 (FIX VISOR) ---
         function startScanner() {
+            document.getElementById('loading-overlay').style.display = 'none'; // Per si venim de següent cançó
             document.getElementById('scanner-screen').style.display = 'flex';
+            if (html5QrCode) html5QrCode.clear();
+            
             html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 250, height: 250 } }, (t) => {
-                html5QrCode.stop().then(() => { window.location.href = t; });
-            }).catch(e => { cancelScanner(); });
+            const config = { fps: 15, qrbox: { width: 250, height: 250 } };
+            
+            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                html5QrCode.stop().then(() => {
+                    // Netegem la URL abans d'anar a la nova carta
+                    const cleanUrl = window.location.origin + window.location.pathname;
+                    window.location.href = decodedText;
+                });
+            }).catch(e => { console.error(e); });
         }
         function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); } else { document.getElementById('scanner-screen').style.display = 'none'; } }
 
@@ -222,7 +230,6 @@
                     document.getElementById('song-year').innerText = s.releaseDate.substring(0,4);
                     document.getElementById('song-title').innerText = s.trackName;
                     document.getElementById('song-artist').innerText = s.artistName;
-                    // Reset UI icons
                     document.getElementById('icon-play').style.display = 'block';
                     document.getElementById('icon-stop').style.display = 'none';
                 }
@@ -253,7 +260,52 @@
                 document.getElementById('ui-online-mode').style.display = 'none';
                 document.getElementById('ui-cards-mode').style.display = 'block';
                 document.getElementById('turn-indicator').innerText = "TINC LES CARTES!";
+                document.getElementById('turn-indicator').style.background = "var(--primary)";
             }
+        }
+
+        function nextAction() {
+            audio.pause();
+            if (gameState.isGameOver) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById('winner-name').innerText = gameState.players[gameState.currentTurn].name.toUpperCase();
+                document.getElementById('winner-screen').classList.add('active');
+                triggerConfetti(); playWinFanfare();
+                return;
+            }
+            
+            if (gameState.players.length > 0) {
+                // Mode Online
+                if (gameState.robbersTried.length > 0) {
+                    gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
+                } else {
+                    gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
+                }
+                gameState.isRobberyActive = false;
+                gameState.robbersTried = [];
+                save(); jugarAleatori();
+            } else {
+                // Mode Tinc les cartes - Arreclar "Carregant" i esborrar ID
+                const cleanUrl = window.location.origin + window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+                startScanner();
+            }
+        }
+
+        function revealSolution(correct, canSteal = false) { 
+            const res = document.getElementById('guess-result');
+            const btnN = document.getElementById('btn-next');
+            const btnS = document.getElementById('btn-steal');
+            if(correct !== null) {
+                res.innerText = correct ? "✅ ENCERTAT!" : "❌ INCORRECTE";
+                res.style.color = correct ? "#28a745" : "#fa2d48";
+            } else { res.innerText = ""; }
+            btnS.style.display = canSteal ? 'block' : 'none';
+            if (gameState.isGameOver) { btnN.innerText = "🏆 VEURE GUANYADOR"; btnN.className = "btn btn-gold"; }
+            else { btnN.innerText = "Següent Cançó"; btnN.className = "btn btn-primary"; }
+            document.getElementById('ui-online-mode').style.display='none'; 
+            document.getElementById('ui-cards-mode').style.display='none';
+            document.getElementById('solution-card').style.display='flex'; 
         }
 
         function checkTimelineGuess(idx) {
@@ -261,7 +313,6 @@
             const p = gameState.players[gameState.currentTurn];
             const sorted = [...p.cards].sort();
             let ok = (idx === -1) ? (year <= sorted[0]) : (idx === sorted.length-1) ? (year >= sorted[sorted.length-1]) : (year >= sorted[idx] && year <= sorted[idx+1]);
-            
             if(ok) { 
                 p.cards.push(year); 
                 if(p.cards.length >= gameState.winCondition) gameState.isGameOver = true;
@@ -296,47 +347,7 @@
             }
         }
 
-        function revealSolution(correct, canSteal = false) { 
-            const res = document.getElementById('guess-result');
-            const btnN = document.getElementById('btn-next');
-            const btnS = document.getElementById('btn-steal');
-            if(correct !== null) {
-                res.innerText = correct ? "✅ ENCERTAT!" : "❌ INCORRECTE";
-                res.style.color = correct ? "#28a745" : "#fa2d48";
-            } else { res.innerText = ""; }
-            btnS.style.display = canSteal ? 'block' : 'none';
-            if (gameState.isGameOver) { btnN.innerText = "🏆 VEURE GUANYADOR"; btnN.className = "btn btn-gold"; }
-            else { btnN.innerText = "Següent Cançó"; btnN.className = "btn btn-primary"; }
-            document.getElementById('ui-online-mode').style.display='none'; 
-            document.getElementById('ui-cards-mode').style.display='none';
-            document.getElementById('solution-card').style.display='flex'; 
-        }
-
-        function nextAction() {
-            audio.pause();
-            if (gameState.isGameOver) {
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                document.getElementById('winner-name').innerText = gameState.players[gameState.currentTurn].name.toUpperCase();
-                document.getElementById('winner-screen').classList.add('active');
-                triggerConfetti(); playWinFanfare();
-                return;
-            }
-            // PAS DE TORN ARREGLAT v90
-            if (gameState.players.length > 0) {
-                if (gameState.robbersTried.length > 0) {
-                    gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
-                } else {
-                    gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
-                }
-                gameState.isRobberyActive = false;
-                gameState.robbersTried = [];
-                save(); jugarAleatori();
-            } else {
-                startScanner();
-            }
-        }
-
-        // --- EFECTES ---
+        // --- ALTRES ---
         function triggerConfetti() {
             const count = 200, defaults = { origin: { y: 0.7 }, zIndex: 9999 };
             function fire(particleRatio, opts) { confetti({ ...defaults, ...opts, particleCount: Math.floor(count * particleRatio) }); }
@@ -353,7 +364,6 @@
                 osc.start(audioCtx.currentTime + (i * 0.15)); osc.stop(audioCtx.currentTime + (i * 0.15) + 0.3);
             });
         }
-
         async function jugarAleatori() {
             document.getElementById('loading-overlay').style.display = 'flex';
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
@@ -368,7 +378,6 @@
             if (avail.length > 0) { window.location.href = avail[Math.floor(Math.random()*avail.length)].url + "&mode=rand"; } 
             else { alert("Llista buida!"); resetGame(); }
         }
-
         function playAgainSamePlayers() {
             gameState.players.forEach(p => { p.cards = [Math.floor(Math.random() * 95) + 1930]; });
             gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.isGameOver = false; gameState.playedIds = [];
