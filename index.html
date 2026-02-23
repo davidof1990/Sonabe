@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 102</title>
+    <title>Sonabé! 🎶 - Versió 103</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -11,7 +11,6 @@
         body { background-color: var(--bg); color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; text-align: center; overflow-x: hidden; }
         .neon-logo { font-weight: bold; font-size: 2.8rem; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px var(--neon); margin-bottom: 20px; }
         
-        /* Totes les pantalles ocultes per defecte */
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; gap: 15px; }
         .active { display: flex; }
 
@@ -25,7 +24,6 @@
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
         .btn-robbery { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple); border: 2px solid white; }
         .mode-selected { background-color: var(--primary) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 30px var(--neon) !important; }
-        .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 20px var(--gold); border: none; }
 
         #turn-indicator { background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; margin-bottom: 15px; text-transform: uppercase; font-size: 1.1rem; }
         .play-button { width: 90px; height: 90px; background-color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 10px 0; border: none; }
@@ -36,10 +34,17 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
+        /* ESCÀNER v103 - RESTAURACIÓ VISUAL v94 */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
+        
+        /* Ocultem els elements interns per deixar només el marc rosa */
+        #reader__scan_region, #reader__border { border: none !important; box-shadow: none !important; }
+        #reader__dashboard, #reader__header_message, #reader__camera_selection, #reader__status_span { display: none !important; }
+        video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+
         .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 250px; border: 5px solid var(--neon); border-radius: 30px; box-shadow: 0 0 40px var(--neon); pointer-events: none; z-index: 3001; }
-        .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--neon); animation: scanMove 2s ease-in-out infinite; }
+        .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--neon); box-shadow: 0 0 15px var(--neon); animation: scanMove 2s ease-in-out infinite; }
         @keyframes scanMove { 0%, 100% { top: 5%; } 50% { top: 95%; } }
 
         .board-container { width: 100%; max-width: 400px; margin-top: 30px; border-top: 1px solid #444; padding-top: 20px; display: none; }
@@ -135,20 +140,18 @@
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isGameOver: false, isRobberyActive: false, robbersTried: [] };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v102');
+            const saved = localStorage.getItem('sonabe_v103');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_v102', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v103', JSON.stringify(gameState)); }
         load();
 
         window.onload = () => { 
             const urlParams = new URLSearchParams(window.location.search);
             const appleId = urlParams.get('id');
-            
-            // FORCEM EL JOC SI HI HA ID - ARREGLAT v102
             if (appleId) {
                 document.getElementById('loading-overlay').style.display = 'flex';
                 document.getElementById('game-screen').classList.add('active');
@@ -218,6 +221,21 @@
                         window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
                         startScanner();
                     }
+                }
+            }, 30);
+        }
+
+        // FADEOUT A "JUGAR DE NOU" v103
+        function playAgain() {
+            clearInterval(fadeInterval);
+            document.getElementById('loading-overlay').style.display = 'flex';
+            fadeInterval = setInterval(() => {
+                if (audio.volume > 0.1) audio.volume -= 0.1;
+                else {
+                    audio.volume = 0; audio.pause(); clearInterval(fadeInterval);
+                    gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]);
+                    gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.isGameOver = false; gameState.playedIds = [];
+                    save(); jugarAleatori();
                 }
             }, 30);
         }
@@ -307,7 +325,7 @@
 
         // --- HELPERS ---
         async function jugarAleatori() {
-            save(); // ASSEGUREM EL GUARDAT v102
+            save();
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
             try {
                 const r = await fetch(sheet); const t = await r.text();
@@ -327,14 +345,10 @@
             } catch(e) { alert("Error de conexió"); }
         }
 
-        function playAgain() {
-            gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]);
-            gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.isGameOver = false; gameState.playedIds = [];
-            save(); jugarAleatori();
-        }
-        function resetGame() { localStorage.removeItem('sonabe_v102'); window.location.href = window.location.origin + window.location.pathname; }
+        function resetGame() { localStorage.removeItem('sonabe_v103'); window.location.href = window.location.origin + window.location.pathname; }
         function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
         function openSetup() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('setup-screen').classList.add('active'); updateSetupList(); }
+        
         function startScanner() {
             document.getElementById('loading-overlay').style.display = 'none';
             document.getElementById('scanner-screen').style.display = 'flex';
