@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonabé! 🎶 - Versió 77</title>
+    <title>Sonabé! 🎶 - Versió 78</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -38,12 +38,14 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
+        /* Scanner Screen */
+        #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        #reader { width: 100% !important; height: 100% !important; }
+        #reader video { object-fit: cover !important; }
+
         .board-container { width: 100%; max-width: 400px; margin-top: 30px; border-top: 1px solid #444; padding-top: 20px; display: none; }
         .player-row { background: #1e1e1e; padding: 10px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; }
         .active-row { border: 2px solid white !important; box-shadow: 0 0 15px var(--primary); background: #222; }
-
-        #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        #reader { width: 100% !important; height: 100% !important; border: none !important; }
         input[type="number"], input[type="text"] { padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white; text-align: center; width: 220px; outline: none; }
     </style>
 </head>
@@ -93,6 +95,10 @@
             </div>
         </div>
 
+        <div id="ui-cards-mode" class="btn-list" style="display:none;">
+            <button class="btn btn-primary" style="margin-top:20px;" onclick="revealSolutionSolo(null)">REVELAR SOLUCIÓ</button>
+        </div>
+
         <div id="solution-card">
             <div id="guess-result"></div>
             <div id="song-year" class="year-badge">----</div>
@@ -124,6 +130,7 @@
     <script>
         const audio = document.getElementById('audio-player');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let html5QrCode = null;
         let gameState = { players: [], currentTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isGameOver: false };
 
         function load() { const saved = localStorage.getItem('sonabe_permanencia_total'); if (saved) gameState = JSON.parse(saved); }
@@ -137,6 +144,38 @@
             else if (gameState.players.length > 0) { renderBoards(); } 
         };
 
+        // --- ESCÀNER (ARREGLAT v78) ---
+        function startScanner() {
+            document.getElementById('scanner-screen').style.display = 'flex';
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                { fps: 15, qrbox: 250 },
+                (decodedText) => {
+                    html5QrCode.stop().then(() => {
+                        window.location.href = decodedText;
+                    });
+                }
+            ).catch(err => {
+                console.error(err);
+                alert("No s'ha pogut obrir la càmera.");
+                cancelScanner();
+            });
+        }
+
+        function cancelScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('scanner-screen').style.display = 'none';
+                }).catch(() => {
+                    document.getElementById('scanner-screen').style.display = 'none';
+                });
+            } else {
+                document.getElementById('scanner-screen').style.display = 'none';
+            }
+        }
+
+        // --- INTERFÍCIE ---
         function renderGameUI() {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('game-screen').classList.add('active');
@@ -148,39 +187,18 @@
             if (gameState.players.length > 0) {
                 const actual = gameState.players[gameState.currentTurn];
                 document.getElementById('ui-online-mode').style.display = 'block';
+                document.getElementById('ui-cards-mode').style.display = 'none';
                 document.getElementById('turn-indicator').innerText = `TORN DE: ${actual.name.toUpperCase()}`;
                 renderTimelineSlots(actual); 
                 renderBoards();
+            } else {
+                document.getElementById('ui-online-mode').style.display = 'none';
+                document.getElementById('ui-cards-mode').style.display = 'block';
+                document.getElementById('turn-indicator').innerText = "TINC LES CARTES!";
             }
         }
 
-        function openSetup() { 
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
-            document.getElementById('setup-screen').classList.add('active'); 
-            updateSetupList(); 
-        }
-
-        function updateSetupList() {
-            const list = document.getElementById('player-list-setup');
-            list.innerHTML = gameState.players.map((p, i) => `<div class="player-item"><span>👤 ${p.name.toUpperCase()}</span><span class="del-btn" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span></div>`).join('');
-            document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none';
-            document.getElementById('win-input').value = gameState.winCondition;
-            setMode(gameState.mode); 
-        }
-
-        function updateWinCondition() {
-            gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5;
-            save();
-            renderBoards();
-        }
-
-        function setMode(m) {
-            gameState.mode = m;
-            document.getElementById('mode-timeline').className = (m === 'timeline') ? 'btn mode-selected' : 'btn btn-outline';
-            document.getElementById('mode-exact').className = (m === 'exact') ? 'btn mode-selected' : 'btn btn-outline';
-            save();
-        }
-
+        // --- LOGICA JOC ---
         function checkTimelineGuess(idx) {
             const r = parseInt(document.getElementById('song-year').innerText);
             const p = gameState.players[gameState.currentTurn];
@@ -197,9 +215,14 @@
             const res = document.getElementById('guess-result');
             const btn = document.getElementById('btn-next');
             if (correct === true) { res.innerText = "✅ ENCERTAT!"; res.style.color = "#28a745"; }
-            else { res.innerText = "❌ INCORRECTE"; res.style.color = "#fa2d48"; }
+            else if (correct === false) { res.innerText = "❌ INCORRECTE"; res.style.color = "#fa2d48"; }
+            else { res.innerText = ""; }
+            
             if (gameState.isGameOver) { btn.innerText = "🏆 VEURE GUANYADOR"; btn.className = "btn btn-gold"; }
+            else { btn.innerText = "Següent Cançó"; btn.className = "btn btn-primary"; }
+
             document.getElementById('ui-online-mode').style.display='none'; 
+            document.getElementById('ui-cards-mode').style.display='none'; 
             document.getElementById('solution-card').style.display='flex'; 
         }
 
@@ -215,11 +238,14 @@
                         playWinFanfare(); setTimeout(triggerConfetti, 100); 
                         return;
                     }
-                    gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length; save(); jugarAleatori(); 
+                    if(gameState.players.length > 0) {
+                        gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length; save(); jugarAleatori(); 
+                    } else { startScanner(); }
                 }
             }, 30);
         }
 
+        // --- EFECTES ---
         function handlePlayClick() {
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
             if (audio.paused) {
@@ -244,11 +270,12 @@
                 const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                 osc.connect(gain); gain.connect(audioCtx.destination);
                 osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (i * 0.15));
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime + (i * 0.15));
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime + (i * 0.15));
                 osc.start(audioCtx.currentTime + (i * 0.15)); osc.stop(audioCtx.currentTime + (i * 0.15) + 0.3);
             });
         }
 
+        // --- HELPERS ---
         async function loadSong(id) {
             if (!gameState.playedIds.includes(id)) { gameState.playedIds.push(id); save(); }
             const r = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
@@ -261,7 +288,22 @@
                 document.getElementById('song-artist').innerText = s.artistName;
             }
         }
+        function openSetup() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('setup-screen').classList.add('active'); updateSetupList(); }
         function addPlayer() { const n = document.getElementById('player-input').value.trim(); if(n){ gameState.players.push({name:n, cards:[Math.floor(Math.random()*95)+1930]}); document.getElementById('player-input').value=""; save(); updateSetupList(); renderBoards(); }}
+        function updateSetupList() {
+            const list = document.getElementById('player-list-setup');
+            list.innerHTML = gameState.players.map((p, i) => `<div class="player-item"><span>👤 ${p.name.toUpperCase()}</span><span class="del-btn" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span></div>`).join('');
+            document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none';
+            document.getElementById('win-input').value = gameState.winCondition;
+            setMode(gameState.mode);
+        }
+        function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); renderBoards(); }
+        function setMode(m) {
+            gameState.mode = m;
+            document.getElementById('mode-timeline').className = (m === 'timeline') ? 'btn mode-selected' : 'btn btn-outline';
+            document.getElementById('mode-exact').className = (m === 'exact') ? 'btn mode-selected' : 'btn btn-outline';
+            save();
+        }
         function renderBoards() {
             const container = document.getElementById('all-boards');
             if (gameState.players.length === 0) { container.style.display = 'none'; return; }
@@ -301,8 +343,6 @@
         }
         function resetGame() { localStorage.removeItem('sonabe_permanencia_total'); window.location.href = window.location.origin + window.location.pathname; }
         function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
-        function startScanner() { document.getElementById('scanner-screen').style.display='flex'; /* logic... */ }
-        function cancelScanner() { document.getElementById('scanner-screen').style.display='none'; }
     </script>
 </body>
 </html>
