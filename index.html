@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonabé! 🎶 - Versió 82</title>
+    <title>Sonabé! 🎶 - Versió 83</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -38,6 +38,7 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
+        /* ESCÀNER VISOR QUADRAT */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
@@ -68,7 +69,7 @@
         <div class="neon-logo" style="font-size: 2rem;">Configurar partida</div>
         <div style="display:flex; gap:10px;">
             <input type="text" id="player-input" placeholder="Nom...">
-            <button class="btn btn-primary" onclick="addPlayer()" style="width:80px; padding:0;">AFEGIR</button>
+            <button class="btn btn-primary" onclick="addPlayer()">AFEGIR</button>
         </div>
         <div id="player-list-setup" style="width:100%; margin-top:10px;"></div>
         <div id="config-area" style="display:none; width:100%; margin-top:10px;">
@@ -91,7 +92,7 @@
         </button>
         <div id="ui-online-mode" class="btn-list" style="display:none;">
             <div id="ui-timeline" class="btn-list">
-                <p id="instruction-text">En quina posició va la cançó?</p>
+                <p>En quina posició va la cançó?</p>
                 <div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div>
             </div>
         </div>
@@ -109,7 +110,7 @@
                 <button id="btn-next" class="btn btn-primary" onclick="nextAction()">Següent Cançó</button>
             </div>
         </div>
-        <button class="btn btn-secondary" id="btn-back-menu" onclick="goToMenu()">Tornar al Menú</button>
+        <button class="btn btn-secondary" onclick="goToMenu()">Tornar al Menú</button>
     </div>
 
     <div id="winner-screen" class="screen">
@@ -137,11 +138,14 @@
         let gameState = { players: [], currentTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isGameOver: false, isRobberyActive: false };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_permanencia_total');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (parsed && Array.isArray(parsed.players)) gameState = parsed;
-            }
+            try {
+                const saved = localStorage.getItem('sonabe_permanencia_total');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    // MERGE SEGUR: Assegurem que totes les claus de la v83 existeixen
+                    gameState = { ...gameState, ...parsed };
+                }
+            } catch(e) { console.error("Error al carregar memòria."); }
         }
         function save() { localStorage.setItem('sonabe_permanencia_total', JSON.stringify(gameState)); }
         load();
@@ -153,22 +157,42 @@
             else if (gameState.players.length > 0) { renderBoards(); } 
         };
 
-        // --- SETUP ---
+        // --- SETUP (ARREGLAT v83) ---
+        function openSetup() { 
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+            document.getElementById('setup-screen').classList.add('active'); 
+            updateSetupList(); 
+        }
+
         function addPlayer() {
-            const n = document.getElementById('player-input').value.trim();
+            const input = document.getElementById('player-input');
+            const n = input.value.trim();
             if (n) {
                 gameState.players.push({ name: n, cards: [Math.floor(Math.random() * 95) + 1930] });
-                document.getElementById('player-input').value = "";
+                input.value = "";
                 save(); updateSetupList(); renderBoards();
             }
         }
+
         function updateSetupList() {
-            const list = document.getElementById('player-list-setup'); if (!list) return;
-            list.innerHTML = gameState.players.map((p, i) => `<div class="player-item"><span>👤 ${p.name.toUpperCase()}</span><span class="del-btn" onclick="gameState.players.splice(${i},1);save();updateSetupList();renderBoards();">✕</span></div>`).join('');
+            const list = document.getElementById('player-list-setup');
+            if (!list) return;
+            list.innerHTML = gameState.players.map((p, i) => `
+                <div class="player-item">
+                    <span>👤 ${p.name.toUpperCase()}</span>
+                    <span class="del-btn" onclick="removePlayer(${i})">✕</span>
+                </div>
+            `).join('');
             document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none';
             document.getElementById('win-input').value = gameState.winCondition;
             setMode(gameState.mode);
         }
+
+        function removePlayer(i) {
+            gameState.players.splice(i, 1);
+            save(); updateSetupList(); renderBoards();
+        }
+
         function setMode(m) {
             gameState.mode = m || 'timeline';
             const btnT = document.getElementById('mode-timeline');
@@ -179,9 +203,13 @@
             }
             save();
         }
-        function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); renderBoards(); }
 
-        // --- ESCÀNER (VISOR QUADRAT v82) ---
+        function updateWinCondition() {
+            gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5;
+            save(); renderBoards();
+        }
+
+        // --- ESCÀNER ---
         function startScanner() {
             document.getElementById('scanner-screen').style.display = 'flex';
             html5QrCode = new Html5Qrcode("reader");
@@ -204,14 +232,14 @@
                 document.getElementById('ui-online-mode').style.display = 'block';
                 document.getElementById('ui-cards-mode').style.display = 'none';
                 
+                const turnBox = document.getElementById('turn-indicator');
                 if (gameState.isRobberyActive) {
-                    document.getElementById('turn-indicator').innerText = `🚨 ROBATORI PER A: ${actual.name.toUpperCase()}`;
-                    document.getElementById('turn-indicator').style.background = "var(--purple)";
+                    turnBox.innerText = `🚨 ROBATORI PER A: ${actual.name.toUpperCase()}`;
+                    turnBox.style.background = "var(--purple)";
                 } else {
-                    document.getElementById('turn-indicator').innerText = `TORN DE: ${actual.name.toUpperCase()}`;
-                    document.getElementById('turn-indicator').style.background = "var(--primary)";
+                    turnBox.innerText = `TORN DE: ${actual.name.toUpperCase()}`;
+                    turnBox.style.background = "var(--primary)";
                 }
-                
                 renderTimelineSlots(actual); 
                 renderBoards();
             } else {
@@ -221,7 +249,6 @@
             }
         }
 
-        // --- LÒGICA JOC (AMB ROBATORI v82) ---
         function checkTimelineGuess(idx) {
             const r = parseInt(document.getElementById('song-year').innerText);
             const p = gameState.players[gameState.currentTurn];
@@ -231,12 +258,11 @@
             if(ok) { 
                 p.cards.push(r); 
                 if(p.cards.length >= gameState.winCondition) gameState.isGameOver = true;
-                gameState.isRobberyActive = false; // Si encerta (normal o robatori), s'acaba el perill
+                gameState.isRobberyActive = false;
                 save(); revealSolutionSolo(true);
             } else { 
-                // Si falla i hi ha més d'un jugador, i NO estàvem ja en un intent de robatori
                 if (gameState.players.length > 1 && !gameState.isRobberyActive) {
-                    revealSolutionSolo(false, true); // Mostra "Incorrecte" però activa botó robar
+                    revealSolutionSolo(false, true); 
                 } else {
                     gameState.isRobberyActive = false;
                     revealSolutionSolo(false, false); 
@@ -245,11 +271,9 @@
         }
 
         function startStealAttempt() {
-            // Passem el torn al següent jugador per a l'intent de robatori
             gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
             gameState.isRobberyActive = true;
-            save();
-            renderGameUI(); // Això mostrarà la línia del temps del "lladre"
+            save(); renderGameUI();
         }
 
         function revealSolutionSolo(correct, canSteal = false) { 
@@ -262,8 +286,7 @@
                 btnSteal.style.display = 'none';
             } else { 
                 res.innerText = "❌ INCORRECTE"; res.style.color = "#fa2d48"; 
-                if (canSteal) btnSteal.style.display = 'block';
-                else btnSteal.style.display = 'none';
+                btnSteal.style.display = canSteal ? 'block' : 'none';
             }
             
             if (gameState.isGameOver) { btnNext.innerText = "🏆 VEURE GUANYADOR"; btnNext.className = "btn btn-gold"; }
@@ -285,13 +308,9 @@
                         playWinFanfare(); setTimeout(triggerConfetti, 100); 
                         return;
                     }
-                    
-                    // Si veníem d'un robatori (encertat o fallat), el torn ja ha avançat.
-                    // Si no, avancem el torn ara.
                     if (!gameState.isRobberyActive) {
                         gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length;
                     }
-                    
                     gameState.isRobberyActive = false;
                     save(); jugarAleatori(); 
                 }
@@ -326,7 +345,7 @@
             });
         }
 
-        // --- HELPERS ---
+        // --- ALTRES ---
         async function loadSong(id) {
             if (!gameState.playedIds.includes(id)) { gameState.playedIds.push(id); save(); }
             const r = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
@@ -375,8 +394,8 @@
             if (avail.length > 0) { window.location.href = avail[Math.floor(Math.random()*avail.length)].url + "&mode=rand"; } 
             else { alert("S'han acabat les cançons!"); resetGame(); }
         }
-        function resetGame() { localStorage.removeItem('sonabe_permanencia_total'); window.location.href = window.location.pathname; }
-        function goToMenu() { window.location.href = window.location.pathname; }
+        function resetGame() { localStorage.removeItem('sonabe_permanencia_total'); window.location.href = window.location.origin + window.location.pathname; }
+        function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
     </script>
 </body>
 </html>
