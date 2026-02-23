@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonabé! 🎶 - Versió 75</title>
+    <title>Sonabé! 🎶 - Versió 77</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -29,7 +29,6 @@
         .del-btn { color: var(--primary); font-weight: bold; cursor: pointer; font-size: 1.4rem; padding: 0 10px; }
 
         #turn-indicator { background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; margin-bottom: 15px; text-transform: uppercase; font-size: 1.1rem; }
-        
         .play-button { width: 90px; height: 90px; background-color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 10px 0; border: none; }
         .play-icon { width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px; }
         .stop-icon { width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none; }
@@ -43,7 +42,7 @@
         .player-row { background: #1e1e1e; padding: 10px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; }
         .active-row { border: 2px solid white !important; box-shadow: 0 0 15px var(--primary); background: #222; }
 
-        #scanner-screen { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:3000; display:none; flex-direction:column; align-items:center; justify-content:center; }
+        #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         input[type="number"], input[type="text"] { padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white; text-align: center; width: 220px; outline: none; }
     </style>
@@ -62,7 +61,7 @@
     </div>
 
     <div id="setup-screen" class="screen">
-        <div class="neon-logo" style="font-size: 2rem;">Configura</div>
+        <div class="neon-logo" style="font-size: 2rem;">Configurar partida</div>
         <div style="display:flex; gap:10px;">
             <input type="text" id="player-input" placeholder="Nom...">
             <button class="btn btn-primary" onclick="addPlayer()" style="width:80px; padding:0;">AFEGIR</button>
@@ -82,7 +81,6 @@
 
     <div id="game-screen" class="screen">
         <div id="turn-indicator">CARREGANT...</div>
-        
         <button id="play-btn-main" class="play-button" onclick="handlePlayClick()">
             <div class="play-icon" id="icon-play"></div>
             <div class="stop-icon" id="icon-stop"></div>
@@ -93,10 +91,6 @@
                 <p>En quina posició va la cançó?</p>
                 <div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div>
             </div>
-        </div>
-
-        <div id="ui-cards-mode" class="btn-list" style="display:none;">
-            <button class="btn btn-primary" style="margin-top:20px;" onclick="revealSolutionSolo(null)">REVELAR SOLUCIÓ</button>
         </div>
 
         <div id="solution-card">
@@ -139,20 +133,13 @@
         window.onload = () => { 
             const urlParams = new URLSearchParams(window.location.search);
             const appleId = urlParams.get('id');
-            if (appleId) { 
-                renderGameUI(); // Primer mostrem la interfície
-                loadSong(appleId); 
-            } else if (gameState.players.length > 0) { 
-                renderBoards(); 
-            } 
+            if (appleId) { renderGameUI(); loadSong(appleId); } 
+            else if (gameState.players.length > 0) { renderBoards(); } 
         };
 
-        // --- UI ---
         function renderGameUI() {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('game-screen').classList.add('active');
-            
-            // NETEJA PREVIA (per si venim d'una cançó anterior)
             document.getElementById('solution-card').style.display = 'none';
             document.getElementById('play-btn-main').style.display = 'flex';
             document.getElementById('icon-play').style.display = 'block';
@@ -161,44 +148,39 @@
             if (gameState.players.length > 0) {
                 const actual = gameState.players[gameState.currentTurn];
                 document.getElementById('ui-online-mode').style.display = 'block';
-                document.getElementById('ui-cards-mode').style.display = 'none';
                 document.getElementById('turn-indicator').innerText = `TORN DE: ${actual.name.toUpperCase()}`;
                 renderTimelineSlots(actual); 
                 renderBoards();
-            } else {
-                document.getElementById('ui-online-mode').style.display = 'none';
-                document.getElementById('ui-cards-mode').style.display = 'block';
-                document.getElementById('turn-indicator').innerText = "TINC LES CARTES!";
             }
         }
 
-        async function loadSong(id) {
-            if (!gameState.playedIds.includes(id)) { gameState.playedIds.push(id); save(); }
-            const r = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
-            const d = await r.json();
-            if (d.results.length > 0) {
-                const s = d.results[0];
-                audio.src = s.previewUrl;
-                document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600');
-                document.getElementById('song-year').innerText = s.releaseDate.substring(0,4);
-                document.getElementById('song-title').innerText = s.trackName;
-                document.getElementById('song-artist').innerText = s.artistName;
-            }
+        function openSetup() { 
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+            document.getElementById('setup-screen').classList.add('active'); 
+            updateSetupList(); 
         }
 
-        // --- AUDIO ---
-        function handlePlayClick() {
-            const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
-            if (audio.paused) {
-                pi.style.display = 'none'; si.style.display = 'block';
-                audio.volume = 0; audio.play();
-                let f = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else { audio.volume = 1; clearInterval(f); } }, 50);
-            } else {
-                let f = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(f); } }, 50);
-            }
+        function updateSetupList() {
+            const list = document.getElementById('player-list-setup');
+            list.innerHTML = gameState.players.map((p, i) => `<div class="player-item"><span>👤 ${p.name.toUpperCase()}</span><span class="del-btn" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span></div>`).join('');
+            document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none';
+            document.getElementById('win-input').value = gameState.winCondition;
+            setMode(gameState.mode); 
         }
 
-        // --- GAME LOGIC ---
+        function updateWinCondition() {
+            gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5;
+            save();
+            renderBoards();
+        }
+
+        function setMode(m) {
+            gameState.mode = m;
+            document.getElementById('mode-timeline').className = (m === 'timeline') ? 'btn mode-selected' : 'btn btn-outline';
+            document.getElementById('mode-exact').className = (m === 'exact') ? 'btn mode-selected' : 'btn btn-outline';
+            save();
+        }
+
         function checkTimelineGuess(idx) {
             const r = parseInt(document.getElementById('song-year').innerText);
             const p = gameState.players[gameState.currentTurn];
@@ -215,14 +197,9 @@
             const res = document.getElementById('guess-result');
             const btn = document.getElementById('btn-next');
             if (correct === true) { res.innerText = "✅ ENCERTAT!"; res.style.color = "#28a745"; }
-            else if (correct === false) { res.innerText = "❌ INCORRECTE"; res.style.color = "#fa2d48"; }
-            else { res.innerText = ""; }
-            
+            else { res.innerText = "❌ INCORRECTE"; res.style.color = "#fa2d48"; }
             if (gameState.isGameOver) { btn.innerText = "🏆 VEURE GUANYADOR"; btn.className = "btn btn-gold"; }
-            else { btn.innerText = "Següent Cançó"; btn.className = "btn btn-primary"; }
-
             document.getElementById('ui-online-mode').style.display='none'; 
-            document.getElementById('ui-cards-mode').style.display='none'; 
             document.getElementById('solution-card').style.display='flex'; 
         }
 
@@ -238,39 +215,53 @@
                         playWinFanfare(); setTimeout(triggerConfetti, 100); 
                         return;
                     }
-                    gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length; 
-                    save(); 
-                    jugarAleatori(); 
+                    gameState.currentTurn = (gameState.currentTurn + 1) % gameState.players.length; save(); jugarAleatori(); 
                 }
             }, 30);
         }
 
-        // --- CONFETTI & SOUND ---
+        function handlePlayClick() {
+            const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
+            if (audio.paused) {
+                pi.style.display = 'none'; si.style.display = 'block';
+                audio.volume = 0; audio.play();
+                let f = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else { audio.volume = 1; clearInterval(f); } }, 50);
+            } else {
+                let f = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(f); } }, 50);
+            }
+        }
+
         function triggerConfetti() {
             const count = 200, defaults = { origin: { y: 0.7 }, zIndex: 9999 };
             function fire(particleRatio, opts) { confetti({ ...defaults, ...opts, particleCount: Math.floor(count * particleRatio) }); }
             fire(0.25, { spread: 26, startVelocity: 55 }); fire(0.2, { spread: 60 });
             fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 }); fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
         }
+
         function playWinFanfare() {
             const notes = [523.25, 659.25, 783.99, 1046.50];
             notes.forEach((freq, i) => {
                 const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                 osc.connect(gain); gain.connect(audioCtx.destination);
                 osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (i * 0.15));
-                gain.gain.setValueAtTime(0, audioCtx.currentTime + (i * 0.15));
-                gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + (i * 0.15) + 0.05);
-                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + (i * 0.15) + 0.3);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime + (i * 0.15));
                 osc.start(audioCtx.currentTime + (i * 0.15)); osc.stop(audioCtx.currentTime + (i * 0.15) + 0.3);
             });
         }
 
-        // --- HELPERS ---
-        function playAgainSamePlayers() {
-            gameState.players.forEach(p => { p.cards = [Math.floor(Math.random() * 95) + 1930]; });
-            gameState.currentTurn = 0; gameState.isGameOver = false; gameState.playedIds = [];
-            save(); jugarAleatori();
+        async function loadSong(id) {
+            if (!gameState.playedIds.includes(id)) { gameState.playedIds.push(id); save(); }
+            const r = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
+            const d = await r.json();
+            if (d.results.length > 0) {
+                const s = d.results[0]; audio.src = s.previewUrl;
+                document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600');
+                document.getElementById('song-year').innerText = s.releaseDate.substring(0,4);
+                document.getElementById('song-title').innerText = s.trackName;
+                document.getElementById('song-artist').innerText = s.artistName;
+            }
         }
+        function addPlayer() { const n = document.getElementById('player-input').value.trim(); if(n){ gameState.players.push({name:n, cards:[Math.floor(Math.random()*95)+1930]}); document.getElementById('player-input').value=""; save(); updateSetupList(); renderBoards(); }}
         function renderBoards() {
             const container = document.getElementById('all-boards');
             if (gameState.players.length === 0) { container.style.display = 'none'; return; }
@@ -289,6 +280,11 @@
                 container.innerHTML += `<button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(${i})">${(i === sorted.length-1) ? 'NOU' : 'ENTRE'}</button>`;
             });
         }
+        function playAgainSamePlayers() {
+            gameState.players.forEach(p => { p.cards = [Math.floor(Math.random() * 95) + 1930]; });
+            gameState.currentTurn = 0; gameState.isGameOver = false; gameState.playedIds = [];
+            save(); jugarAleatori();
+        }
         async function jugarAleatori() {
             document.getElementById('loading-overlay').style.display = 'flex';
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
@@ -303,18 +299,10 @@
             if (avail.length > 0) { window.location.href = avail[Math.floor(Math.random()*avail.length)].url + "&mode=rand"; } 
             else { alert("S'han acabat les cançons!"); resetGame(); }
         }
-        function startScanner() { document.getElementById('scanner-screen').style.display='flex'; /* html5QrCode logic... */ }
-        function cancelScanner() { document.getElementById('scanner-screen').style.display='none'; }
-        function openSetup() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('setup-screen').classList.add('active'); updateSetupList(); }
-        function addPlayer() { const n = document.getElementById('player-input').value.trim(); if(n){ gameState.players.push({name:n, cards:[Math.floor(Math.random()*95)+1930]}); document.getElementById('player-input').value=""; save(); updateSetupList(); renderBoards(); }}
-        function updateSetupList() {
-            const list = document.getElementById('player-list-setup');
-            list.innerHTML = gameState.players.map((p, i) => `<div class="player-item"><span>👤 ${p.name.toUpperCase()}</span><span class="del-btn" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span></div>`).join('');
-            document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none';
-        }
-        function setMode(m) { gameState.mode = m; document.getElementById('mode-timeline').className = (m === 'timeline') ? 'btn mode-selected' : 'btn btn-outline'; document.getElementById('mode-exact').className = (m === 'exact') ? 'btn mode-selected' : 'btn btn-outline'; save(); }
         function resetGame() { localStorage.removeItem('sonabe_permanencia_total'); window.location.href = window.location.origin + window.location.pathname; }
         function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
+        function startScanner() { document.getElementById('scanner-screen').style.display='flex'; /* logic... */ }
+        function cancelScanner() { document.getElementById('scanner-screen').style.display='none'; }
     </script>
 </body>
 </html>
