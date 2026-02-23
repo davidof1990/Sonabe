@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 120</title>
+    <title>Sonabé! 🎶 - Versió 121</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -24,7 +24,6 @@
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
         
-        /* BOTÓ MODE SELECCIONAT (EFECTE NEÓ) */
         .mode-selected { 
             background-color: var(--neon) !important; 
             color: white !important; 
@@ -87,7 +86,6 @@
         <div id="config-area" style="display:none; width:100%; margin-top:10px;">
             <p style="font-size:0.75rem; font-weight:bold; color:#888;">CARTES PER GUANYAR:</p>
             <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:15px; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white; text-align: center;">
-            
             <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-top:10px;">MODE DE JOC:</p>
             <div class="btn-list" style="margin-bottom:20px;">
                 <button id="mode-timeline" class="btn btn-outline" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
@@ -95,7 +93,7 @@
             </div>
             <button class="btn btn-primary" style="width:280px; border:2px solid white;" onclick="jugarAleatori('online')">COMENÇAR PARTIDA</button>
         </div>
-        <button class="btn btn-secondary" style="margin-top:15px;" onclick="goToMenu()">Tornar al Menú Principal</button>
+        <button class="btn btn-secondary" style="margin-top:15px;" onclick="goToMenu()">Tornar</button>
     </div>
 
     <div id="game-screen" class="screen">
@@ -108,6 +106,10 @@
             <p id="game-instruction" style="font-weight:bold;"></p>
             <div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div>
         </div>
+        <div id="ui-cards-mode" class="btn-list" style="display:none;">
+            <button class="btn btn-primary" style="margin-top:20px;" onclick="revealSolution(null, false)">REVELAR SOLUCIÓ</button>
+        </div>
+
         <div id="solution-card">
             <div id="guess-result" style="font-weight:bold; font-size:1.8rem; margin-bottom:10px;"></div>
             <div id="song-details" style="display:none; flex-direction:column; align-items:center; gap:10px; width:100%;">
@@ -121,7 +123,7 @@
                 <button id="btn-next" class="btn btn-primary" onclick="nextAction()">Següent Cançó</button>
             </div>
         </div>
-        <button class="btn btn-secondary" onclick="goToMenu()">Tornar al Menú Principal</button>
+        <button class="btn btn-secondary" onclick="goToMenu()">Tornar al Menú</button>
     </div>
 
     <div id="winner-screen" class="screen">
@@ -136,12 +138,6 @@
     <div id="all-boards" class="board-container"></div>
     <audio id="audio-player" preload="auto"></audio>
 
-    <div id="scanner-screen">
-        <div id="reader"></div>
-        <div class="scanner-overlay"><div class="scan-line"></div></div>
-        <button class="btn btn-secondary" style="position:absolute; bottom:50px; width:200px; z-index:3005;" onclick="cancelScanner()">CANCEL·LAR</button>
-    </div>
-
     <script>
         const audio = document.getElementById('audio-player');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -150,24 +146,24 @@
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [] };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v120_final');
+            const saved = localStorage.getItem('sonabe_v121_master');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_v120_final', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v121_master', JSON.stringify(gameState)); }
         load();
 
         window.onload = () => { 
             const urlParams = new URLSearchParams(window.location.search);
             const appleId = urlParams.get('id');
+            const sheetYear = urlParams.get('y');
             
-            // SI HI HA ID, ANEM AL JOC. SI NO, SEMPRE AL MENÚ PRINCIPAL David!
             if (appleId) {
-                showLoader("Cregant cançó...");
+                showLoader("Carregant dades del full...");
                 renderGameUI(); 
-                loadSong(appleId); 
+                loadSong(appleId, sheetYear); 
             } else {
                 hideLoader();
                 showScreen('landing-screen');
@@ -180,24 +176,13 @@
             document.getElementById(id).classList.add('active');
         }
 
-        // --- NAVEGACIÓ v120 ---
-        function goToMenu() {
-            hideLoader();
-            // Netejem la URL completament David!
-            window.location.href = window.location.origin + window.location.pathname;
-        }
-
-        function openSetup() {
-            showScreen('setup-screen');
-            updateSetupList();
-        }
+        function goToMenu() { hideLoader(); window.location.href = window.location.origin + window.location.pathname; }
 
         function showLoader(txt) {
-            clearTimeout(safetyTimer);
             document.getElementById('loading-overlay').style.display = 'flex';
             document.getElementById('loading-text').innerText = txt || "CARREGANT...";
             document.getElementById('rescue-btn').style.display = 'none';
-            safetyTimer = setTimeout(() => { document.getElementById('rescue-btn').style.display = 'block'; }, 5000);
+            safetyTimer = setTimeout(() => { document.getElementById('rescue-btn').style.display = 'block'; }, 6000);
         }
         function hideLoader() { clearTimeout(safetyTimer); document.getElementById('loading-overlay').style.display = 'none'; }
 
@@ -216,16 +201,21 @@
 
         function nextAction() {
             clearInterval(fadeInterval);
-            showLoader("Següent cançó...");
-            gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
-            gameState.originalTurn = gameState.currentTurn;
-            gameState.isRobberyActive = false;
-            gameState.robbersTried = [];
-            save();
-            jugarAleatori('online');
+            if (gameState.players.length > 0) {
+                showLoader("Buscant nova cançó...");
+                gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
+                gameState.originalTurn = gameState.currentTurn;
+                gameState.isRobberyActive = false;
+                gameState.robbersTried = [];
+                save();
+                jugarAleatori('online');
+            } else {
+                goToMenu();
+            }
         }
 
-        async function loadSong(id) {
+        // --- CÀRREGA DE CANÇÓ v121 AMB L'ANY DEL SHEET David! ---
+        async function loadSong(id, yearFromSheet) {
             try {
                 const r = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
                 const d = await r.json();
@@ -233,9 +223,12 @@
                     const s = d.results[0];
                     audio.src = s.previewUrl;
                     document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600');
-                    document.getElementById('song-year').innerText = s.releaseDate.substring(0,4);
                     document.getElementById('song-title').innerText = s.trackName;
                     document.getElementById('song-artist').innerText = s.artistName;
+                    
+                    // EL MOMENT CLAU: Sobreescribim l'any d'iTunes amb el del Google Sheet David!
+                    document.getElementById('song-year').innerText = yearFromSheet || s.releaseDate.substring(0,4);
+                    
                     hideLoader();
                 }
             } catch (e) { hideLoader(); }
@@ -245,8 +238,11 @@
             showScreen('game-screen');
             document.getElementById('solution-card').style.display = 'none';
             const turnBox = document.getElementById('turn-indicator');
+            
             if (gameState.players.length > 0) {
+                // MODE ONLINE
                 document.getElementById('ui-online-mode').style.display = 'block';
+                document.getElementById('ui-cards-mode').style.display = 'none';
                 const actual = gameState.players[gameState.currentTurn];
                 const original = gameState.players[gameState.originalTurn];
                 const targetTimeline = gameState.isRobberyActive ? original : actual;
@@ -256,6 +252,12 @@
                 document.getElementById('game-instruction').innerText = gameState.isRobberyActive ? `Línia de ${original.name.toUpperCase()}` : "On va aquesta cançó?";
                 renderTimelineSlots(targetTimeline); 
                 renderBoards();
+            } else {
+                // MODE TINC LES CARTES
+                document.getElementById('ui-online-mode').style.display = 'none';
+                document.getElementById('ui-cards-mode').style.display = 'block';
+                turnBox.innerText = "TINC LES CARTES!";
+                turnBox.style.background = "var(--primary)";
             }
         }
 
@@ -269,10 +271,7 @@
             if(ok) { 
                 thief.cards.push(year); 
                 save(); renderBoards();
-                if(thief.cards.length >= gameState.winCondition) { 
-                    triggerWin(thief.name.toUpperCase());
-                    return;
-                }
+                if(thief.cards.length >= gameState.winCondition) { triggerWin(thief.name.toUpperCase()); return; }
                 gameState.isRobberyActive = false; gameState.robbersTried = [];
                 save(); revealSolution(true);
             } else { 
@@ -293,18 +292,24 @@
             const res = document.getElementById('guess-result');
             const details = document.getElementById('song-details');
             const btnS = document.getElementById('btn-steal');
-            if(correct) {
+            if(correct === true) {
                 res.innerText = "✅ ENCERTAT!";
                 res.style.color = "#28a745";
                 details.style.display = "flex";
                 btnS.style.display = "none";
-            } else {
+            } else if (correct === false) {
                 res.innerText = "❌ INCORRECTE";
                 res.style.color = "#fa2d48";
                 if (canSteal) { details.style.display = "none"; btnS.style.display = "block"; } 
                 else { details.style.display = "flex"; btnS.style.display = "none"; }
+            } else {
+                // Mode lliure (null)
+                res.innerText = "";
+                details.style.display = "flex";
+                btnS.style.display = "none";
             }
             document.getElementById('ui-online-mode').style.display='none'; 
+            document.getElementById('ui-cards-mode').style.display='none'; 
             document.getElementById('solution-card').style.display='flex'; 
         }
 
@@ -321,21 +326,25 @@
             if (next !== -1) { gameState.currentTurn = next; gameState.isRobberyActive = true; save(); renderGameUI(); }
         }
 
+        // --- CÀRREGA DEL GOOGLE SHEET v121 David! ---
         async function jugarAleatori(type) {
-            const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
+            const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
             try {
-                const r = await fetch(sheet);
+                const r = await fetch(sheetURL);
                 const t = await r.text();
                 const lines = t.split("\n").slice(1);
                 const avail = lines.map(l => {
                     const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                     const id = (c[6] ? c[6].match(/id=(\d+)/) || [] : [])[1];
-                    return { id };
+                    const sheetYear = c[2]; // COLUMNA 2 ÉS L'ANY REAL David!
+                    return { id, sheetYear };
                 }).filter(s => s.id && !gameState.playedIds.includes(s.id));
+                
                 if (avail.length > 0) {
                     const song = avail[Math.floor(Math.random()*avail.length)];
                     gameState.playedIds.push(song.id); save();
-                    window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id;
+                    // Passem l'id i l'any per URL David!
+                    window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id + "&y=" + song.sheetYear;
                 }
             } catch(e) { hideLoader(); }
         }
@@ -355,10 +364,7 @@
             document.getElementById('win-input').value = gameState.winCondition;
             setMode(gameState.mode);
         }
-        function updateWinCondition() { 
-            gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; 
-            save(); 
-        }
+        function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); renderBoards(); }
         function setMode(m) {
             gameState.mode = m || 'timeline';
             const btnT = document.getElementById('mode-timeline'), btnE = document.getElementById('mode-exact');
@@ -373,11 +379,16 @@
             gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = [];
             save(); jugarAleatori('online');
         }
-        function resetGame() { localStorage.removeItem('sonabe_v120_final'); goToMenu(); }
+        function resetGame() { localStorage.removeItem('sonabe_v121_master'); goToMenu(); }
+        function openSetup() { showScreen('setup-screen'); updateSetupList(); }
+        
+        // ESCÀNER v94
         function startScanner() {
             showScreen('scanner-screen');
             html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => { html5QrCode.stop().then(() => { window.location.href = t; }); });
+            html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => { 
+                html5QrCode.stop().then(() => { window.location.href = t; }); 
+            });
         }
         function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { showScreen('landing-screen'); }); } }
         
