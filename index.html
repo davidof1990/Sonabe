@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 145 MASTER</title>
+    <title>Sonabé! 🎶 - Versió 146 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -24,7 +24,6 @@
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon) !important; }
 
-        /* ESCÀNER (ESTABLE v137) */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
@@ -139,7 +138,6 @@
             }
         }
         function save() { localStorage.setItem('sonabe_master_stable_v137', JSON.stringify(gameState)); }
-        
         load();
 
         window.onload = () => {
@@ -152,10 +150,7 @@
             else { hideLoader(); showScreen('landing-screen'); if (gameState.players.length > 0) renderBoards(); }
         };
 
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
+        function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -169,45 +164,24 @@
             }
         }
 
-        // David: FADE OUT MILLORAT (v145)
         function performFadeOut(callback) {
             showLoader("REINICIANT...");
             clearInterval(fadeInterval);
-            
-            // Si no hi ha música, fem la transició igualment però ràpid
-            if (audio.paused || audio.volume <= 0.05) { 
-                setTimeout(callback, 600); 
-                return; 
-            }
-
-            // Descens d'un segon per evitar el "salt" David!
-            fadeInterval = setInterval(() => {
-                if (audio.volume > 0.05) { 
-                    audio.volume = Math.max(0, audio.volume - 0.05); 
-                } 
-                else { 
-                    audio.volume = 0; 
-                    audio.pause(); 
-                    clearInterval(fadeInterval); 
-                    setTimeout(callback, 200); // Pausa extra per netejar memòria
-                }
-            }, 50); // 50ms x 20 passos = 1 segon de fade real
+            if (audio.paused || audio.volume <= 0.05) { setTimeout(callback, 600); return; }
+            fadeInterval = setInterval(() => { if (audio.volume > 0.05) { audio.volume -= 0.05; } else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); } }, 50);
         }
 
         async function startScanner() {
-            showScreen('landing-screen'); 
-            document.getElementById('scanner-screen').style.display = 'block';
+            showScreen('landing-screen'); document.getElementById('scanner-screen').style.display = 'block';
             if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} }
             html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => {
-                html5QrCode.stop().then(() => { window.location.href = t; });
-            }).catch(() => { cancelScanner(); });
+            html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => { html5QrCode.stop().then(() => { window.location.href = t; }); }).catch(() => { cancelScanner(); });
         }
         function cancelScanner() { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); else document.getElementById('scanner-screen').style.display = 'none'; window.location.href = window.location.origin + window.location.pathname; }
 
         function addPlayer() {
             const n = document.getElementById('player-input').value.trim();
-            if (n) { gameState.players.push({ name: n, cards: [Math.floor(Math.random() * 95) + 1930] }); document.getElementById('player-input').value = ""; save(); updateSetupList(); renderBoards(); }
+            if (n) { gameState.players.push({ name: n, cards: [2000] }); document.getElementById('player-input').value = ""; save(); updateSetupList(); renderBoards(); }
         }
         function updateSetupList() {
             const list = document.getElementById('player-list-setup'); if (!list) return;
@@ -271,7 +245,7 @@
 
         function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_master_stable_v137'); window.location.href = window.location.origin + window.location.pathname; }); }
         function goToMenu() { performFadeOut(() => { window.location.href = window.location.origin + window.location.pathname; }); }
-        function playAgain() { performFadeOut(() => { gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = []; save(); jugarAleatori('online'); }); }
+        function playAgain() { performFadeOut(() => { gameState.players.forEach(p => p.cards = [2000]); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = []; save(); jugarAleatori('online'); }); }
         function nextAction() { performFadeOut(() => { if (gameState.players.length > 0) { showLoader("Següent torn..."); gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; gameState.originalTurn = gameState.currentTurn; gameState.isRobberyActive = false; gameState.robbersTried = []; save(); jugarAleatori('online'); } else { window.location.href = window.location.origin + window.location.pathname + "?scan=true"; } }); }
         
         function showLoader(txt) { document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt || "CARREGANT..."; }
@@ -295,7 +269,42 @@
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
         function renderBoards() { const container = document.getElementById('all-boards'); if (!container) return; container.style.display = 'block'; container.innerHTML = `<h3>Objectiu: ${gameState.winCondition} cartes</h3>`; gameState.players.forEach((p, i) => { const active = (i === gameState.currentTurn) ? 'active-row' : ''; container.innerHTML += `<div class="player-row ${active}"><div style="font-size:0.75rem; font-weight:bold; color:var(--primary);">${p.name.toUpperCase()} (${p.cards.length})</div><div style="display:flex;gap:4px;flex-wrap:wrap;">${[...p.cards].sort().map(y => `<div style="background:white;color:black;padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:bold;">${y}</div>`).join('')}</div></div>`; }); }
         function renderTimelineSlots(player) { const container = document.getElementById('timeline-slots'); if (!container) return; container.innerHTML = ""; const sorted = [...player.cards].sort(); container.innerHTML += `<button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(-1)">ANTIC</button>`; sorted.forEach((y, i) => { container.innerHTML += `<div style="background:white;color:black;padding:5px 10px;border-radius:6px;font-weight:bold;">${y}</div>`; container.innerHTML += `<button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(${i})">${(i === sorted.length-1) ? 'NOU' : 'ENTRE'}</button>`; }); }
-        async function jugarAleatori(type) { const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now(); try { const r = await fetch(sheet); const t = await r.text(); const lines = t.split("\n").slice(1); const avail = lines.map(l => { const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); const id = (c[6] ? c[6].match(/id=(\d+)/) || [] : [])[1]; return { id }; }).filter(s => s.id && !gameState.playedIds.includes(s.id)); if (avail.length > 0) { const song = avail[Math.floor(Math.random()*avail.length)]; gameState.playedIds.push(song.id); save(); window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id; } } catch(e) { hideLoader(); } }
+        
+        async function jugarAleatori(type) { 
+            showLoader("Preparant base de dades...");
+            const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now(); 
+            try { 
+                const r = await fetch(sheet); const t = await r.text(); const lines = t.split("\n").slice(1); 
+                
+                // --- David: CÀLCUL DE RANG INTEL·LIGENT ---
+                let sheetYears = lines.map(l => {
+                    const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                    return parseInt(c[2]);
+                }).filter(y => !isNaN(y));
+                
+                const minYear = Math.min(...sheetYears) || 1930;
+                const maxYear = Math.max(...sheetYears) || 2025;
+
+                // Si és el primer cop que juguem aquesta partida, ajustem les cartes inicials David!
+                if (gameState.playedIds.length === 0) {
+                    gameState.players.forEach(p => {
+                        p.cards = [Math.floor(Math.random() * (maxYear - minYear + 1)) + minYear];
+                    });
+                }
+
+                const avail = lines.map(l => { 
+                    const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
+                    const id = (c[6] ? c[6].match(/id=(\d+)/) || [] : [])[1]; 
+                    return { id }; 
+                }).filter(s => s.id && !gameState.playedIds.includes(s.id)); 
+                
+                if (avail.length > 0) { 
+                    const song = avail[Math.floor(Math.random()*avail.length)]; 
+                    gameState.playedIds.push(song.id); save(); 
+                    window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id; 
+                } 
+            } catch(e) { hideLoader(); } 
+        }
     </script>
 </body>
 </html>
