@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 131</title>
+    <title>Sonabé! 🎶 - Versió 132</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -22,7 +22,6 @@
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .btn-secondary { background: #333 !important; color: #ccc !important; border: 1px solid #555 !important; }
-        .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 25px var(--neon) !important; }
 
         #turn-indicator { background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; margin-bottom: 15px; text-transform: uppercase; font-size: 1.1rem; }
         .play-button { width: 90px; height: 90px; background-color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 10px 0; border: none; }
@@ -33,15 +32,16 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
-        /* ESCÀNER v131 David: Eliminem el quadre blanc i centrem el rosa */
+        /* ESCÀNER v132: Net de brossa i centrat David! */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; }
         #reader { width: 100% !important; height: 100% !important; min-height: 100vh; background: #000; border: none !important; }
         #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
         
-        /* Eliminem tota la interfície per defecte de la llibreria David */
+        /* Eliminació agressiva d'elements de la llibreria */
         #reader__scan_region { border: none !important; }
-        #reader__border { border: none !important; display: none !important; }
-        #reader__dashboard, #reader__header_message, #reader__status_span { display: none !important; }
+        #reader__border, #reader__dashboard, #reader__header_message, #reader__status_span, div[style*="border: 1px solid rgb(170, 170, 170)"] { 
+            display: none !important; border: none !important; 
+        }
 
         .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 260px; height: 260px; border: 5px solid var(--neon); border-radius: 30px; box-shadow: 0 0 40px var(--neon); pointer-events: none; z-index: 5000; }
         .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--neon); box-shadow: 0 0 15px var(--neon); animation: scanMove 2s ease-in-out infinite; }
@@ -56,7 +56,7 @@
 
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <p id="loading-text" style="margin-top:15px;">ACTUALITZANT...</p>
+        <p id="loading-text" style="margin-top:15px;">CARREGANT...</p>
         <button id="rescue-btn" class="btn btn-outline" style="display:none; margin-top:20px; color:white;" onclick="location.reload()">REINTENTAR</button>
     </div>
 
@@ -83,7 +83,7 @@
                 <button id="mode-timeline" class="btn btn-outline" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn btn-outline" onclick="setMode('exact')">ANY EXACTE</button>
             </div>
-            <button class="btn btn-primary" style="width:280px; border:2px solid white; margin-top:20px;" onclick="jugarAleatori('online')">COMENÇAR</button>
+            <button class="btn btn-primary" style="width:280px; border:2px solid white; margin-top:20px;" onclick="jugarAleatori('online')">COMENÇAR PARTIDA</button>
         </div>
         <button class="btn btn-secondary" style="margin-top:15px;" onclick="goToMenu()">Tornar</button>
     </div>
@@ -146,25 +146,28 @@
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [] };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v131_final');
+            const saved = localStorage.getItem('sonabe_v132_final');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_v131_final', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v132_final', JSON.stringify(gameState)); }
         
         load();
 
         window.onload = () => { 
-            load(); // Forcem recàrrega David!
+            load();
             const urlParams = new URLSearchParams(window.location.search);
             const appleId = urlParams.get('id');
+            const scanFlag = urlParams.get('scan');
             
             if (appleId) {
                 showLoader("Carregant música...");
-                renderGameUI(); // Aquí ja sabem si anem a Online o Cards David
+                renderGameUI(); 
                 loadSong(appleId); 
+            } else if (scanFlag === 'true') {
+                startScanner();
             } else {
                 hideLoader();
                 showScreen('landing-screen');
@@ -178,6 +181,16 @@
         }
 
         // --- ÀUDIO ---
+        audio.ontimeupdate = () => {
+            if (audio.duration && audio.duration - audio.currentTime < 3 && !isAutomaticFading && !audio.paused) {
+                isAutomaticFading = true;
+                let autoFade = setInterval(() => {
+                    if (audio.volume > 0.05) audio.volume -= 0.05;
+                    else { audio.volume = 0; audio.pause(); isAutomaticFading = false; clearInterval(autoFade); }
+                }, 100);
+            }
+        };
+
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
@@ -199,8 +212,9 @@
             }, 40);
         }
 
-        // --- ESCÀNER David: Neteja de recuadres blancs ---
+        // --- ESCÀNER v132 David! ---
         async function startScanner() {
+            showScreen('landing-screen'); // Reset per seguretat
             document.getElementById('scanner-screen').style.display = 'block';
             if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} }
             html5QrCode = new Html5Qrcode("reader");
@@ -214,6 +228,7 @@
         function cancelScanner() { 
             if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); } 
             else { document.getElementById('scanner-screen').style.display = 'none'; }
+            window.location.href = window.location.origin + window.location.pathname;
         }
 
         // --- LÒGICA JOC ---
@@ -247,8 +262,6 @@
             showScreen('game-screen');
             document.getElementById('solution-card').style.display = 'none';
             const turnBox = document.getElementById('turn-indicator');
-            
-            // David: Si hi ha jugadors, SEMPRE mode Online. No hi ha discussió.
             if (gameState.players.length > 0) {
                 document.getElementById('ui-online-mode').style.display = 'block';
                 document.getElementById('ui-cards-mode').style.display = 'none';
@@ -265,6 +278,23 @@
                 turnBox.innerText = "TINC LES CARTES!";
                 turnBox.style.background = "var(--primary)";
             }
+        }
+
+        // --- NAVEGACIÓ v132 David! ---
+        function nextAction() {
+            performFadeOut(() => {
+                if (gameState.players.length > 0) {
+                    showLoader("Següent torn...");
+                    gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
+                    gameState.originalTurn = gameState.currentTurn;
+                    gameState.isRobberyActive = false;
+                    gameState.robbersTried = [];
+                    save(); jugarAleatori('online');
+                } else {
+                    // SI NO HI HA JUGADORS, TORNA A L'ESCÀNER David!
+                    window.location.href = window.location.origin + window.location.pathname + "?scan=true";
+                }
+            });
         }
 
         function checkTimelineGuess(idx) {
@@ -303,7 +333,7 @@
         function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); renderBoards(); }
         function setMode(m) { gameState.mode = m || 'timeline'; const btnT = document.getElementById('mode-timeline'), btnE = document.getElementById('mode-exact'); if (btnT && btnE) { btnT.className = (gameState.mode === 'timeline') ? 'btn mode-selected' : 'btn btn-outline'; btnE.className = (gameState.mode === 'exact') ? 'btn mode-selected' : 'btn btn-outline'; } save(); }
         function playAgain() { performFadeOut(() => { gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = []; save(); jugarAleatori('online'); }); }
-        function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_v131_final'); goToMenu(); }); }
+        function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_v132_final'); goToMenu(); }); }
         function goToMenu() { performFadeOut(() => { window.location.href = window.location.origin + window.location.pathname; }); }
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
         function showLoader(txt) { clearTimeout(safetyTimer); document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt || "CARREGANT..."; document.getElementById('rescue-btn').style.display = 'none'; safetyTimer = setTimeout(() => { document.getElementById('rescue-btn').style.display = 'block'; }, 6000); }
@@ -312,7 +342,6 @@
         function playWinFanfare() { const notes = [523.25, 659.25, 783.99, 1046.50]; notes.forEach((freq, i) => { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (i * 0.15)); gain.gain.setValueAtTime(0.05, audioCtx.currentTime + (i * 0.15)); osc.start(audioCtx.currentTime + (i * 0.15)); osc.stop(audioCtx.currentTime + (i * 0.15) + 0.3); }); }
         function renderBoards() { const container = document.getElementById('all-boards'); if (!container) return; container.style.display = 'block'; container.innerHTML = `<h3>Objectiu: ${gameState.winCondition}</h3>`; gameState.players.forEach((p, i) => { const active = (i === gameState.currentTurn) ? 'active-row' : ''; container.innerHTML += `<div class="player-row ${active}"><div style="font-size:0.75rem; font-weight:bold; color:var(--primary);">${p.name.toUpperCase()} (${p.cards.length})</div><div style="display:flex;gap:4px;flex-wrap:wrap;">${[...p.cards].sort().map(y => `<div style="background:white;color:black;padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:bold;">${y}</div>`).join('')}</div></div>`; }); }
         function renderTimelineSlots(player) { const container = document.getElementById('timeline-slots'); if (!container) return; container.innerHTML = ""; const sorted = [...player.cards].sort(); container.innerHTML += `<button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(-1)">ANTIC</button>`; sorted.forEach((y, i) => { container.innerHTML += `<div style="background:white;color:black;padding:5px 10px;border-radius:6px;font-weight:bold;">${y}</div>`; container.innerHTML += `<button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(${i})">${(i === sorted.length-1) ? 'NOU' : 'ENTRE'}</button>`; }); }
-        function nextAction() { performFadeOut(() => { if (gameState.players.length > 0) { showLoader("Passant de cançó..."); gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; gameState.originalTurn = gameState.currentTurn; gameState.isRobberyActive = false; gameState.robbersTried = []; save(); jugarAleatori('online'); } else { goToMenu(); } }); }
         async function jugarAleatori(type) { const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now(); try { const r = await fetch(sheet); const t = await r.text(); const lines = t.split("\n").slice(1); const avail = lines.map(l => { const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); const id = (c[6] ? c[6].match(/id=(\d+)/) || [] : [])[1]; return { id }; }).filter(s => s.id && !gameState.playedIds.includes(s.id)); if (avail.length > 0) { const song = avail[Math.floor(Math.random()*avail.length)]; gameState.playedIds.push(song.id); save(); window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id; } } catch(e) { hideLoader(); } }
     </script>
 </body>
