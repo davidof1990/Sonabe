@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 124</title>
+    <title>Sonabé! 🎶 - Versió 125</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -21,8 +21,11 @@
         .btn { background: rgba(255,255,255,0.1); border: 1px solid #444; color: #eee; padding: 16px 25px; border-radius: 40px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; width: 280px; transition: 0.2s; outline: none; box-sizing: border-box; }
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
-        .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
-        .btn-secondary { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid #666; }
+        
+        /* BOTONS VICTÒRIA FIXATS David! */
+        .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 20px var(--gold) !important; border: 2px solid white !important; }
+        .btn-secondary { background: #333 !important; color: #ccc !important; border: 1px solid #555 !important; }
+
         .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 25px var(--neon) !important; text-shadow: 0 0 8px #fff; }
         .btn-robbery { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple); border: 2px solid white; }
 
@@ -35,7 +38,7 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
-        /* ESCÀNER v94 VISOR ROSA */
+        /* ESCÀNER v94 - VISOR NET ROSA */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader__scan_region, #reader__border { border: none !important; box-shadow: none !important; }
@@ -54,7 +57,7 @@
 
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <p id="loading-text" style="margin-top:15px;">CARREGANT...</p>
+        <p id="loading-text" style="margin-top:15px;">ACTUALITZANT...</p>
         <button id="rescue-btn" class="btn btn-outline" style="display:none; margin-top:20px; color:white;" onclick="goToMenu()">REINTENTAR</button>
     </div>
 
@@ -82,7 +85,7 @@
                 <button id="mode-timeline" class="btn btn-outline" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn btn-outline" onclick="setMode('exact')">ANY EXACTE</button>
             </div>
-            <button class="btn btn-primary" style="width:280px; border:2px solid white;" onclick="jugarAleatori('online')">COMENÇAR</button>
+            <button class="btn btn-primary" style="width:280px; border:2px solid white;" onclick="jugarAleatori('online')">COMENÇAR PARTIDA</button>
         </div>
         <button class="btn btn-secondary" style="margin-top:15px;" onclick="goToMenu()">Tornar</button>
     </div>
@@ -142,19 +145,20 @@
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [] };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v124_final');
+            const saved = localStorage.getItem('sonabe_v125_master');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_v124_final', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v125_master', JSON.stringify(gameState)); }
         load();
 
         window.onload = () => { 
             const urlParams = new URLSearchParams(window.location.search);
             const appleId = urlParams.get('id');
             const sheetY = urlParams.get('y');
+            
             if (appleId) {
                 currentYear = sheetY ? parseInt(sheetY) : null;
                 showLoader("Carregant música...");
@@ -162,13 +166,17 @@
                 loadSong(appleId); 
             } else {
                 hideLoader();
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                document.getElementById('landing-screen').classList.add('active');
+                showScreen('landing-screen');
                 if (gameState.players.length > 0) renderBoards();
             }
         };
 
-        // --- GESTIÓ FADE AUTOMÀTIC David! ---
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // --- GESTIÓ FADES David! ---
         audio.ontimeupdate = () => {
             if (audio.duration && audio.duration - audio.currentTime < 3 && !isAutomaticFading && !audio.paused) {
                 isAutomaticFading = true;
@@ -184,16 +192,6 @@
                 }, 100);
             }
         };
-
-        function showLoader(txt) {
-            clearTimeout(safetyTimer);
-            document.getElementById('loading-overlay').style.display = 'flex';
-            document.getElementById('loading-text').innerText = txt || "CARREGANT...";
-            document.getElementById('rescue-btn').style.display = 'none';
-            safetyTimer = setTimeout(() => { document.getElementById('rescue-btn').style.display = 'block'; }, 5000);
-        }
-        function hideLoader() { clearTimeout(safetyTimer); document.getElementById('loading-overlay').style.display = 'none'; }
-        function goToMenu() { performFadeOut(() => { window.location.href = window.location.origin + window.location.pathname; }); }
 
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -220,9 +218,10 @@
             }, 40);
         }
 
+        // --- LÒGICA JOC ---
         function nextAction() {
             performFadeOut(() => {
-                showLoader("Sincronitzant...");
+                showLoader("Passant de cançó...");
                 gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
                 gameState.originalTurn = gameState.currentTurn;
                 gameState.isRobberyActive = false;
@@ -249,24 +248,28 @@
         }
 
         function renderGameUI() {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('game-screen').classList.add('active');
+            showScreen('game-screen');
             document.getElementById('solution-card').style.display = 'none';
             const turnBox = document.getElementById('turn-indicator');
+            
+            // BLINDAT David! Si hi ha jugadors, SEMPRE mode online.
             if (gameState.players.length > 0) {
                 document.getElementById('ui-online-mode').style.display = 'block';
                 document.getElementById('ui-cards-mode').style.display = 'none';
                 const actual = gameState.players[gameState.currentTurn];
                 const original = gameState.players[gameState.originalTurn];
                 const targetTimeline = gameState.isRobberyActive ? original : actual;
+                
                 turnBox.innerText = gameState.isRobberyActive ? `🚨 ROBATORI: ${actual.name.toUpperCase()}` : `TORN DE: ${actual.name.toUpperCase()}`;
                 turnBox.style.background = gameState.isRobberyActive ? "var(--purple)" : "var(--primary)";
                 document.getElementById('game-instruction').innerText = gameState.isRobberyActive ? `Línia de ${original.name.toUpperCase()}` : "On va aquesta cançó?";
-                renderTimelineSlots(targetTimeline); renderBoards();
+                renderTimelineSlots(targetTimeline); 
+                renderBoards();
             } else {
                 document.getElementById('ui-online-mode').style.display = 'none';
                 document.getElementById('ui-cards-mode').style.display = 'block';
                 turnBox.innerText = "TINC LES CARTES!";
+                turnBox.style.background = "var(--primary)";
             }
         }
 
@@ -275,14 +278,12 @@
             const target = gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : thief;
             const sorted = [...target.cards].sort();
             let ok = (idx === -1) ? (currentYear <= sorted[0]) : (idx === sorted.length-1) ? (currentYear >= sorted[sorted.length-1]) : (currentYear >= sorted[idx] && currentYear <= sorted[idx+1]);
+            
             if(ok) { 
                 thief.cards.push(currentYear); 
                 save(); renderBoards();
-                if(thief.cards.length >= gameState.winCondition) {
-                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                    document.getElementById('winner-name').innerText = thief.name.toUpperCase();
-                    document.getElementById('winner-screen').classList.add('active');
-                    triggerConfetti(); playWinFanfare();
+                if(thief.cards.length >= gameState.winCondition) { 
+                    triggerWin(thief.name.toUpperCase());
                     return;
                 }
                 gameState.isRobberyActive = false; gameState.robbersTried = [];
@@ -293,6 +294,12 @@
                 const nextIdx = findNextInCircle();
                 revealSolution(false, nextIdx !== -1);
             }
+        }
+
+        function triggerWin(name) {
+            showScreen('winner-screen');
+            document.getElementById('winner-name').innerText = name;
+            triggerConfetti(); playWinFanfare();
         }
 
         function revealSolution(correct, canSteal = false) { 
@@ -309,6 +316,8 @@
                 res.style.color = "#fa2d48";
                 if (canSteal) { details.style.display = "none"; btnS.style.display = "block"; } 
                 else { details.style.display = "flex"; btnS.style.display = "none"; }
+            } else {
+                res.innerText = ""; details.style.display = "flex"; btnS.style.display = "none";
             }
             document.getElementById('ui-online-mode').style.display='none'; 
             document.getElementById('ui-cards-mode').style.display='none'; 
@@ -329,6 +338,7 @@
         }
 
         async function jugarAleatori(type) {
+            save(); // Guardat abans de saltar David!
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
             try {
                 const r = await fetch(sheet);
@@ -337,13 +347,14 @@
                 const avail = lines.map(l => {
                     const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                     const id = (c[6] ? c[6].match(/id=(\d+)/) || [] : [])[1];
-                    const sheetY = c[2] ? c[2].trim() : null;
-                    return { id, sheetY };
+                    const sY = c[2] ? c[2].trim() : null;
+                    return { id, sY };
                 }).filter(s => s.id && !gameState.playedIds.includes(s.id));
+                
                 if (avail.length > 0) {
                     const song = avail[Math.floor(Math.random()*avail.length)];
                     gameState.playedIds.push(song.id); save();
-                    window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id + "&y=" + song.sheetY;
+                    window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id + "&y=" + song.sY;
                 }
             } catch(e) { hideLoader(); }
         }
@@ -374,7 +385,6 @@
             save();
         }
 
-        // --- ARREGLAT v124 David! Fade Out als botons de victòria ---
         function playAgain() {
             performFadeOut(() => {
                 showLoader("Nova partida...");
@@ -383,27 +393,26 @@
                 save(); jugarAleatori('online');
             });
         }
-
-        function resetGame() {
-            performFadeOut(() => {
-                localStorage.removeItem('sonabe_v124_final');
-                window.location.href = window.location.origin + window.location.pathname;
-            });
+        function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_v125_master'); goToMenu(); }); }
+        function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
+        function openSetup() { showScreen('setup-screen'); updateSetupList(); }
+        function showLoader(txt) {
+            clearTimeout(safetyTimer);
+            document.getElementById('loading-overlay').style.display = 'flex';
+            document.getElementById('loading-text').innerText = txt || "CARREGANT...";
+            document.getElementById('rescue-btn').style.display = 'none';
+            safetyTimer = setTimeout(() => { document.getElementById('rescue-btn').style.display = 'block'; }, 5000);
         }
+        function hideLoader() { clearTimeout(safetyTimer); document.getElementById('loading-overlay').style.display = 'none'; }
 
-        function openSetup() { 
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('setup-screen').classList.add('active');
-            updateSetupList();
-        }
         function startScanner() {
-            document.getElementById('scanner-screen').style.display = 'flex';
+            showScreen('scanner-screen');
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => { 
                 html5QrCode.stop().then(() => { window.location.href = t; }); 
             });
         }
-        function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); } }
+        function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { showScreen('landing-screen'); }); } }
         function triggerConfetti() {
             const count = 200, defaults = { origin: { y: 0.7 }, zIndex: 9999 };
             function fire(ratio, opts) { confetti({ ...defaults, ...opts, particleCount: Math.floor(count * ratio) }); }
