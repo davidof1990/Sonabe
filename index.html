@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 137 STABLE</title>
+    <title>Sonabé! 🎶 - Versió 138</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -24,7 +24,7 @@
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon) !important; }
 
-        /* ESCÀNER (BLINDAT v134) */
+        /* ESCÀNER (BLINDAT) */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
@@ -69,13 +69,11 @@
         <div id="config-area" style="display:none; width: 100%;">
             <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-bottom:5px;">CARTES PER GUANYAR:</p>
             <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:15px; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white; text-align: center; font-weight: bold;">
-            
             <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-bottom:10px;">MODE DE JOC:</p>
             <div class="btn-list" style="margin-bottom:20px;">
                 <button id="mode-timeline" class="btn btn-outline" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn btn-outline" onclick="setMode('exact')">ANY EXACTE</button>
             </div>
-            
             <button class="btn btn-primary" style="width:280px; border:2px solid white;" onclick="jugarAleatori('online')">COMENÇAR PARTIDA</button>
         </div>
         <button class="btn btn-secondary" style="margin-top:15px;" onclick="goToMenu()">Tornar</button>
@@ -139,13 +137,13 @@
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [] };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_master_stable_v137');
+            const saved = localStorage.getItem('sonabe_v138_final');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_master_stable_v137', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v138_final', JSON.stringify(gameState)); }
         load();
 
         window.onload = () => {
@@ -163,7 +161,7 @@
             document.getElementById(id).classList.add('active');
         }
 
-        // --- ÀUDIO David! ---
+        // --- ÀUDIO AMB FADE OUT MILLORAT David! ---
         audio.ontimeupdate = () => {
             if (audio.duration && audio.duration - audio.currentTime < 3 && !isAutomaticFading && !audio.paused) {
                 isAutomaticFading = true;
@@ -186,34 +184,62 @@
             }
         }
 
+        // FADE OUT BLINDAT PER REINICI David
         function performFadeOut(callback) {
             clearInterval(fadeInterval);
-            if (audio.paused || audio.volume === 0) { callback(); return; }
+            if (audio.paused || audio.volume === 0) {
+                setTimeout(callback, 300); // Dona un respir visual abans de saltar
+                return;
+            }
             fadeInterval = setInterval(() => {
-                if (audio.volume > 0.1) audio.volume -= 0.1;
-                else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); }
-            }, 40);
+                if (audio.volume > 0.05) {
+                    audio.volume -= 0.05;
+                } else {
+                    audio.volume = 0;
+                    audio.pause();
+                    clearInterval(fadeInterval);
+                    setTimeout(callback, 200); // Marge extra perquè el silenci s'assenti
+                }
+            }, 30); // Fade suau de 30ms per pas
         }
 
-        // --- ESCÀNER David! Flux Directe ---
         async function startScanner() {
             showScreen('landing-screen'); 
             document.getElementById('scanner-screen').style.display = 'block';
             if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} }
             html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 20, qrbox: 250 };
-            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                html5QrCode.stop().then(() => { window.location.href = decodedText; });
+            html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => {
+                html5QrCode.stop().then(() => { window.location.href = t; });
             }).catch(() => { cancelScanner(); });
         }
+        function cancelScanner() { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); else document.getElementById('scanner-screen').style.display = 'none'; window.location.href = window.location.origin + window.location.pathname; }
 
-        function cancelScanner() {
-            if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); }
-            else { document.getElementById('scanner-screen').style.display = 'none'; }
-            window.location.href = window.location.origin + window.location.pathname;
+        function addPlayer() {
+            const n = document.getElementById('player-input').value.trim();
+            if (n) {
+                gameState.players.push({ name: n, cards: [Math.floor(Math.random() * 95) + 1930] });
+                document.getElementById('player-input').value = "";
+                save(); updateSetupList(); renderBoards();
+            }
+        }
+        function updateSetupList() {
+            const list = document.getElementById('player-list-setup'); if (!list) return;
+            list.innerHTML = gameState.players.map((p, i) => `<div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.05); padding:10px; margin:5px; border-radius:8px;"><span>👤 ${p.name.toUpperCase()}</span><span style="color:red; cursor:pointer;" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span></div>`).join('');
+            document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none';
+            document.getElementById('win-input').value = gameState.winCondition;
+            setMode(gameState.mode);
+        }
+        function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); renderBoards(); }
+        function setMode(m) {
+            gameState.mode = m || 'timeline';
+            const btnT = document.getElementById('mode-timeline'), btnE = document.getElementById('mode-exact');
+            if (btnT && btnE) {
+                btnT.className = (gameState.mode === 'timeline') ? 'btn mode-selected' : 'btn btn-outline';
+                btnE.className = (gameState.mode === 'exact') ? 'btn mode-selected' : 'btn btn-outline';
+            }
+            save();
         }
 
-        // --- LÒGICA JOC David! ---
         async function loadSong(id) {
             showLoader("Verificant dades...");
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
@@ -270,40 +296,10 @@
                     gameState.originalTurn = gameState.currentTurn;
                     gameState.isRobberyActive = false; gameState.robbersTried = []; save();
                     jugarAleatori('online');
-                } else {
-                    window.location.href = window.location.origin + window.location.pathname + "?scan=true";
-                }
+                } else { window.location.href = window.location.origin + window.location.pathname + "?scan=true"; }
             });
         }
 
-        // --- SETUP David! ---
-        function addPlayer() {
-            const n = document.getElementById('player-input').value.trim();
-            if (n) {
-                gameState.players.push({ name: n, cards: [Math.floor(Math.random() * 95) + 1930] });
-                document.getElementById('player-input').value = "";
-                save(); updateSetupList(); renderBoards();
-            }
-        }
-        function updateSetupList() {
-            const list = document.getElementById('player-list-setup'); if (!list) return;
-            list.innerHTML = gameState.players.map((p, i) => `<div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.05); padding:10px; margin:5px; border-radius:8px;"><span>👤 ${p.name.toUpperCase()}</span><span style="color:red; cursor:pointer;" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span></div>`).join('');
-            document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none';
-            document.getElementById('win-input').value = gameState.winCondition;
-            setMode(gameState.mode);
-        }
-        function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); renderBoards(); }
-        function setMode(m) {
-            gameState.mode = m || 'timeline';
-            const btnT = document.getElementById('mode-timeline'), btnE = document.getElementById('mode-exact');
-            if (btnT && btnE) {
-                btnT.className = (gameState.mode === 'timeline') ? 'btn mode-selected' : 'btn btn-outline';
-                btnE.className = (gameState.mode === 'exact') ? 'btn mode-selected' : 'btn btn-outline';
-            }
-            save();
-        }
-
-        // --- AUXILIARS ---
         function checkTimelineGuess(idx) {
             const thief = gameState.players[gameState.currentTurn];
             const target = gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : thief;
@@ -336,9 +332,12 @@
         function findNextInCircle() { for (let i = 1; i < gameState.players.length; i++) { let c = (gameState.currentTurn + i) % gameState.players.length; if (!gameState.robbersTried.includes(c)) return c; } return -1; }
         function startStealAttempt() { const n = findNextInCircle(); if (n !== -1) { gameState.currentTurn = n; gameState.isRobberyActive = true; save(); renderGameUI(); } }
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
-        function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_master_stable_v137'); window.location.href = window.location.origin + window.location.pathname; }); }
+        
+        // RESET MILLORAT David!
+        function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_v138_final'); window.location.href = window.location.origin + window.location.pathname; }); }
         function goToMenu() { performFadeOut(() => { window.location.href = window.location.origin + window.location.pathname; }); }
         function playAgain() { performFadeOut(() => { gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = []; save(); jugarAleatori('online'); }); }
+        
         function showLoader(txt) { document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt || "CARREGANT..."; }
         function hideLoader() { document.getElementById('loading-overlay').style.display = 'none'; }
         function triggerConfetti() { const count = 200; function fire(r, o) { confetti({ origin: { y: 0.7 }, zIndex: 9999, ...o, particleCount: Math.floor(count * r) }); } fire(0.25, { spread: 26, startVelocity: 55 }); fire(0.2, { spread: 60 }); fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 }); fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 }); }
