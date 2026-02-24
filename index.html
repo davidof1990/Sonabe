@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 142 MASTER</title>
+    <title>Sonabé! 🎶 - Versió 143 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -24,6 +24,7 @@
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon) !important; }
 
+        /* ESCÀNER MASTER */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
@@ -156,6 +157,7 @@
             document.getElementById(id).classList.add('active');
         }
 
+        // --- ÀUDIO ---
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
@@ -168,15 +170,20 @@
             }
         }
 
+        // David: Fade out universal blindat
         function performFadeOut(callback) {
             clearInterval(fadeInterval);
-            if (audio.paused || audio.volume === 0) { setTimeout(callback, 200); return; }
+            if (audio.paused || audio.volume <= 0.05) { 
+                setTimeout(callback, 300); // Forcem transició visual David!
+                return; 
+            }
             fadeInterval = setInterval(() => {
                 if (audio.volume > 0.1) { audio.volume -= 0.1; } 
                 else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); }
-            }, 30);
+            }, 40);
         }
 
+        // --- ESCÀNER ---
         async function startScanner() {
             showScreen('landing-screen'); 
             document.getElementById('scanner-screen').style.display = 'block';
@@ -188,6 +195,7 @@
         }
         function cancelScanner() { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); else document.getElementById('scanner-screen').style.display = 'none'; window.location.href = window.location.origin + window.location.pathname; }
 
+        // --- PARTIDA ---
         function addPlayer() {
             const n = document.getElementById('player-input').value.trim();
             if (n) { gameState.players.push({ name: n, cards: [Math.floor(Math.random() * 95) + 1930] }); document.getElementById('player-input').value = ""; save(); updateSetupList(); renderBoards(); }
