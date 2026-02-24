@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 121</title>
+    <title>Sonabé! 🎶 - Versió 122</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; --gold: #ffd700; --purple: #a020f0; }
         body { background-color: var(--bg); color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; text-align: center; overflow-x: hidden; }
-        
         .neon-logo { font-weight: bold; font-size: 2.8rem; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px var(--neon); margin-bottom: 20px; }
-        
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; gap: 15px; }
         .active { display: flex; }
 
@@ -23,17 +21,8 @@
         .btn { background: rgba(255,255,255,0.1); border: 1px solid #444; color: #eee; padding: 16px 25px; border-radius: 40px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; width: 280px; transition: 0.2s; outline: none; box-sizing: border-box; }
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
-        
-        .mode-selected { 
-            background-color: var(--neon) !important; 
-            color: white !important; 
-            border: 2px solid white !important; 
-            box-shadow: 0 0 25px var(--neon) !important;
-            text-shadow: 0 0 8px #fff;
-        }
-
+        .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 25px var(--neon) !important; text-shadow: 0 0 8px #fff; }
         .btn-robbery { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple); border: 2px solid white; }
-        .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 20px var(--gold); border: none; }
 
         #turn-indicator { background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; margin-bottom: 15px; text-transform: uppercase; font-size: 1.1rem; }
         .play-button { width: 90px; height: 90px; background-color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 10px 0; border: none; }
@@ -44,7 +33,7 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
-        /* ESCÀNER v94 - VISOR NET */
+        /* ESCÀNER v94 VISOR NET ROSA */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader__scan_region, #reader__border { border: none !important; box-shadow: none !important; }
@@ -61,11 +50,7 @@
 </head>
 <body>
 
-    <div id="loading-overlay">
-        <div class="spinner"></div>
-        <p id="loading-text" style="margin-top:15px;">CARREGANT...</p>
-        <button id="rescue-btn" class="btn btn-outline" style="display:none; margin-top:20px; color:white;" onclick="hideLoader()">SALTAR</button>
-    </div>
+    <div id="loading-overlay"><div class="spinner"></div><p id="loading-text" style="margin-top:15px;">CARREGANT...</p></div>
 
     <div id="landing-screen" class="screen">
         <div class="neon-logo">Sonabé!</div>
@@ -86,12 +71,12 @@
         <div id="config-area" style="display:none; width:100%; margin-top:10px;">
             <p style="font-size:0.75rem; font-weight:bold; color:#888;">CARTES PER GUANYAR:</p>
             <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:15px; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white; text-align: center;">
-            <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-top:10px;">MODE DE JOC:</p>
+            <p style="font-size:0.75rem; font-weight:bold; color:#888;">MODE DE JOC:</p>
             <div class="btn-list" style="margin-bottom:20px;">
                 <button id="mode-timeline" class="btn btn-outline" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn btn-outline" onclick="setMode('exact')">ANY EXACTE</button>
             </div>
-            <button class="btn btn-primary" style="width:280px; border:2px solid white;" onclick="jugarAleatori('online')">COMENÇAR PARTIDA</button>
+            <button class="btn btn-primary" style="width:280px; border:2px solid white;" onclick="jugarAleatori('online')">COMENÇAR</button>
         </div>
         <button class="btn btn-secondary" style="margin-top:15px;" onclick="goToMenu()">Tornar</button>
     </div>
@@ -130,7 +115,7 @@
         <div class="neon-logo">GUANYADOR!</div>
         <h1 id="winner-name" style="color:var(--neon); font-size: 3.5rem;">NOM</h1>
         <div class="btn-list">
-            <button class="btn btn-gold" onclick="playAgain()">JUGAR DE NOU</button>
+            <button class="btn btn-primary" style="border:2px solid white;" onclick="playAgain()">JUGAR DE NOU</button>
             <button class="btn btn-secondary" onclick="resetGame()">REINICIAR TOT</button>
         </div>
     </div>
@@ -138,55 +123,50 @@
     <div id="all-boards" class="board-container"></div>
     <audio id="audio-player" preload="auto"></audio>
 
+    <div id="scanner-screen">
+        <div id="reader"></div>
+        <div class="scanner-overlay"><div class="scan-line"></div></div>
+        <button class="btn btn-secondary" style="position:absolute; bottom:50px; width:200px; z-index:3005;" onclick="cancelScanner()">CANCEL·LAR</button>
+    </div>
+
     <script>
         const audio = document.getElementById('audio-player');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let html5QrCode = null, fadeInterval = null, safetyTimer = null;
+        let html5QrCode = null, fadeInterval = null, currentYear = null;
         
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [] };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v121_master');
+            const saved = localStorage.getItem('sonabe_v122_final');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_v121_master', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v122_final', JSON.stringify(gameState)); }
         load();
 
         window.onload = () => { 
             const urlParams = new URLSearchParams(window.location.search);
             const appleId = urlParams.get('id');
-            const sheetYear = urlParams.get('y');
+            const sheetY = urlParams.get('y');
             
             if (appleId) {
-                showLoader("Carregant dades del full...");
+                currentYear = sheetY ? parseInt(sheetY) : null;
+                document.getElementById('loading-overlay').style.display = 'flex';
                 renderGameUI(); 
-                loadSong(appleId, sheetYear); 
+                loadSong(appleId); 
             } else {
-                hideLoader();
-                showScreen('landing-screen');
+                document.getElementById('loading-overlay').style.display = 'none';
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById('landing-screen').classList.add('active');
                 if (gameState.players.length > 0) renderBoards();
             }
         };
 
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
+        function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
 
-        function goToMenu() { hideLoader(); window.location.href = window.location.origin + window.location.pathname; }
-
-        function showLoader(txt) {
-            document.getElementById('loading-overlay').style.display = 'flex';
-            document.getElementById('loading-text').innerText = txt || "CARREGANT...";
-            document.getElementById('rescue-btn').style.display = 'none';
-            safetyTimer = setTimeout(() => { document.getElementById('rescue-btn').style.display = 'block'; }, 6000);
-        }
-        function hideLoader() { clearTimeout(safetyTimer); document.getElementById('loading-overlay').style.display = 'none'; }
-
-        // --- AUDIO ---
+        // --- AUDIO FADES RESTAURATS David! ---
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
@@ -199,23 +179,26 @@
             }
         }
 
-        function nextAction() {
+        function performFadeOut(callback) {
             clearInterval(fadeInterval);
-            if (gameState.players.length > 0) {
-                showLoader("Buscant nova cançó...");
-                gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
-                gameState.originalTurn = gameState.currentTurn;
-                gameState.isRobberyActive = false;
-                gameState.robbersTried = [];
-                save();
-                jugarAleatori('online');
-            } else {
-                goToMenu();
-            }
+            document.getElementById('loading-overlay').style.display = 'flex';
+            if (audio.paused || audio.volume === 0) { callback(); return; }
+            fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); } }, 30);
         }
 
-        // --- CÀRREGA DE CANÇÓ v121 AMB L'ANY DEL SHEET David! ---
-        async function loadSong(id, yearFromSheet) {
+        function nextAction() {
+            performFadeOut(() => {
+                if (gameState.players.length > 0) {
+                    gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
+                    gameState.originalTurn = gameState.currentTurn;
+                    gameState.isRobberyActive = false;
+                    gameState.robbersTried = [];
+                    save(); jugarAleatori('online');
+                } else { goToMenu(); }
+            });
+        }
+
+        async function loadSong(id) {
             try {
                 const r = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
                 const d = await r.json();
@@ -226,21 +209,22 @@
                     document.getElementById('song-title').innerText = s.trackName;
                     document.getElementById('song-artist').innerText = s.artistName;
                     
-                    // EL MOMENT CLAU: Sobreescribim l'any d'iTunes amb el del Google Sheet David!
-                    document.getElementById('song-year').innerText = yearFromSheet || s.releaseDate.substring(0,4);
+                    // Si no venim de base de dades, agafem itunes David!
+                    if (!currentYear) currentYear = parseInt(s.releaseDate.substring(0,4));
+                    document.getElementById('song-year').innerText = currentYear;
                     
-                    hideLoader();
+                    document.getElementById('loading-overlay').style.display = 'none';
                 }
-            } catch (e) { hideLoader(); }
+            } catch (e) { document.getElementById('loading-overlay').style.display = 'none'; }
         }
 
         function renderGameUI() {
-            showScreen('game-screen');
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('game-screen').classList.add('active');
             document.getElementById('solution-card').style.display = 'none';
             const turnBox = document.getElementById('turn-indicator');
             
             if (gameState.players.length > 0) {
-                // MODE ONLINE
                 document.getElementById('ui-online-mode').style.display = 'block';
                 document.getElementById('ui-cards-mode').style.display = 'none';
                 const actual = gameState.players[gameState.currentTurn];
@@ -253,25 +237,30 @@
                 renderTimelineSlots(targetTimeline); 
                 renderBoards();
             } else {
-                // MODE TINC LES CARTES
                 document.getElementById('ui-online-mode').style.display = 'none';
                 document.getElementById('ui-cards-mode').style.display = 'block';
                 turnBox.innerText = "TINC LES CARTES!";
-                turnBox.style.background = "var(--primary)";
             }
         }
 
         function checkTimelineGuess(idx) {
-            const year = parseInt(document.getElementById('song-year').innerText);
             const thief = gameState.players[gameState.currentTurn];
             const target = gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : thief;
             const sorted = [...target.cards].sort();
-            let ok = (idx === -1) ? (year <= sorted[0]) : (idx === sorted.length-1) ? (year >= sorted[sorted.length-1]) : (year >= sorted[idx] && year <= sorted[idx+1]);
+            
+            // COMPROVACIÓ BLINDADA David!
+            let ok = (idx === -1) ? (currentYear <= sorted[0]) : (idx === sorted.length-1) ? (currentYear >= sorted[sorted.length-1]) : (currentYear >= sorted[idx] && currentYear <= sorted[idx+1]);
             
             if(ok) { 
-                thief.cards.push(year); 
+                thief.cards.push(currentYear); 
                 save(); renderBoards();
-                if(thief.cards.length >= gameState.winCondition) { triggerWin(thief.name.toUpperCase()); return; }
+                if(thief.cards.length >= gameState.winCondition) {
+                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                    document.getElementById('winner-name').innerText = thief.name.toUpperCase();
+                    document.getElementById('winner-screen').classList.add('active');
+                    triggerConfetti(); playWinFanfare();
+                    return;
+                }
                 gameState.isRobberyActive = false; gameState.robbersTried = [];
                 save(); revealSolution(true);
             } else { 
@@ -280,12 +269,6 @@
                 const nextIdx = findNextInCircle();
                 revealSolution(false, nextIdx !== -1);
             }
-        }
-
-        function triggerWin(name) {
-            showScreen('winner-screen');
-            document.getElementById('winner-name').innerText = name;
-            triggerConfetti(); playWinFanfare();
         }
 
         function revealSolution(correct, canSteal = false) { 
@@ -303,10 +286,7 @@
                 if (canSteal) { details.style.display = "none"; btnS.style.display = "block"; } 
                 else { details.style.display = "flex"; btnS.style.display = "none"; }
             } else {
-                // Mode lliure (null)
-                res.innerText = "";
-                details.style.display = "flex";
-                btnS.style.display = "none";
+                res.innerText = ""; details.style.display = "flex"; btnS.style.display = "none";
             }
             document.getElementById('ui-online-mode').style.display='none'; 
             document.getElementById('ui-cards-mode').style.display='none'; 
@@ -326,29 +306,28 @@
             if (next !== -1) { gameState.currentTurn = next; gameState.isRobberyActive = true; save(); renderGameUI(); }
         }
 
-        // --- CÀRREGA DEL GOOGLE SHEET v121 David! ---
         async function jugarAleatori(type) {
-            const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
+            const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
             try {
-                const r = await fetch(sheetURL);
+                const r = await fetch(sheet);
                 const t = await r.text();
                 const lines = t.split("\n").slice(1);
                 const avail = lines.map(l => {
                     const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                     const id = (c[6] ? c[6].match(/id=(\d+)/) || [] : [])[1];
-                    const sheetYear = c[2]; // COLUMNA 2 ÉS L'ANY REAL David!
-                    return { id, sheetYear };
+                    const sheetY = c[2] ? c[2].trim() : null;
+                    return { id, sheetY };
                 }).filter(s => s.id && !gameState.playedIds.includes(s.id));
                 
                 if (avail.length > 0) {
                     const song = avail[Math.floor(Math.random()*avail.length)];
                     gameState.playedIds.push(song.id); save();
-                    // Passem l'id i l'any per URL David!
-                    window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id + "&y=" + song.sheetYear;
+                    window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id + "&y=" + song.sheetY;
                 }
-            } catch(e) { hideLoader(); }
+            } catch(e) { document.getElementById('loading-overlay').style.display = 'none'; }
         }
 
+        // --- SETUP ---
         function addPlayer() {
             const n = document.getElementById('player-input').value.trim();
             if (n) {
@@ -374,24 +353,21 @@
             }
             save();
         }
-        function playAgain() {
-            gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]);
-            gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = [];
-            save(); jugarAleatori('online');
+        function resetGame() { localStorage.removeItem('sonabe_v122_final'); goToMenu(); }
+        function openSetup() { 
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('setup-screen').classList.add('active');
+            updateSetupList();
         }
-        function resetGame() { localStorage.removeItem('sonabe_v121_master'); goToMenu(); }
-        function openSetup() { showScreen('setup-screen'); updateSetupList(); }
-        
-        // ESCÀNER v94
+
         function startScanner() {
-            showScreen('scanner-screen');
+            document.getElementById('scanner-screen').style.display = 'flex';
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => { 
                 html5QrCode.stop().then(() => { window.location.href = t; }); 
             });
         }
-        function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { showScreen('landing-screen'); }); } }
-        
+        function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); } }
         function triggerConfetti() {
             const count = 200, defaults = { origin: { y: 0.7 }, zIndex: 9999 };
             function fire(ratio, opts) { confetti({ ...defaults, ...opts, particleCount: Math.floor(count * ratio) }); }
@@ -407,6 +383,11 @@
                 gain.gain.setValueAtTime(0.05, audioCtx.currentTime + (i * 0.15));
                 osc.start(audioCtx.currentTime + (i * 0.15)); osc.stop(audioCtx.currentTime + (i * 0.15) + 0.3);
             });
+        }
+        function playAgain() {
+            gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]);
+            gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = [];
+            save(); jugarAleatori('online');
         }
         function renderBoards() {
             const container = document.getElementById('all-boards'); if (!container) return;
