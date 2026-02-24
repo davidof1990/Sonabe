@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 122</title>
+    <title>Sonabé! 🎶 - Versió 123</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -50,7 +50,11 @@
 </head>
 <body>
 
-    <div id="loading-overlay"><div class="spinner"></div><p id="loading-text" style="margin-top:15px;">CARREGANT...</p></div>
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p id="loading-text" style="margin-top:15px;">CARREGANT...</p>
+        <button id="rescue-btn" class="btn btn-outline" style="display:none; margin-top:20px; color:white; border-color:white;" onclick="goToMenu()">REINTENTAR</button>
+    </div>
 
     <div id="landing-screen" class="screen">
         <div class="neon-logo">Sonabé!</div>
@@ -115,7 +119,7 @@
         <div class="neon-logo">GUANYADOR!</div>
         <h1 id="winner-name" style="color:var(--neon); font-size: 3.5rem;">NOM</h1>
         <div class="btn-list">
-            <button class="btn btn-primary" style="border:2px solid white;" onclick="playAgain()">JUGAR DE NOU</button>
+            <button class="btn btn-gold" style="border:2px solid white; color:black;" onclick="playAgain()">JUGAR DE NOU</button>
             <button class="btn btn-secondary" onclick="resetGame()">REINICIAR TOT</button>
         </div>
     </div>
@@ -132,18 +136,18 @@
     <script>
         const audio = document.getElementById('audio-player');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let html5QrCode = null, fadeInterval = null, currentYear = null;
+        let html5QrCode = null, fadeInterval = null, currentYear = null, safetyTimer = null;
         
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [] };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v122_final');
+            const saved = localStorage.getItem('sonabe_v123_final');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_v122_final', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v123_final', JSON.stringify(gameState)); }
         load();
 
         window.onload = () => { 
@@ -153,20 +157,28 @@
             
             if (appleId) {
                 currentYear = sheetY ? parseInt(sheetY) : null;
-                document.getElementById('loading-overlay').style.display = 'flex';
+                showLoader("Carregant música...");
                 renderGameUI(); 
                 loadSong(appleId); 
             } else {
-                document.getElementById('loading-overlay').style.display = 'none';
+                hideLoader();
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.getElementById('landing-screen').classList.add('active');
                 if (gameState.players.length > 0) renderBoards();
             }
         };
 
-        function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
+        function showLoader(txt) {
+            clearTimeout(safetyTimer);
+            document.getElementById('loading-overlay').style.display = 'flex';
+            document.getElementById('loading-text').innerText = txt || "CARREGANT...";
+            document.getElementById('rescue-btn').style.display = 'none';
+            // Si als 5 segons no ha saltat la cançó, donem opció a reintentar/refrescar David!
+            safetyTimer = setTimeout(() => { document.getElementById('rescue-btn').style.display = 'block'; }, 5000);
+        }
+        function hideLoader() { clearTimeout(safetyTimer); document.getElementById('loading-overlay').style.display = 'none'; }
+        function goToMenu() { hideLoader(); window.location.href = window.location.origin + window.location.pathname; }
 
-        // --- AUDIO FADES RESTAURATS David! ---
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
@@ -181,7 +193,7 @@
 
         function performFadeOut(callback) {
             clearInterval(fadeInterval);
-            document.getElementById('loading-overlay').style.display = 'flex';
+            showLoader("Sincronitzant...");
             if (audio.paused || audio.volume === 0) { callback(); return; }
             fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); } }, 30);
         }
@@ -208,14 +220,11 @@
                     document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600');
                     document.getElementById('song-title').innerText = s.trackName;
                     document.getElementById('song-artist').innerText = s.artistName;
-                    
-                    // Si no venim de base de dades, agafem itunes David!
                     if (!currentYear) currentYear = parseInt(s.releaseDate.substring(0,4));
                     document.getElementById('song-year').innerText = currentYear;
-                    
-                    document.getElementById('loading-overlay').style.display = 'none';
+                    hideLoader();
                 }
-            } catch (e) { document.getElementById('loading-overlay').style.display = 'none'; }
+            } catch (e) { hideLoader(); }
         }
 
         function renderGameUI() {
@@ -223,14 +232,12 @@
             document.getElementById('game-screen').classList.add('active');
             document.getElementById('solution-card').style.display = 'none';
             const turnBox = document.getElementById('turn-indicator');
-            
             if (gameState.players.length > 0) {
                 document.getElementById('ui-online-mode').style.display = 'block';
                 document.getElementById('ui-cards-mode').style.display = 'none';
                 const actual = gameState.players[gameState.currentTurn];
                 const original = gameState.players[gameState.originalTurn];
                 const targetTimeline = gameState.isRobberyActive ? original : actual;
-                
                 turnBox.innerText = gameState.isRobberyActive ? `🚨 ROBATORI: ${actual.name.toUpperCase()}` : `TORN DE: ${actual.name.toUpperCase()}`;
                 turnBox.style.background = gameState.isRobberyActive ? "var(--purple)" : "var(--primary)";
                 document.getElementById('game-instruction').innerText = gameState.isRobberyActive ? `Línia de ${original.name.toUpperCase()}` : "On va aquesta cançó?";
@@ -247,8 +254,6 @@
             const thief = gameState.players[gameState.currentTurn];
             const target = gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : thief;
             const sorted = [...target.cards].sort();
-            
-            // COMPROVACIÓ BLINDADA David!
             let ok = (idx === -1) ? (currentYear <= sorted[0]) : (idx === sorted.length-1) ? (currentYear >= sorted[sorted.length-1]) : (currentYear >= sorted[idx] && currentYear <= sorted[idx+1]);
             
             if(ok) { 
@@ -318,16 +323,14 @@
                     const sheetY = c[2] ? c[2].trim() : null;
                     return { id, sheetY };
                 }).filter(s => s.id && !gameState.playedIds.includes(s.id));
-                
                 if (avail.length > 0) {
                     const song = avail[Math.floor(Math.random()*avail.length)];
                     gameState.playedIds.push(song.id); save();
                     window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id + "&y=" + song.sheetY;
                 }
-            } catch(e) { document.getElementById('loading-overlay').style.display = 'none'; }
+            } catch(e) { hideLoader(); }
         }
 
-        // --- SETUP ---
         function addPlayer() {
             const n = document.getElementById('player-input').value.trim();
             if (n) {
@@ -353,7 +356,7 @@
             }
             save();
         }
-        function resetGame() { localStorage.removeItem('sonabe_v122_final'); goToMenu(); }
+        function resetGame() { localStorage.removeItem('sonabe_v123_final'); goToMenu(); }
         function openSetup() { 
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('setup-screen').classList.add('active');
@@ -368,6 +371,7 @@
             });
         }
         function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); } }
+        
         function triggerConfetti() {
             const count = 200, defaults = { origin: { y: 0.7 }, zIndex: 9999 };
             function fire(ratio, opts) { confetti({ ...defaults, ...opts, particleCount: Math.floor(count * ratio) }); }
@@ -384,11 +388,16 @@
                 osc.start(audioCtx.currentTime + (i * 0.15)); osc.stop(audioCtx.currentTime + (i * 0.15) + 0.3);
             });
         }
+        
+        // --- ARREGLAT v123: Fade out en el Play Again David! ---
         function playAgain() {
-            gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]);
-            gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = [];
-            save(); jugarAleatori('online');
+            performFadeOut(() => {
+                gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]);
+                gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = [];
+                save(); jugarAleatori('online');
+            });
         }
+
         function renderBoards() {
             const container = document.getElementById('all-boards'); if (!container) return;
             container.style.display = 'block'; container.innerHTML = `<h3>Objectiu: ${gameState.winCondition}</h3>`;
