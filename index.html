@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 135</title>
+    <title>Sonabé! 🎶 - Versió 136 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -24,13 +24,13 @@
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon) !important; }
 
-        /* ESCÀNER v134/135 (NO TOCAR) */
+        /* ESCÀNER MASTER (NO TOCAR) */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
         #reader__scan_region { border: none !important; }
         #reader__border { border: none !important; display: none !important; opacity: 0 !important; }
-        #reader__dashboard, #reader__header_message, #reader__status_span { display: none !important; }
+        #reader__dashboard, #reader__header_message, #reader__status_span, div[style*="border: 1px solid rgb(170, 170, 170)"] { display: none !important; border: none !important; }
 
         .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 250px; border: 5px solid var(--neon); border-radius: 30px; box-shadow: 0 0 40px var(--neon); pointer-events: none; z-index: 4000; }
         .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--neon); box-shadow: 0 0 15px var(--neon); animation: scanMove 2s ease-in-out infinite; }
@@ -139,13 +139,13 @@
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [] };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v135_final');
+            const saved = localStorage.getItem('sonabe_master_stable');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_v135_final', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_master_stable', JSON.stringify(gameState)); }
         load();
 
         window.onload = () => {
@@ -163,7 +163,6 @@
             document.getElementById(id).classList.add('active');
         }
 
-        // --- ÀUDIO ---
         audio.ontimeupdate = () => {
             if (audio.duration && audio.duration - audio.currentTime < 3 && !isAutomaticFading && !audio.paused) {
                 isAutomaticFading = true;
@@ -195,7 +194,6 @@
             }, 40);
         }
 
-        // --- ESCÀNER (SENSE MODIFICAR David!) ---
         async function startScanner() {
             showScreen('landing-screen'); 
             document.getElementById('scanner-screen').style.display = 'block';
@@ -207,7 +205,6 @@
         }
         function cancelScanner() { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); else document.getElementById('scanner-screen').style.display = 'none'; window.location.href = window.location.origin + window.location.pathname; }
 
-        // --- SETUP (RESTABLERT David!) ---
         function addPlayer() {
             const n = document.getElementById('player-input').value.trim();
             if (n) {
@@ -234,9 +231,8 @@
             save();
         }
 
-        // --- LÒGICA JOC ---
         async function loadSong(id) {
-            showLoader("Verificant any...");
+            showLoader("Verificant dades...");
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
             try {
                 const rSheet = await fetch(sheet); const tSheet = await rSheet.text();
@@ -326,7 +322,7 @@
         function findNextInCircle() { for (let i = 1; i < gameState.players.length; i++) { let c = (gameState.currentTurn + i) % gameState.players.length; if (!gameState.robbersTried.includes(c)) return c; } return -1; }
         function startStealAttempt() { const n = findNextInCircle(); if (n !== -1) { gameState.currentTurn = n; gameState.isRobberyActive = true; save(); renderGameUI(); } }
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
-        function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_v135_final'); window.location.href = window.location.origin + window.location.pathname; }); }
+        function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_master_stable'); window.location.href = window.location.origin + window.location.pathname; }); }
         function goToMenu() { performFadeOut(() => { window.location.href = window.location.origin + window.location.pathname; }); }
         function playAgain() { performFadeOut(() => { gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = []; save(); jugarAleatori('online'); }); }
         function showLoader(txt) { document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt || "CARREGANT..."; }
