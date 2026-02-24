@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 158 MASTER</title>
+    <title>Sonabé! 🎶 - Versió 159 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -22,6 +22,7 @@
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
+        .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon) !important; }
         
         #play-btn-main { width:90px; height:90px; background-color:var(--primary); border-radius:50%; border:none; margin: 10px 0; display:flex !important; align-items:center !important; justify-content:center !important; outline: none; }
 
@@ -52,22 +53,24 @@
     </div>
 
     <div id="setup-screen" class="screen">
-        <div class="neon-logo" style="font-size: 2rem;">Configuració en línia</div>
-        <div style="display:flex; gap:10px; width: 280px;">
-            <input type="text" id="player-input" placeholder="Nom..." style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white;">
+        <div class="neon-logo" style="font-size: 2.2rem;">Jugar en línia</div>
+        <div style="display:flex; gap:10px; width: 280px; margin-bottom: 10px;">
+            <input type="text" id="player-input" placeholder="Nom del jugador..." style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white;">
             <button class="btn btn-primary" onclick="addPlayer()" style="width:60px; padding:0;">+</button>
         </div>
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
+        
         <div id="config-area" style="display:none; width: 100%;">
-            <p style="font-size:0.75rem; font-weight:bold; color:#888;">CARTES PER GUANYAR:</p>
-            <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:15px; padding: 12px; border-radius: 10px; background: #222; color: white; text-align: center;">
+            <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-bottom:5px;">CARTES PER GUANYAR:</p>
+            <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:20px; padding: 12px; border-radius: 10px; background: #222; color: white; text-align: center; border: 1px solid #444;">
+            
             <div class="btn-list">
                 <button id="mode-timeline" class="btn btn-outline" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn btn-outline" onclick="setMode('exact')">ANY EXACTE</button>
+                <button class="btn btn-primary" style="margin-top:10px; border: 2px solid white;" onclick="jugarAleatori('online')">COMENÇAR PARTIDA</button>
             </div>
-            <button class="btn btn-primary" style="margin-top:20px;" onclick="jugarAleatori('online')">COMENÇAR PARTIDA</button>
         </div>
-        <button class="btn btn-secondary" onclick="goToMenu()">Tornar</button>
+        <button class="btn btn-secondary" style="margin-top:10px;" onclick="goToMenu()">Tornar</button>
     </div>
 
     <div id="game-screen" class="screen">
