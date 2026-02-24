@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 130</title>
+    <title>Sonabé! 🎶 - Versió 131</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -33,16 +33,17 @@
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
-        /* ESCÀNER v130 - FORÇAT VISIBLE David! */
+        /* ESCÀNER v131 David: Eliminem el quadre blanc i centrem el rosa */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; }
-        #reader { width: 100% !important; height: 100% !important; min-height: 100vh; background: #000; }
-        /* Forcem que el vídeo es vegi sí o sí David! */
-        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
+        #reader { width: 100% !important; height: 100% !important; min-height: 100vh; background: #000; border: none !important; }
+        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
         
-        #reader__scan_region, #reader__border { border: none !important; box-shadow: none !important; }
+        /* Eliminem tota la interfície per defecte de la llibreria David */
+        #reader__scan_region { border: none !important; }
+        #reader__border { border: none !important; display: none !important; }
         #reader__dashboard, #reader__header_message, #reader__status_span { display: none !important; }
 
-        .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 250px; border: 5px solid var(--neon); border-radius: 30px; box-shadow: 0 0 40px var(--neon); pointer-events: none; z-index: 5000; }
+        .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 260px; height: 260px; border: 5px solid var(--neon); border-radius: 30px; box-shadow: 0 0 40px var(--neon); pointer-events: none; z-index: 5000; }
         .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--neon); box-shadow: 0 0 15px var(--neon); animation: scanMove 2s ease-in-out infinite; }
         @keyframes scanMove { 0%, 100% { top: 5%; } 50% { top: 95%; } }
 
@@ -88,7 +89,7 @@
     </div>
 
     <div id="game-screen" class="screen">
-        <div id="turn-indicator">TORN DE...</div>
+        <div id="turn-indicator">CARREGANT...</div>
         <button id="play-btn-main" class="play-button" onclick="handlePlayClick()">
             <div class="play-icon" id="icon-play"></div>
             <div class="stop-icon" id="icon-stop"></div>
@@ -145,21 +146,24 @@
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [] };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v130_final');
+            const saved = localStorage.getItem('sonabe_v131_final');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_v130_final', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v131_final', JSON.stringify(gameState)); }
+        
         load();
 
         window.onload = () => { 
+            load(); // Forcem recàrrega David!
             const urlParams = new URLSearchParams(window.location.search);
             const appleId = urlParams.get('id');
+            
             if (appleId) {
                 showLoader("Carregant música...");
-                renderGameUI(); 
+                renderGameUI(); // Aquí ja sabem si anem a Online o Cards David
                 loadSong(appleId); 
             } else {
                 hideLoader();
@@ -195,13 +199,13 @@
             }, 40);
         }
 
-        // --- ESCÀNER David! ---
+        // --- ESCÀNER David: Neteja de recuadres blancs ---
         async function startScanner() {
             document.getElementById('scanner-screen').style.display = 'block';
             if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} }
             html5QrCode = new Html5Qrcode("reader");
             
-            const config = { fps: 20, qrbox: { width: 250, height: 250 } };
+            const config = { fps: 20, qrbox: 250 };
             html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
                 html5QrCode.stop().then(() => { window.location.href = decodedText; });
             }).catch(() => { cancelScanner(); });
@@ -243,6 +247,8 @@
             showScreen('game-screen');
             document.getElementById('solution-card').style.display = 'none';
             const turnBox = document.getElementById('turn-indicator');
+            
+            // David: Si hi ha jugadors, SEMPRE mode Online. No hi ha discussió.
             if (gameState.players.length > 0) {
                 document.getElementById('ui-online-mode').style.display = 'block';
                 document.getElementById('ui-cards-mode').style.display = 'none';
@@ -290,7 +296,6 @@
             document.getElementById('ui-online-mode').style.display='none'; document.getElementById('ui-cards-mode').style.display='none'; document.getElementById('solution-card').style.display='flex'; 
         }
 
-        // --- AUXILIARS ---
         function findNextInCircle() { for (let i = 1; i < gameState.players.length; i++) { let c = (gameState.currentTurn + i) % gameState.players.length; if (!gameState.robbersTried.includes(c)) return c; } return -1; }
         function startStealAttempt() { const n = findNextInCircle(); if (n !== -1) { gameState.currentTurn = n; gameState.isRobberyActive = true; save(); renderGameUI(); } }
         function addPlayer() { const n = document.getElementById('player-input').value.trim(); if (n) { gameState.players.push({ name: n, cards: [Math.floor(Math.random() * 95) + 1930] }); document.getElementById('player-input').value = ""; save(); updateSetupList(); renderBoards(); } }
@@ -298,7 +303,7 @@
         function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); renderBoards(); }
         function setMode(m) { gameState.mode = m || 'timeline'; const btnT = document.getElementById('mode-timeline'), btnE = document.getElementById('mode-exact'); if (btnT && btnE) { btnT.className = (gameState.mode === 'timeline') ? 'btn mode-selected' : 'btn btn-outline'; btnE.className = (gameState.mode === 'exact') ? 'btn mode-selected' : 'btn btn-outline'; } save(); }
         function playAgain() { performFadeOut(() => { gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = []; save(); jugarAleatori('online'); }); }
-        function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_v130_final'); goToMenu(); }); }
+        function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_v131_final'); goToMenu(); }); }
         function goToMenu() { performFadeOut(() => { window.location.href = window.location.origin + window.location.pathname; }); }
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
         function showLoader(txt) { clearTimeout(safetyTimer); document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt || "CARREGANT..."; document.getElementById('rescue-btn').style.display = 'none'; safetyTimer = setTimeout(() => { document.getElementById('rescue-btn').style.display = 'block'; }, 6000); }
