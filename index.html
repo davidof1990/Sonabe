@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 149 MASTER</title>
+    <title>Sonabé! 🎶 - Versió 150 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -21,6 +21,8 @@
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon) !important; }
+        
+        /* ESCÀNER MASTER */
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
@@ -28,6 +30,7 @@
         .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 250px; border: 5px solid var(--neon); border-radius: 30px; box-shadow: 0 0 40px var(--neon); pointer-events: none; z-index: 4000; }
         .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--neon); box-shadow: 0 0 15px var(--neon); animation: scanMove 2s ease-in-out infinite; }
         @keyframes scanMove { 0%, 100% { top: 5%; } 50% { top: 95%; } }
+
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .player-row { background: #1e1e1e; padding: 10px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; }
@@ -55,7 +58,7 @@
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
         <div id="config-area" style="display:none; width: 100%;">
             <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-bottom:5px;">CARTES PER GUANYAR:</p>
-            <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:15px; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white; text-align: center;">
+            <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:15px; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white; text-align: center; font-weight: bold;">
             <div class="btn-list" style="margin-bottom:20px;">
                 <button id="mode-timeline" class="btn btn-outline" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn btn-outline" onclick="setMode('exact')">ANY EXACTE</button>
@@ -67,31 +70,36 @@
 
     <div id="game-screen" class="screen">
         <div id="turn-indicator" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%;">CARREGANT...</div>
-        <button id="play-btn-main" style="width:90px; height:90px; background-color:var(--primary); border-radius:50%; border:none; margin: 10px 0;" onclick="handlePlayClick()">
+        
+        <button id="play-btn-main" style="width:90px; height:90px; background-color:var(--primary); border-radius:50%; border:none; margin: 10px 0; display:flex; align-items:center; justify-content:center;" onclick="handlePlayClick()">
             <div id="icon-play" style="width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px;"></div>
             <div id="icon-stop" style="width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none;"></div>
         </button>
+
         <div id="ui-online-mode" class="btn-list" style="display:none;"><div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div></div>
         <div id="ui-cards-mode" class="btn-list" style="display:none;"><button class="btn btn-primary" onclick="revealSolution(null, false)">REVELAR SOLUCIÓ</button></div>
+        
         <div id="solution-card" style="display:none; flex-direction:column; align-items:center;">
-            <div id="guess-result"></div>
+            <div id="guess-result" style="font-weight:bold; font-size:1.8rem; margin-bottom:10px;"></div>
             <div id="song-details" style="display:none; flex-direction:column; align-items:center;">
                 <div id="song-year" class="year-badge">----</div>
-                <img id="album-img" class="album-art" src=""><div id="song-title"></div><div id="song-artist"></div>
+                <img id="album-img" class="album-art" src="" style="margin:10px 0;">
+                <div id="song-title" style="font-weight:bold;"></div>
+                <div id="song-artist" style="color:var(--primary);"></div>
             </div>
-            <button id="btn-next" class="btn btn-primary" onclick="nextAction()">Següent Cançó</button>
+            <button id="btn-next" class="btn btn-primary" style="margin-top:15px;" onclick="nextAction()">Següent Cançó</button>
         </div>
         <button class="btn btn-secondary" onclick="goToMenu()">Tornar</button>
     </div>
 
     <div id="winner-screen" class="screen">
-        <div class="neon-logo">GUANYADOR!</div><h1 id="winner-name"></h1>
+        <div class="neon-logo">GUANYADOR!</div><h1 id="winner-name" style="color:var(--neon); font-size:3rem;"></h1>
         <button class="btn btn-gold" onclick="playAgain()">JUGAR DE NOU</button>
     </div>
 
     <div id="all-boards" style="width:100%; max-width:400px; margin-top:30px; border-top:1px solid #444; padding-top:20px; display:none;"></div>
     <audio id="audio-player" preload="auto"></audio>
-    <div id="scanner-screen"><div id="reader"></div><div class="scanner-overlay"><div class="scan-line"></div></div><button class="btn btn-secondary" onclick="cancelScanner()">CANCEL·LAR</button></div>
+    <div id="scanner-screen"><div id="reader"></div><div class="scanner-overlay"><div class="scan-line"></div></div><button class="btn btn-secondary" onclick="cancelScanner()" style="position:absolute; bottom:50px; left:50%; transform:translateX(-50%); z-index:5000;">CANCEL·LAR</button></div>
 
     <script>
         const audio = document.getElementById('audio-player');
@@ -106,8 +114,25 @@
         window.onload = () => { load(); const urlParams = new URLSearchParams(window.location.search); const appleId = urlParams.get('id'); if (appleId) { renderGameUI(); loadSong(appleId); } else { hideLoader(); showScreen('landing-screen'); if (gameState.players.length > 0) renderBoards(); } };
 
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-        function handlePlayClick() { if (audioCtx.state === 'suspended') audioCtx.resume(); const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop'); clearInterval(fadeInterval); if (audio.paused) { pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play(); fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.05; else { audio.volume = 1; clearInterval(fadeInterval); } }, 40); } else { fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(fadeInterval); } }, 40); } }
-        function performFadeOut(callback) { showLoader("REINICIANT..."); clearInterval(fadeInterval); if (audio.paused || audio.volume <= 0.05) { setTimeout(callback, 600); return; } fadeInterval = setInterval(() => { if (audio.volume > 0.05) { audio.volume -= 0.05; } else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); } }, 50); }
+        
+        function handlePlayClick() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
+            clearInterval(fadeInterval);
+            if (audio.paused) {
+                pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play();
+                fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.05; else { audio.volume = 1; clearInterval(fadeInterval); } }, 40);
+            } else {
+                fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(fadeInterval); } }, 40);
+            }
+        }
+
+        function performFadeOut(callback) {
+            showLoader("REINICIANT...");
+            clearInterval(fadeInterval);
+            if (audio.paused || audio.volume <= 0.05) { setTimeout(callback, 600); return; }
+            fadeInterval = setInterval(() => { if (audio.volume > 0.05) { audio.volume -= 0.05; } else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); } }, 50);
+        }
 
         async function startScanner() { showScreen('landing-screen'); document.getElementById('scanner-screen').style.display = 'block'; if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} } html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => { html5QrCode.stop().then(() => { window.location.href = t; }); }).catch(() => { cancelScanner(); }); }
         function cancelScanner() { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); else document.getElementById('scanner-screen').style.display = 'none'; window.location.href = window.location.origin + window.location.pathname; }
@@ -141,25 +166,10 @@
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
             try {
                 const r = await fetch(sheet); const t = await r.text(); const lines = t.split("\n").slice(1);
-                
-                // David: Filtre d'anys per evitar el 819 (mirem només columna D)
                 let foundYears = [];
-                lines.forEach(l => {
-                    const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                    let y = parseInt(c[3]); // Columna D
-                    if (!isNaN(y) && y > 1900 && y < 2100) foundYears.push(y);
-                });
-
-                const minYear = Math.min(...foundYears) || 1930;
-                const maxYear = Math.max(...foundYears) || 2025;
-
-                // David: Ara sí, any aleatori entremig tal com vols!
-                if (gameState.playedIds.length === 0) {
-                    gameState.players.forEach(p => {
-                        p.cards = [Math.floor(Math.random() * (maxYear - minYear + 1)) + minYear];
-                    });
-                }
-
+                lines.forEach(l => { const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); let y = parseInt(c[3]); if (!isNaN(y) && y > 1900 && y < 2100) foundYears.push(y); });
+                const minYear = Math.min(...foundYears) || 1930, maxYear = Math.max(...foundYears) || 2025;
+                if (gameState.playedIds.length === 0) { gameState.players.forEach(p => { p.cards = [Math.floor(Math.random() * (maxYear - minYear + 1)) + minYear]; }); }
                 const avail = lines.map(l => { const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); const id = (c[6] ? c[6].match(/id=(\d+)/) || [] : [])[1]; return { id }; }).filter(s => s.id && !gameState.playedIds.includes(s.id));
                 if (avail.length > 0) { const song = avail[Math.floor(Math.random()*avail.length)]; gameState.playedIds.push(song.id); save(); window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id; }
             } catch(e) { hideLoader(); }
