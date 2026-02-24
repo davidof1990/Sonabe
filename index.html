@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 147 MASTER</title>
+    <title>Sonabé! 🎶 - Versió 149 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -54,6 +54,7 @@
         </div>
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
         <div id="config-area" style="display:none; width: 100%;">
+            <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-bottom:5px;">CARTES PER GUANYAR:</p>
             <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:15px; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white; text-align: center;">
             <div class="btn-list" style="margin-bottom:20px;">
                 <button id="mode-timeline" class="btn btn-outline" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
@@ -136,18 +137,29 @@
         }
 
         async function jugarAleatori(type) {
-            showLoader("Analitzant columna D...");
+            showLoader("Calculant anys...");
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
             try {
                 const r = await fetch(sheet); const t = await r.text(); const lines = t.split("\n").slice(1);
-                // --- David: CORRECCIÓ COLUMNA D (Índex 3) ---
-                let sheetYears = lines.map(l => {
+                
+                // David: Filtre d'anys per evitar el 819 (mirem només columna D)
+                let foundYears = [];
+                lines.forEach(l => {
                     const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                    let y = parseInt(c[3]); // David: ARA SÍ, COLUMNA D
-                    return (y > 1850 && y < 2030) ? y : NaN; // Filtre de seguretat
-                }).filter(y => !isNaN(y));
-                const minYear = Math.min(...sheetYears) || 1930, maxYear = Math.max(...sheetYears) || 2025;
-                if (gameState.playedIds.length === 0) { gameState.players.forEach(p => { p.cards = [Math.floor(Math.random() * (maxYear - minYear + 1)) + minYear]; }); }
+                    let y = parseInt(c[3]); // Columna D
+                    if (!isNaN(y) && y > 1900 && y < 2100) foundYears.push(y);
+                });
+
+                const minYear = Math.min(...foundYears) || 1930;
+                const maxYear = Math.max(...foundYears) || 2025;
+
+                // David: Ara sí, any aleatori entremig tal com vols!
+                if (gameState.playedIds.length === 0) {
+                    gameState.players.forEach(p => {
+                        p.cards = [Math.floor(Math.random() * (maxYear - minYear + 1)) + minYear];
+                    });
+                }
+
                 const avail = lines.map(l => { const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); const id = (c[6] ? c[6].match(/id=(\d+)/) || [] : [])[1]; return { id }; }).filter(s => s.id && !gameState.playedIds.includes(s.id));
                 if (avail.length > 0) { const song = avail[Math.floor(Math.random()*avail.length)]; gameState.playedIds.push(song.id); save(); window.location.href = window.location.origin + window.location.pathname + "?id=" + song.id; }
             } catch(e) { hideLoader(); }
