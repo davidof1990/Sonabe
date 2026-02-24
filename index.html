@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 140 MASTER</title>
+    <title>Sonabé! 🎶 - Versió 141 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -64,7 +64,6 @@
             <button class="btn btn-primary" onclick="addPlayer()" style="width:60px; padding:0;">+</button>
         </div>
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
-        
         <div id="config-area" style="display:none; width: 100%;">
             <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-bottom:5px;">CARTES PER GUANYAR:</p>
             <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:15px; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white; text-align: center; font-weight: bold;">
@@ -84,16 +83,13 @@
             <div id="icon-play" style="width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px;"></div>
             <div id="icon-stop" style="width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none;"></div>
         </button>
-        
         <div id="ui-online-mode" class="btn-list" style="display:none;">
             <p id="game-instruction" style="font-size: 0.9rem; font-weight: bold; margin-bottom: 10px;"></p>
             <div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div>
         </div>
-        
         <div id="ui-cards-mode" class="btn-list" style="display:none;">
             <button class="btn btn-primary" style="margin-top:20px;" onclick="revealSolution(null, false)">REVELAR SOLUCIÓ</button>
         </div>
-
         <div id="solution-card" style="display:none; flex-direction:column; align-items:center; gap:10px;">
             <div id="guess-result" style="font-weight:bold; font-size:1.8rem;"></div>
             <div id="song-details" style="display:none; flex-direction:column; align-items:center; gap:10px;">
@@ -160,7 +156,7 @@
             document.getElementById(id).classList.add('active');
         }
 
-        // --- ÀUDIO AMB FADE OUT ---
+        // --- ÀUDIO ---
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
@@ -173,9 +169,13 @@
             }
         }
 
+        // FADE OUT BLINDAT David!
         function performFadeOut(callback) {
             clearInterval(fadeInterval);
-            if (audio.paused || audio.volume === 0) { callback(); return; }
+            if (audio.paused || audio.volume === 0) { 
+                setTimeout(callback, 300); // Forcem espera encara que no hi hagi àudio David
+                return; 
+            }
             fadeInterval = setInterval(() => {
                 if (audio.volume > 0.05) { audio.volume -= 0.05; } 
                 else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); }
@@ -194,7 +194,7 @@
         }
         function cancelScanner() { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); else document.getElementById('scanner-screen').style.display = 'none'; window.location.href = window.location.origin + window.location.pathname; }
 
-        // --- LÒGICA PARTIDA ---
+        // --- SETUP ---
         function addPlayer() {
             const n = document.getElementById('player-input').value.trim();
             if (n) {
@@ -269,7 +269,7 @@
             }
         }
 
-        // --- SORTIDES AMB FADE-OUT David! ---
+        // --- SORTIDES David! ---
         function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_master_stable_v137'); window.location.href = window.location.origin + window.location.pathname; }); }
         function goToMenu() { performFadeOut(() => { window.location.href = window.location.origin + window.location.pathname; }); }
         function playAgain() { 
@@ -321,7 +321,7 @@
         function startStealAttempt() { const n = findNextInCircle(); if (n !== -1) { gameState.currentTurn = n; gameState.isRobberyActive = true; save(); renderGameUI(); } }
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
         function showLoader(txt) { document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt || "CARREGANT..."; }
-        function hideLoader() { document.getElementById('loading-overlay').style.display = 'none'; }
+        function hideLoader() { document.getElementById('loading-overlay').style.none; }
         function triggerConfetti() { const count = 200; function fire(r, o) { confetti({ origin: { y: 0.7 }, zIndex: 9999, ...o, particleCount: Math.floor(count * r) }); } fire(0.25, { spread: 26, startVelocity: 55 }); fire(0.2, { spread: 60 }); fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 }); fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 }); }
         function playWinFanfare() { const notes = [523.25, 659.25, 783.99, 1046.50]; notes.forEach((freq, i) => { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (i * 0.15)); gain.gain.setValueAtTime(0.05, audioCtx.currentTime + (i * 0.15)); osc.start(audioCtx.currentTime + (i * 0.15)); osc.stop(audioCtx.currentTime + (i * 0.15) + 0.3); }); }
         function renderBoards() { const container = document.getElementById('all-boards'); if (!container) return; container.style.display = 'block'; container.innerHTML = `<h3>Objectiu: ${gameState.winCondition} cartes</h3>`; gameState.players.forEach((p, i) => { const active = (i === gameState.currentTurn) ? 'active-row' : ''; container.innerHTML += `<div class="player-row ${active}"><div style="font-size:0.75rem; font-weight:bold; color:var(--primary);">${p.name.toUpperCase()} (${p.cards.length})</div><div style="display:flex;gap:4px;flex-wrap:wrap;">${[...p.cards].sort().map(y => `<div style="background:white;color:black;padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:bold;">${y}</div>`).join('')}</div></div>`; }); }
