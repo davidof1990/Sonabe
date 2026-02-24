@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 129</title>
+    <title>Sonabé! 🎶 - Versió 130</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -20,29 +20,29 @@
         .btn-list { display: flex; flex-direction: column; gap: 10px; width: 100%; align-items: center; }
         .btn { background: rgba(255,255,255,0.1); border: 1px solid #444; color: #eee; padding: 16px 25px; border-radius: 40px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; width: 280px; transition: 0.2s; outline: none; box-sizing: border-box; }
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
-        .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .btn-secondary { background: #333 !important; color: #ccc !important; border: 1px solid #555 !important; }
-        .btn-robbery { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple); border: 2px solid white; }
+        .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 25px var(--neon) !important; }
 
         #turn-indicator { background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; margin-bottom: 15px; text-transform: uppercase; font-size: 1.1rem; }
         .play-button { width: 90px; height: 90px; background-color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 10px 0; border: none; }
         .play-icon { width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px; }
         .stop-icon { width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none; }
-        
+
         #solution-card { display: none; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
 
-        /* ESCÀNER v94 - VISOR ROSA SOBREPOSAT David! */
-        #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        #reader { width: 100% !important; height: 100% !important; border: none !important; }
-        #reader__scan_region, #reader__border { border: none !important; box-shadow: none !important; }
-        /* Amaguem tota la brossa de la llibreria David! */
-        #reader__dashboard, #reader__header_message, #reader__camera_selection, #reader__status_span { display: none !important; }
-        video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+        /* ESCÀNER v130 - FORÇAT VISIBLE David! */
+        #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; flex-direction: column; }
+        #reader { width: 100% !important; height: 100% !important; min-height: 100vh; background: #000; }
+        /* Forcem que el vídeo es vegi sí o sí David! */
+        #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
         
-        .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 250px; border: 5px solid var(--neon); border-radius: 30px; box-shadow: 0 0 40px var(--neon); pointer-events: none; z-index: 4000; }
+        #reader__scan_region, #reader__border { border: none !important; box-shadow: none !important; }
+        #reader__dashboard, #reader__header_message, #reader__status_span { display: none !important; }
+
+        .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 250px; border: 5px solid var(--neon); border-radius: 30px; box-shadow: 0 0 40px var(--neon); pointer-events: none; z-index: 5000; }
         .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--neon); box-shadow: 0 0 15px var(--neon); animation: scanMove 2s ease-in-out infinite; }
         @keyframes scanMove { 0%, 100% { top: 5%; } 50% { top: 95%; } }
 
@@ -88,7 +88,7 @@
     </div>
 
     <div id="game-screen" class="screen">
-        <div id="turn-indicator">CARREGANT...</div>
+        <div id="turn-indicator">TORN DE...</div>
         <button id="play-btn-main" class="play-button" onclick="handlePlayClick()">
             <div class="play-icon" id="icon-play"></div>
             <div class="stop-icon" id="icon-stop"></div>
@@ -134,7 +134,7 @@
     <div id="scanner-screen">
         <div id="reader"></div>
         <div class="scanner-overlay"><div class="scan-line"></div></div>
-        <button class="btn btn-secondary" style="position:absolute; bottom:50px; width:200px; z-index:5000;" onclick="cancelScanner()">CANCEL·LAR</button>
+        <button class="btn btn-secondary" style="position:absolute; bottom:50px; left: 50%; transform: translateX(-50%); width:200px; z-index:6000;" onclick="cancelScanner()">CANCEL·LAR</button>
     </div>
 
     <script>
@@ -145,13 +145,13 @@
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [] };
 
         function load() {
-            const saved = localStorage.getItem('sonabe_v129_final');
+            const saved = localStorage.getItem('sonabe_v130_final');
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed};
             }
         }
-        function save() { localStorage.setItem('sonabe_v129_final', JSON.stringify(gameState)); }
+        function save() { localStorage.setItem('sonabe_v130_final', JSON.stringify(gameState)); }
         load();
 
         window.onload = () => { 
@@ -173,22 +173,7 @@
             document.getElementById(id).classList.add('active');
         }
 
-        // --- GESTIÓ ÀUDIO ---
-        audio.ontimeupdate = () => {
-            if (audio.duration && audio.duration - audio.currentTime < 3 && !isAutomaticFading && !audio.paused) {
-                isAutomaticFading = true;
-                let autoFade = setInterval(() => {
-                    if (audio.volume > 0.05) audio.volume -= 0.05;
-                    else {
-                        audio.volume = 0; audio.pause();
-                        isAutomaticFading = false; clearInterval(autoFade);
-                        document.getElementById('icon-play').style.display = 'block';
-                        document.getElementById('icon-stop').style.display = 'none';
-                    }
-                }, 100);
-            }
-        };
-
+        // --- ÀUDIO ---
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
@@ -210,7 +195,24 @@
             }, 40);
         }
 
-        // --- CARREGAR CANÇÓ AMB VERIFICACIÓ GOOGLE David! ---
+        // --- ESCÀNER David! ---
+        async function startScanner() {
+            document.getElementById('scanner-screen').style.display = 'block';
+            if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} }
+            html5QrCode = new Html5Qrcode("reader");
+            
+            const config = { fps: 20, qrbox: { width: 250, height: 250 } };
+            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                html5QrCode.stop().then(() => { window.location.href = decodedText; });
+            }).catch(() => { cancelScanner(); });
+        }
+
+        function cancelScanner() { 
+            if (html5QrCode) { html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); } 
+            else { document.getElementById('scanner-screen').style.display = 'none'; }
+        }
+
+        // --- LÒGICA JOC ---
         async function loadSong(id) {
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
             try {
@@ -236,19 +238,6 @@
                 }
             } catch (e) { hideLoader(); }
         }
-
-        // --- ESCÀNER v129 David! ---
-        async function startScanner() {
-            showScreen('scanner-screen');
-            if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} }
-            html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 20, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
-            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                html5QrCode.stop().then(() => { window.location.href = decodedText; });
-            }).catch(() => { showScreen('landing-screen'); });
-        }
-
-        function cancelScanner() { if (html5QrCode) { html5QrCode.stop().then(() => { showScreen('landing-screen'); }); } else { showScreen('landing-screen'); } }
 
         function renderGameUI() {
             showScreen('game-screen');
@@ -301,6 +290,7 @@
             document.getElementById('ui-online-mode').style.display='none'; document.getElementById('ui-cards-mode').style.display='none'; document.getElementById('solution-card').style.display='flex'; 
         }
 
+        // --- AUXILIARS ---
         function findNextInCircle() { for (let i = 1; i < gameState.players.length; i++) { let c = (gameState.currentTurn + i) % gameState.players.length; if (!gameState.robbersTried.includes(c)) return c; } return -1; }
         function startStealAttempt() { const n = findNextInCircle(); if (n !== -1) { gameState.currentTurn = n; gameState.isRobberyActive = true; save(); renderGameUI(); } }
         function addPlayer() { const n = document.getElementById('player-input').value.trim(); if (n) { gameState.players.push({ name: n, cards: [Math.floor(Math.random() * 95) + 1930] }); document.getElementById('player-input').value = ""; save(); updateSetupList(); renderBoards(); } }
@@ -308,7 +298,7 @@
         function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); renderBoards(); }
         function setMode(m) { gameState.mode = m || 'timeline'; const btnT = document.getElementById('mode-timeline'), btnE = document.getElementById('mode-exact'); if (btnT && btnE) { btnT.className = (gameState.mode === 'timeline') ? 'btn mode-selected' : 'btn btn-outline'; btnE.className = (gameState.mode === 'exact') ? 'btn mode-selected' : 'btn btn-outline'; } save(); }
         function playAgain() { performFadeOut(() => { gameState.players.forEach(p => p.cards = [Math.floor(Math.random() * 95) + 1930]); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = []; save(); jugarAleatori('online'); }); }
-        function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_v129_final'); goToMenu(); }); }
+        function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_v130_final'); goToMenu(); }); }
         function goToMenu() { performFadeOut(() => { window.location.href = window.location.origin + window.location.pathname; }); }
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
         function showLoader(txt) { clearTimeout(safetyTimer); document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt || "CARREGANT..."; document.getElementById('rescue-btn').style.display = 'none'; safetyTimer = setTimeout(() => { document.getElementById('rescue-btn').style.display = 'block'; }, 6000); }
