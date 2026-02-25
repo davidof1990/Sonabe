@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 162 MASTER</title>
+    <title>Sonabé! 🎶 - Versió 163 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -24,7 +24,6 @@
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon) !important; }
         
-        /* BOTÓ PLAY CENTRAT David! */
         #play-btn-main { width:90px; height:90px; background-color:var(--primary); border-radius:50%; border:none; margin: 15px 0; display:flex !important; align-items:center !important; justify-content:center !important; outline: none; cursor: pointer; box-shadow: 0 0 15px rgba(250, 45, 72, 0.4); }
 
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; }
@@ -115,6 +114,9 @@
         let html5QrCode = null, fadeInterval = null, currentYear = null;
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [] };
 
+        // David: RESET AUTOMÀTIC DELS ICONES QUAN ACABA LA CANÇÓ
+        audio.onended = () => { resetPlayIcons(); };
+
         function load() { const saved = localStorage.getItem('sonabe_master_stable_v137'); if (saved) { const parsed = JSON.parse(saved); if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed}; } }
         function save() { localStorage.setItem('sonabe_master_stable_v137', JSON.stringify(gameState)); }
         load();
@@ -126,24 +128,52 @@
         function showLoader(txt) { document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt || "CARREGANT..."; }
         function hideLoader() { document.getElementById('loading-overlay').style.display = 'none'; }
 
+        function resetPlayIcons() {
+            document.getElementById('icon-play').style.display = 'block';
+            document.getElementById('icon-stop').style.display = 'none';
+        }
+
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
             clearInterval(fadeInterval);
+            
             if (audio.paused) {
-                pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play();
-                fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.05; else { audio.volume = 1; clearInterval(fadeInterval); } }, 40);
+                // FADE IN
+                pi.style.display = 'none'; si.style.display = 'block'; 
+                audio.volume = 0; 
+                audio.play();
+                fadeInterval = setInterval(() => { if (audio.volume < 0.95) audio.volume += 0.05; else { audio.volume = 1; clearInterval(fadeInterval); } }, 30);
             } else {
-                fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(fadeInterval); } }, 40);
+                // FADE OUT MANUAL
+                fadeInterval = setInterval(() => { 
+                    if (audio.volume > 0.1) {
+                        audio.volume -= 0.1;
+                    } else {
+                        audio.volume = 0;
+                        audio.pause();
+                        resetPlayIcons();
+                        clearInterval(fadeInterval);
+                    }
+                }, 30);
             }
         }
 
         function performFadeOut(callback) {
             showLoader("CARREGANT...");
-            const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
             clearInterval(fadeInterval);
             if (audio.paused || audio.volume <= 0.05) { setTimeout(callback, 600); return; }
-            fadeInterval = setInterval(() => { if (audio.volume > 0.05) { audio.volume -= 0.05; } else { audio.volume = 0; audio.pause(); if(pi) pi.style.display = 'block'; if(si) si.style.display = 'none'; clearInterval(fadeInterval); callback(); } }, 50);
+            fadeInterval = setInterval(() => { 
+                if (audio.volume > 0.1) { 
+                    audio.volume -= 0.1; 
+                } else { 
+                    audio.volume = 0; 
+                    audio.pause(); 
+                    resetPlayIcons();
+                    clearInterval(fadeInterval); 
+                    callback(); 
+                } 
+            }, 40);
         }
 
         async function startScanner() { hideLoader(); showScreen('landing-screen'); document.getElementById('scanner-screen').style.display = 'block'; if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} } html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => { html5QrCode.stop().then(() => { window.location.href = t; }); }).catch(() => { cancelScanner(); }); }
