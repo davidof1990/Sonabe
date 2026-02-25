@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 160 MASTER</title>
+    <title>Sonabé! 🎶 - Versió 161 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -24,7 +24,22 @@
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon) !important; }
         
-        #play-btn-main { width:90px; height:90px; background-color:var(--primary); border-radius:50%; border:none; margin: 10px 0; display:flex !important; align-items:center !important; justify-content:center !important; outline: none; }
+        /* BOTÓ PLAY DINÀMIC */
+        #play-btn-main { width:100px; height:100px; background-color:var(--primary); border-radius:50%; border:none; margin: 15px 0; display:flex; align-items:center; justify-content:center; cursor: pointer; transition: transform 0.2s; position: relative; box-shadow: 0 0 20px rgba(250, 45, 72, 0.4); }
+        #play-btn-main:active { transform: scale(0.95); }
+
+        /* ONA SONORA / EQUALITZADOR */
+        .wave-container { display: flex; align-items: flex-end; justify-content: center; gap: 4px; height: 35px; width: 50px; }
+        .bar { width: 6px; background: white; border-radius: 3px; height: 6px; transition: height 0.2s; }
+        .playing .bar { animation: soundWave 0.6s infinite ease-in-out; }
+        .bar:nth-child(2) { animation-delay: 0.1s; }
+        .bar:nth-child(3) { animation-delay: 0.2s; }
+        .bar:nth-child(4) { animation-delay: 0.3s; }
+
+        @keyframes soundWave {
+            0%, 100% { height: 10px; }
+            50% { height: 35px; }
+        }
 
         #scanner-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 3000; display: none; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
@@ -43,7 +58,7 @@
 <body>
     <div id="loading-overlay"><div class="spinner"></div><p id="loading-text" style="margin-top:15px;">CARREGANT...</p></div>
 
-    <div id="landing-screen" class="screen">
+    <div id="landing-screen" class="screen active">
         <div class="neon-logo">Sonabé!</div>
         <div class="btn-list">
             <button class="btn btn-primary" onclick="startScanner()">Tinc les cartes! 📷</button>
@@ -59,11 +74,9 @@
             <button class="btn btn-primary" onclick="addPlayer()" style="width:60px; padding:0;">+</button>
         </div>
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
-        
         <div id="config-area" style="display:none; width: 100%;">
             <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-bottom:5px;">CARTES PER GUANYAR:</p>
             <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:20px; padding: 12px; border-radius: 10px; background: #222; color: white; text-align: center; border: 1px solid #444;">
-            
             <div class="btn-list">
                 <button id="mode-timeline" class="btn" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn" onclick="setMode('exact')">ANY EXACTE</button>
@@ -75,10 +88,16 @@
 
     <div id="game-screen" class="screen">
         <div id="turn-indicator" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%;">CARREGANT...</div>
+        
         <button id="play-btn-main" onclick="handlePlayClick()">
-            <div id="icon-play" style="width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px;"></div>
-            <div id="icon-stop" style="width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none;"></div>
+            <div id="play-visuals" style="display: flex; align-items: center; justify-content: center;">
+                <div id="icon-play" style="width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px;"></div>
+                <div id="wave-anim" class="wave-container" style="display: none;">
+                    <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                </div>
+            </div>
         </button>
+
         <div id="ui-online-mode" class="btn-list" style="display:none;"><div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div></div>
         <div id="ui-cards-mode" class="btn-list" style="display:none;"><button class="btn btn-primary" onclick="revealSolution(null)">REVELAR SOLUCIÓ</button></div>
         <div id="solution-card" style="display:none; flex-direction:column; align-items:center;">
@@ -120,50 +139,81 @@
         window.onload = () => { load(); const urlParams = new URLSearchParams(window.location.search); const appleId = urlParams.get('id'); const scanMode = urlParams.get('scan'); if (appleId) { renderGameUI(); loadSong(appleId); } else if (scanMode === 'true') { startScanner(); } else { hideLoader(); showScreen('landing-screen'); if (gameState.players.length > 0) renderBoards(); } };
 
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-        
-        // David: Ara en obrir el menú, el mode es marca visualment
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
-
         function showLoader(txt) { document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt || "CARREGANT..."; }
         function hideLoader() { document.getElementById('loading-overlay').style.display = 'none'; }
 
+        // David: CONTROL DE L'ANIMACIÓ DE L'ONA
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
+            const btn = document.getElementById('play-btn-main');
+            const pi = document.getElementById('icon-play');
+            const wa = document.getElementById('wave-anim');
             clearInterval(fadeInterval);
-            if (audio.paused) { pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play(); fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.05; else { audio.volume = 1; clearInterval(fadeInterval); } }, 40); }
-            else { fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(fadeInterval); } }, 40); }
+
+            if (audio.paused) {
+                // Play mode
+                pi.style.display = 'none';
+                wa.style.display = 'flex';
+                btn.classList.add('playing');
+                audio.volume = 0;
+                audio.play();
+                fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.05; else { audio.volume = 1; clearInterval(fadeInterval); } }, 40);
+            } else {
+                // Stop mode
+                fadeInterval = setInterval(() => { 
+                    if (audio.volume > 0.1) {
+                        audio.volume -= 0.1;
+                    } else {
+                        audio.volume = 0;
+                        audio.pause();
+                        pi.style.display = 'block';
+                        wa.style.display = 'none';
+                        btn.classList.remove('playing');
+                        clearInterval(fadeInterval);
+                    }
+                }, 40);
+            }
         }
 
         function performFadeOut(callback) {
             showLoader("CARREGANT...");
+            const btn = document.getElementById('play-btn-main');
+            const pi = document.getElementById('icon-play');
+            const wa = document.getElementById('wave-anim');
             clearInterval(fadeInterval);
             if (audio.paused || audio.volume <= 0.05) { setTimeout(callback, 600); return; }
-            fadeInterval = setInterval(() => { if (audio.volume > 0.05) { audio.volume -= 0.05; } else { audio.volume = 0; audio.pause(); clearInterval(fadeInterval); callback(); } }, 50);
+            fadeInterval = setInterval(() => { 
+                if (audio.volume > 0.05) { 
+                    audio.volume -= 0.05; 
+                } else { 
+                    audio.volume = 0; 
+                    audio.pause(); 
+                    if(pi) pi.style.display = 'block';
+                    if(wa) wa.style.display = 'none';
+                    if(btn) btn.classList.remove('playing');
+                    clearInterval(fadeInterval); 
+                    callback(); 
+                } 
+            }, 50);
         }
 
         async function startScanner() { hideLoader(); showScreen('landing-screen'); document.getElementById('scanner-screen').style.display = 'block'; if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} } html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => { html5QrCode.stop().then(() => { window.location.href = t; }); }).catch(() => { cancelScanner(); }); }
         function cancelScanner() { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); else document.getElementById('scanner-screen').style.display = 'none'; window.location.href = window.location.origin + window.location.pathname; }
 
         function addPlayer() { const n = document.getElementById('player-input').value.trim(); if (n) { gameState.players.push({ name: n, cards: [2000] }); document.getElementById('player-input').value = ""; save(); updateSetupList(); renderBoards(); } }
-        
         function updateSetupList() { 
             const list = document.getElementById('player-list-setup'); if (!list) return;
             list.innerHTML = gameState.players.map((p, i) => `<div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.05); padding:10px; margin:5px; border-radius:8px;"><span>👤 ${p.name.toUpperCase()}</span><span style="color:red; cursor:pointer;" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span></div>`).join('');
             document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none';
             document.getElementById('win-input').value = gameState.winCondition;
-            setMode(gameState.mode); // David: Això fa que surti marcat el mode actual
+            setMode(gameState.mode);
         }
-
         function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); renderBoards(); }
-
         function setMode(m) {
             gameState.mode = m || 'timeline';
             const btnT = document.getElementById('mode-timeline'), btnE = document.getElementById('mode-exact');
-            if (btnT && btnE) {
-                btnT.className = (gameState.mode === 'timeline') ? 'btn mode-selected' : 'btn btn-outline';
-                btnE.className = (gameState.mode === 'exact') ? 'btn mode-selected' : 'btn btn-outline';
-            }
+            if (btnT && btnE) { btnT.className = (gameState.mode === 'timeline') ? 'btn mode-selected' : 'btn btn-outline'; btnE.className = (gameState.mode === 'exact') ? 'btn mode-selected' : 'btn btn-outline'; }
             save();
         }
 
