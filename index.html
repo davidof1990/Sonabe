@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 165 MASTER</title>
+    <title>Sonabé! 🎶 - Versió 166 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -21,12 +21,11 @@
         .btn { background: rgba(255,255,255,0.1); border: 1px solid #444; color: #eee; padding: 16px 25px; border-radius: 40px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; width: 280px; transition: 0.2s; outline: none; box-sizing: border-box; }
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
-        .btn-purple { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple) !important; border: none !important; }
+        .btn-purple { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple) !important; border: 2px solid white !important; }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon) !important; }
         
         #play-btn-main { width:90px; height:90px; background-color:var(--primary); border-radius:50%; border:none; margin: 15px 0; display:flex !important; align-items:center !important; justify-content:center !important; outline: none; cursor: pointer; box-shadow: 0 0 15px rgba(250, 45, 72, 0.4); }
-
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .player-row { background: #1e1e1e; padding: 10px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; }
@@ -54,14 +53,14 @@
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
         <div id="config-area" style="display:none; width: 100%;">
             <p style="font-size:0.75rem; font-weight:bold; color:#888;">CARTES PER GUANYAR:</p>
-            <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:20px; padding: 12px; border-radius: 10px; background: #222; color: white; text-align: center; border: 1px solid #444;">
+            <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:20px; padding: 12px; border-radius: 10px; background: #222; color: white; text-align: center;">
             <div class="btn-list">
                 <button id="mode-timeline" class="btn" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn" onclick="setMode('exact')">ANY EXACTE</button>
-                <button class="btn btn-primary" style="margin-top:10px; border: 2px solid white;" onclick="jugarAleatori('online')">COMENÇAR PARTIDA</button>
+                <button class="btn btn-primary" style="margin-top:10px;" onclick="jugarAleatori('online')">COMENÇAR PARTIDA</button>
             </div>
         </div>
-        <button class="btn btn-secondary" style="margin-top:10px;" onclick="goToMenu()">Tornar</button>
+        <button class="btn btn-secondary" onclick="goToMenu()">Tornar</button>
     </div>
 
     <div id="game-screen" class="screen">
@@ -76,23 +75,21 @@
         
         <div id="solution-card" style="display:none; flex-direction:column; align-items:center;">
             <div id="guess-result" style="font-weight:bold; font-size:1.5rem; margin-bottom:10px;"></div>
-            
             <div id="song-details" style="display:none; flex-direction:column; align-items:center;">
                 <div id="song-year" class="year-badge">----</div>
                 <img id="album-img" class="album-art" src="" style="margin:10px 0;">
                 <div id="song-title" style="font-weight:bold;"></div>
                 <div id="song-artist" style="color:var(--primary);"></div>
             </div>
-
             <button id="btn-rob" class="btn btn-purple" style="display:none; margin-top:10px;" onclick="executeRobbery()">ROBAR CARTA 🚨</button>
             <button id="btn-next" class="btn btn-primary" style="margin-top:15px; display:none;" onclick="nextAction()">Següent Cançó</button>
         </div>
-        <button id="btn-back-menu" class="btn btn-secondary" style="margin-top:10px;" onclick="goToMenu()">Tornar al Menú</button>
+        <button class="btn btn-secondary" style="margin-top:10px;" onclick="goToMenu()">Tornar al Menú</button>
     </div>
 
     <div id="winner-screen" class="screen">
         <div class="neon-logo">GUANYADOR!</div>
-        <h1 id="winner-name" style="color:var(--neon); font-size:3rem; margin:10px 0;"></h1>
+        <h1 id="winner-name" style="color:var(--neon); font-size:3rem;"></h1>
         <div class="btn-list">
             <button class="btn btn-gold" onclick="playAgain()">JUGAR DE NOU</button>
             <button class="btn btn-secondary" onclick="resetGame()">REINICIAR TOT</button>
@@ -107,7 +104,7 @@
         const audio = document.getElementById('audio-player');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let html5QrCode = null, fadeInterval = null, currentYear = null;
-        let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null };
+        let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, nextRobberIdx: -1 };
 
         audio.onended = () => { resetPlayIcons(); };
 
@@ -142,7 +139,7 @@
         }
 
         async function loadSong(id) {
-            showLoader("Buscant cançó...");
+            showLoader("Sincronitzant...");
             const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
             try {
                 const rSheet = await fetch(sheet); const tSheet = await rSheet.text(); const lines = tSheet.split("\n").slice(1);
@@ -179,8 +176,7 @@
             if (gameState.players.length > 0) {
                 document.getElementById('ui-online-mode').style.display = 'block';
                 const actual = gameState.players[gameState.currentTurn]; 
-                const turnBox = document.getElementById('turn-indicator');
-                turnBox.innerText = gameState.isRobberyActive ? `🚨 ROBATORI: ${actual.name.toUpperCase()}` : `TORN DE: ${actual.name.toUpperCase()}`;
+                document.getElementById('turn-indicator').innerText = gameState.isRobberyActive ? `🚨 ROBATORI: ${actual.name.toUpperCase()}` : `TORN DE: ${actual.name.toUpperCase()}`;
                 renderTimelineSlots(gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : actual); 
                 renderBoards();
             }
@@ -195,8 +191,7 @@
             if(ok) {
                 thief.cards.push(currentYear);
                 if(thief.cards.length >= gameState.winCondition) gameState.pendingWinner = thief.name;
-                save(); 
-                revealResultUI(true);
+                save(); revealResultUI(true, false);
             } else {
                 if (!gameState.isRobberyActive) {
                     gameState.originalTurn = gameState.currentTurn;
@@ -208,15 +203,14 @@
                 let nextR = findNextInCircle();
                 if (nextR !== -1) {
                     gameState.nextRobberIdx = nextR;
-                    save(); 
-                    revealResultUI(false, true); // Robatori disponible
+                    save(); revealResultUI(false, true); // Robatori disponible!
                 } else {
-                    revealResultUI(false, false); // Tothom ha fallat
+                    save(); revealResultUI(false, false); // Fi de ronda
                 }
             }
         }
 
-        function revealResultUI(isCorrect, canRob = false) {
+        function revealResultUI(isCorrect, canRob) {
             const res = document.getElementById('guess-result');
             const details = document.getElementById('song-details');
             const btnRob = document.getElementById('btn-rob');
@@ -233,7 +227,7 @@
                 res.innerText = "❌ INCORRECTE"; res.style.color = "#fa2d48";
                 if (canRob) {
                     btnRob.style.display = "block";
-                    btnRob.innerText = "ROBAR CARTA 🚨";
+                    details.style.display = "none"; // David: Amaguem detalls durant robatori!
                 } else {
                     details.style.display = "flex";
                     btnNext.style.display = "block";
@@ -244,11 +238,16 @@
         function executeRobbery() {
             gameState.currentTurn = gameState.nextRobberIdx;
             gameState.isRobberyActive = true;
-            save();
-            renderGameUI();
+            save(); renderGameUI();
         }
 
-        function findNextInCircle() { for (let i = 1; i < gameState.players.length; i++) { let c = (gameState.originalTurn + i) % gameState.players.length; if (!gameState.robbersTried.includes(c)) return c; } return -1; }
+        function findNextInCircle() { 
+            for (let i = 1; i < gameState.players.length; i++) { 
+                let c = (gameState.originalTurn + i) % gameState.players.length; 
+                if (!gameState.robbersTried.includes(c)) return c; 
+            } 
+            return -1; 
+        }
 
         function nextAction() {
             performFadeOut(() => {
@@ -266,7 +265,7 @@
             });
         }
 
-        // --- Funcions auxiliars ---
+        // Helpers
         function addPlayer() { const n = document.getElementById('player-input').value.trim(); if (n) { gameState.players.push({ name: n, cards: [2000] }); document.getElementById('player-input').value = ""; save(); updateSetupList(); renderBoards(); } }
         function updateSetupList() { const list = document.getElementById('player-list-setup'); if (!list) return; list.innerHTML = gameState.players.map((p, i) => `<div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.05); padding:10px; margin:5px; border-radius:8px;"><span>👤 ${p.name.toUpperCase()}</span><span style="color:red; cursor:pointer;" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span></div>`).join(''); document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none'; document.getElementById('win-input').value = gameState.winCondition; setMode(gameState.mode); }
         function setMode(m) { gameState.mode = m || 'timeline'; const btnT = document.getElementById('mode-timeline'), btnE = document.getElementById('mode-exact'); if (btnT && btnE) { btnT.className = (gameState.mode === 'timeline') ? 'btn mode-selected' : 'btn btn-outline'; btnE.className = (gameState.mode === 'exact') ? 'btn mode-selected' : 'btn btn-outline'; } save(); }
