@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v172 MASTER</title>
+    <title>Sonabé! 🎶 - v173 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; --gold: #ffd700; --purple: #a020f0; }
-        body { background-color: var(--bg); color: white; font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; text-align: center; overflow-x: hidden; }
+        body { background-color: var(--bg); color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; text-align: center; overflow-x: hidden; }
         .neon-logo { font-weight: bold; font-size: 2.8rem; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px var(--neon); margin-bottom: 20px; }
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; gap: 15px; }
         .active { display: flex; }
@@ -20,11 +20,11 @@
         .btn-list { display: flex; flex-direction: column; gap: 10px; width: 100%; align-items: center; }
         .btn { background: rgba(255,255,255,0.1); border: 1px solid #444; color: #eee; padding: 16px 25px; border-radius: 40px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; width: 280px; transition: 0.2s; outline: none; }
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
-        .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
         .btn-purple { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple) !important; border: none !important; }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
+        .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; }
         
-        #play-btn-main { width:90px; height:90px; background-color:var(--primary); border-radius:50%; border:none; margin: 15px 0; display:flex; align-items:center; justify-content:center; cursor: pointer; }
+        #play-btn-main { width:90px; height:90px; background-color:var(--primary); border-radius:50%; border:none; margin: 15px 0; display:flex; align-items:center; justify-content:center; cursor: pointer; outline: none; }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .player-row { background: #1e1e1e; padding: 10px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; width: 100%; box-sizing: border-box; }
@@ -46,7 +46,7 @@
     <div id="setup-screen" class="screen">
         <div class="neon-logo" style="font-size: 2.2rem;">Jugar en línia</div>
         <div style="display:flex; gap:10px; width: 280px; margin-bottom: 10px;">
-            <input type="text" id="player-input" placeholder="Nom del jugador..." style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white;">
+            <input type="text" id="player-input" placeholder="Nom..." style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white;">
             <button class="btn btn-primary" onclick="addPlayer()" style="width:60px; padding:0;">+</button>
         </div>
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
@@ -63,7 +63,7 @@
     </div>
 
     <div id="game-screen" class="screen">
-        <div id="turn-indicator" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%;">...</div>
+        <div id="turn-indicator" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%;">CARREGANT TORN...</div>
         <button id="play-btn-main" onclick="handlePlayClick()">
             <div id="icon-play" style="width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px;"></div>
             <div id="icon-stop" style="width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none;"></div>
@@ -88,7 +88,7 @@
                 </div>
             </div>
         </div>
-        <button id="btn-menu-back" class="btn btn-secondary" style="margin-top:10px;" onclick="goToMenu()">Tornar al Menú</button>
+        <button class="btn btn-secondary" style="margin-top:10px;" onclick="goToMenu()">Tornar al Menú</button>
     </div>
 
     <div id="all-boards" style="width:100%; max-width:400px; margin-top:30px; border-top:1px solid #444; padding-top:20px; display:none;"></div>
@@ -99,15 +99,32 @@
         let fadeInterval = null, currentYear = null;
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, nextRobberIdx: -1 };
 
-        function save() { localStorage.setItem('sonabe_v172', JSON.stringify(gameState)); }
-        function load() { const saved = localStorage.getItem('sonabe_v172'); if (saved) { try { const p = JSON.parse(saved); if (p && p.players) gameState = p; } catch(e) {} } }
+        const STORAGE_KEY = 'sonabe_v173';
+
+        function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState)); }
+        function load() { 
+            const saved = localStorage.getItem(STORAGE_KEY); 
+            if (saved) { 
+                try { 
+                    const parsed = JSON.parse(saved); 
+                    if (parsed && Array.isArray(parsed.players)) gameState = parsed; 
+                } catch(e) { console.error("Error carregant dades", e); } 
+            } 
+        }
 
         window.onload = () => {
             load();
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
-            if (id) { renderGameUI(); loadSong(id); } 
-            else { showScreen('landing-screen'); if (gameState.players.length > 0) renderBoards(); }
+            if (id) {
+                // David: Primer dibuixem qui juga, després busquem la cançó
+                if (gameState.players.length === 0) { goToMenu(); return; }
+                renderGameUI();
+                loadSong(id);
+            } else {
+                showScreen('landing-screen');
+                if (gameState.players.length > 0) renderBoards();
+            }
         };
 
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
@@ -169,7 +186,8 @@
                 
                 if (avail.length > 0) {
                     const s = avail[Math.floor(Math.random()*avail.length)];
-                    gameState.playedIds.push(s.id); save();
+                    gameState.playedIds.push(s.id); 
+                    save(); // David: Guardem abans de marxar
                     window.location.href = window.location.origin + window.location.pathname + "?id=" + s.id;
                 }
             } catch(e) { hideLoader(); }
@@ -224,13 +242,11 @@
                 if (win) {
                     res.innerHTML = "🏆 HAS GUANYAT LA PARTIDA!";
                     res.style.color = "#ffd700";
-                    winBox.style.display = "flex";
-                    btnN.style.display = "none";
+                    winBox.style.display = "flex"; btnN.style.display = "none";
                     confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
                 } else {
                     res.innerText = "✅ ENCERTAT!";
-                    res.style.color = "#28a745";
-                    btnN.style.display = "block";
+                    res.style.color = "#28a745"; btnN.style.display = "block";
                 }
             } else {
                 res.innerText = "❌ INCORRECTE"; res.style.color = "#fa2d48";
@@ -245,21 +261,14 @@
         function nextAction() {
             gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
             gameState.originalTurn = gameState.currentTurn;
-            gameState.isRobberyActive = false; gameState.robbersTried = []; save();
-            jugarAleatori();
+            gameState.isRobberyActive = false; gameState.robbersTried = []; 
+            save(); jugarAleatori();
         }
 
         function playAgain() {
-            showLoader("Reiniciant partida...");
-            // David: Resetejem el tauler però mantenim els jugadors
-            gameState.playedIds = [];
-            gameState.pendingWinner = null;
-            gameState.isRobberyActive = false;
-            gameState.currentTurn = 0;
-            gameState.originalTurn = 0;
-            // Tornem a la base del joc (neteja interna per forçar recàrrega d'anys)
-            save();
-            jugarAleatori();
+            gameState.playedIds = []; gameState.pendingWinner = null;
+            gameState.isRobberyActive = false; gameState.currentTurn = 0; gameState.originalTurn = 0;
+            save(); jugarAleatori();
         }
 
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
@@ -294,9 +303,9 @@
                 c.innerHTML += `<div style="background:white;color:black;padding:5px 10px;border-radius:6px;font-weight:bold;">${y}</div><button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(${i})">${(i===s.length-1)?'NOU':'ENTRE'}</button>`;
             });
         }
-        function resetGame() { localStorage.removeItem('sonabe_v172'); window.location.href = window.location.origin + window.location.pathname; }
+        function resetGame() { localStorage.removeItem(STORAGE_KEY); window.location.href = window.location.origin + window.location.pathname; }
         function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
-        function startScanner() { alert("Usa el mode Jugar en línia per a aquesta demo."); }
+        function startScanner() { alert("Mode escàner en desenvolupament."); }
     </script>
 </body>
 </html>
