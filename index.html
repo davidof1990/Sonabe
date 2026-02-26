@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v177 MASTER COMPLETE</title>
+    <title>Sonabé! 🎶 - v178 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -22,7 +22,7 @@
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-purple { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple) !important; border: none !important; }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
-        .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; }
+        .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 15px var(--neon); }
         
         #play-btn-main { width:90px; height:90px; background-color:var(--primary); border-radius:50%; border:none; margin: 15px 0; display:flex; align-items:center; justify-content:center; cursor: pointer; outline: none; }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
@@ -54,7 +54,7 @@
     <div id="setup-screen" class="screen">
         <div class="neon-logo" style="font-size: 2.2rem;">Jugar en línia</div>
         <div style="display:flex; gap:10px; width: 280px; margin-bottom: 10px;">
-            <input type="text" id="player-input" placeholder="Nom..." style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white;">
+            <input type="text" id="player-input" placeholder="Nom del jugador..." style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white;">
             <button class="btn btn-primary" onclick="addPlayer()" style="width:60px; padding:0;">+</button>
         </div>
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
@@ -97,7 +97,7 @@
             </div>
         </div>
         <div id="game-board-container" style="width: 100%; margin-top: 20px;"></div>
-        <button class="btn btn-secondary" onclick="showScreen('landing-screen')">Menú Principal</button>
+        <button class="btn btn-secondary" style="margin-top:10px;" onclick="goToMenu()">Menú Principal</button>
     </div>
 
     <audio id="audio-player" preload="auto"></audio>
@@ -107,7 +107,7 @@
         let html5QrCode = null, fadeInterval = null, currentYear = null;
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false };
 
-        const KEY = 'sonabe_v177';
+        const KEY = 'sonabe_v178';
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
         function load() { const s = localStorage.getItem(KEY); if(s) { try { gameState = JSON.parse(s); } catch(e){} } }
 
@@ -116,18 +116,36 @@
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
         function showLoader(txt) { document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt; }
         function hideLoader() { document.getElementById('loading-overlay').style.display = 'none'; }
+        function resetPlayIcons() { document.getElementById('icon-play').style.display = 'block'; document.getElementById('icon-stop').style.display = 'none'; }
 
         // --- MOTOR DE MÚSICA ---
         function handlePlayClick() {
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
+            clearInterval(fadeInterval);
             if (audio.paused) {
                 pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play();
                 fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else clearInterval(fadeInterval); }, 50);
             } else {
-                fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.pause(); pi.style.display = 'block'; si.style.display = 'none'; clearInterval(fadeInterval); } }, 50);
+                performFadeOut();
             }
         }
-        audio.onended = () => { document.getElementById('icon-play').style.display = 'block'; document.getElementById('icon-stop').style.display = 'none'; };
+
+        function performFadeOut(callback) {
+            clearInterval(fadeInterval);
+            fadeInterval = setInterval(() => {
+                if (audio.volume > 0.1) {
+                    audio.volume -= 0.1;
+                } else {
+                    audio.pause();
+                    audio.volume = 1;
+                    resetPlayIcons();
+                    clearInterval(fadeInterval);
+                    if (callback) callback();
+                }
+            }, 50);
+        }
+
+        audio.onended = () => { resetPlayIcons(); };
 
         // --- ESCÀNER ---
         function startScanner() {
@@ -135,29 +153,16 @@
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (text) => {
                 const id = new URLSearchParams(text.split('?')[1]).get('id');
-                if (id) {
-                    stopScanner();
-                    gameState.isOnline = false;
-                    showScreen('game-screen');
-                    loadSong(id);
-                }
+                if (id) { stopScanner(); gameState.isOnline = false; loadSong(id); }
             }).catch(() => stopScanner());
         }
-        function stopScanner() {
-            if (html5QrCode) html5QrCode.stop().then(() => {
-                document.getElementById('scanner-container').style.display = 'none';
-            });
-        }
+        function stopScanner() { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-container').style.display = 'none'; }); }
 
-        // --- ONLINE SETUP ---
+        // --- SETUP ---
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
         function addPlayer() {
             const name = document.getElementById('player-input').value.trim();
-            if (name) {
-                gameState.players.push({ name: name, cards: [] });
-                document.getElementById('player-input').value = "";
-                save(); updateSetupList();
-            }
+            if (name) { gameState.players.push({ name: name, cards: [] }); document.getElementById('player-input').value = ""; save(); updateSetupList(); }
         }
         function updateSetupList() {
             const list = document.getElementById('player-list-setup');
@@ -202,6 +207,7 @@
         async function loadSong(id, sheetYear = null) {
             showLoader("Carregant música...");
             showScreen('game-screen');
+            resetPlayIcons(); // David: Forcem el triangle al carregar nova cançó
             try {
                 const ri = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
                 const di = await ri.json();
@@ -263,7 +269,6 @@
             } else {
                 if (!gameState.isRobberyActive) { gameState.originalTurn = gameState.currentTurn; gameState.robbersTried = [gameState.currentTurn]; }
                 else { gameState.robbersTried.push(gameState.currentTurn); }
-                
                 let nextR = -1;
                 for (let i=1; i<gameState.players.length; i++) {
                     let c = (gameState.originalTurn + i) % gameState.players.length;
@@ -299,17 +304,24 @@
         function executeRobbery() { gameState.currentTurn = gameState.nextRobberIdx; gameState.isRobberyActive = true; save(); renderGameUI(); }
         
         function nextAction() {
-            if (!gameState.isOnline) { startScanner(); return; }
-            gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
-            gameState.originalTurn = gameState.currentTurn;
-            gameState.isRobberyActive = false; gameState.robbersTried = [];
-            save(); fetchNextSong();
+            performFadeOut(() => {
+                if (!gameState.isOnline) { startScanner(); return; }
+                gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
+                gameState.originalTurn = gameState.currentTurn;
+                gameState.isRobberyActive = false; gameState.robbersTried = [];
+                save(); fetchNextSong();
+            });
         }
 
         function playAgain() {
-            gameState.playedIds = []; gameState.players.forEach(p => p.cards = []);
-            gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.pendingWinner = null;
-            save(); startGame();
+            performFadeOut(() => {
+                gameState.playedIds = []; 
+                gameState.players.forEach(p => p.cards = []);
+                gameState.currentTurn = 0; 
+                gameState.originalTurn = 0; 
+                gameState.pendingWinner = null;
+                save(); startGame();
+            });
         }
 
         function renderBoards() {
@@ -322,8 +334,8 @@
             });
         }
 
-        function resetGame() { localStorage.removeItem(KEY); window.location.reload(); }
-        function goToMenu() { window.location.reload(); }
+        function resetGame() { performFadeOut(() => { localStorage.removeItem(KEY); window.location.reload(); }); }
+        function goToMenu() { performFadeOut(() => { window.location.reload(); }); }
     </script>
 </body>
 </html>
