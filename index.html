@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v174 MASTER</title>
+    <title>Sonabé! 🎶 - v175 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -23,7 +23,7 @@
         .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
         .btn-purple { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple) !important; border: none !important; }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
-        .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; }
+        .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 15px var(--neon); }
         
         #play-btn-main { width:90px; height:90px; background-color:var(--primary); border-radius:50%; border:none; margin: 15px 0; display:flex; align-items:center; justify-content:center; cursor: pointer; }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
@@ -57,7 +57,7 @@
             <div class="btn-list">
                 <button id="mode-timeline" class="btn" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn" onclick="setMode('exact')">ANY EXACTE</button>
-                <button class="btn btn-primary" style="margin-top:10px;" onclick="jugarAleatori()">COMENÇAR PARTIDA</button>
+                <button class="btn btn-primary" style="margin-top:10px;" onclick="jugarAleatori('start')">COMENÇAR PARTIDA</button>
             </div>
         </div>
         <button class="btn btn-secondary" onclick="goToMenu()">Tornar</button>
@@ -100,11 +100,11 @@
         let fadeInterval = null, currentYear = null;
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, nextRobberIdx: -1 };
 
-        const KEY = 'sonabe_v174';
+        const STORAGE_KEY = 'sonabe_v175';
 
-        function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
+        function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState)); }
         function load() { 
-            const s = localStorage.getItem(KEY); 
+            const s = localStorage.getItem(STORAGE_KEY); 
             if (s) { try { const p = JSON.parse(s); if (p && p.players) gameState = p; } catch(e) {} } 
         }
 
@@ -112,7 +112,6 @@
             load();
             const id = new URLSearchParams(window.location.search).get('id');
             if (id) {
-                if (gameState.players.length === 0) { goToMenu(); return; }
                 renderGameUI();
                 loadSong(id);
             } else {
@@ -127,7 +126,6 @@
         
         function handlePlayClick() {
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
-            clearInterval(fadeInterval);
             if (audio.paused) {
                 pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play();
                 fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else clearInterval(fadeInterval); }, 50);
@@ -138,7 +136,7 @@
         audio.onended = () => { document.getElementById('icon-play').style.display = 'block'; document.getElementById('icon-stop').style.display = 'none'; };
 
         async function loadSong(id) {
-            showLoader("Buscant la música...");
+            showLoader("Sincronitzant...");
             try {
                 const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
                 const r = await fetch(sheet); const t = await r.text(); const lines = t.split("\n").slice(1);
@@ -151,8 +149,7 @@
                 const ri = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`); 
                 const di = await ri.json();
                 if (di.results && di.results.length > 0) {
-                    const s = di.results[0];
-                    audio.src = s.previewUrl;
+                    const s = di.results[0]; audio.src = s.previewUrl;
                     document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600');
                     document.getElementById('song-title').innerText = s.trackName;
                     document.getElementById('song-artist').innerText = s.artistName;
@@ -162,15 +159,14 @@
             } catch(e) {} finally { hideLoader(); }
         }
 
-        async function jugarAleatori() {
-            showLoader("Preparant la ronda...");
+        async function jugarAleatori(type) {
+            showLoader("Preparant cançó...");
             try {
                 const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
                 const r = await fetch(sheet); const t = await r.text(); const lines = t.split("\n").slice(1);
                 let years = []; lines.forEach(l => { const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); let y = parseInt(c[3]); if (!isNaN(y)) years.push(y); });
                 const min = years.length ? Math.min(...years) : 1930, max = years.length ? Math.max(...years) : 2025;
                 
-                // Si és el principi de la partida, donem una carta inicial a cadascú
                 if (gameState.playedIds.length === 0) {
                     gameState.players.forEach(p => p.cards = [Math.floor(Math.random()*(max-min+1))+min]);
                 }
@@ -184,10 +180,14 @@
                     const s = avail[Math.floor(Math.random()*avail.length)];
                     gameState.playedIds.push(s.id); 
                     save();
-                    window.location.href = window.location.origin + window.location.pathname + "?id=" + s.id;
-                } else {
-                    alert("No queden més cançons!");
-                    goToMenu();
+                    // David: Si acabem de començar, no recarreguem la pàgina!
+                    if (type === 'start') {
+                        renderGameUI();
+                        loadSong(s.id);
+                        history.pushState({}, '', '?id=' + s.id);
+                    } else {
+                        window.location.href = window.location.origin + window.location.pathname + "?id=" + s.id;
+                    }
                 }
             } catch(e) { hideLoader(); }
         }
@@ -262,35 +262,29 @@
             save(); jugarAleatori();
         }
 
-        // David: Aquí la clau del fix
         function playAgain() {
-            showLoader("Reiniciant...");
-            gameState.playedIds = [];
-            gameState.pendingWinner = null;
-            gameState.isRobberyActive = false;
-            gameState.currentTurn = 0;
-            gameState.originalTurn = 0;
-            // Netejem les cartes per començar de nou
-            gameState.players.forEach(p => p.cards = []);
-            save();
-            // Demanem la cançó nova. jugarAleatori redirigirà amb el nou ID
-            jugarAleatori();
+            gameState.playedIds = []; gameState.pendingWinner = null;
+            gameState.isRobberyActive = false; gameState.currentTurn = 0; gameState.originalTurn = 0;
+            save(); jugarAleatori('start');
         }
 
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
-        function addPlayer() { const n = document.getElementById('player-input').value.trim(); if (n) { gameState.players.push({ name: n, cards: [] }); document.getElementById('player-input').value = ""; save(); updateSetupList(); renderBoards(); } }
+        function addPlayer() { 
+            const n = document.getElementById('player-input').value.trim(); 
+            if (n) { gameState.players.push({ name: n, cards: [] }); document.getElementById('player-input').value = ""; save(); updateSetupList(); renderBoards(); } 
+        }
         function updateSetupList() { 
             const list = document.getElementById('player-list-setup'); 
             list.innerHTML = gameState.players.map((p, i) => `<div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.05); padding:10px; margin:5px; border-radius:8px;"><span>👤 ${p.name.toUpperCase()}</span><span style="color:red; cursor:pointer;" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span></div>`).join('');
             document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none';
             document.getElementById('win-input').value = gameState.winCondition;
-            setMode(gameState.mode);
+            setMode(gameState.mode || 'timeline');
         }
         function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); renderBoards(); }
         function setMode(m) { 
-            gameState.mode = m || 'timeline'; 
-            document.getElementById('mode-timeline').className = (gameState.mode === 'timeline') ? 'btn mode-selected' : 'btn btn-outline';
-            document.getElementById('mode-exact').className = (gameState.mode === 'exact') ? 'btn mode-selected' : 'btn btn-outline';
+            gameState.mode = m; 
+            document.getElementById('mode-timeline').className = (m === 'timeline') ? 'btn mode-selected' : 'btn btn-outline';
+            document.getElementById('mode-exact').className = (m === 'exact') ? 'btn mode-selected' : 'btn btn-outline';
             save(); 
         }
         function renderBoards() { 
@@ -309,9 +303,9 @@
                 c.innerHTML += `<div style="background:white;color:black;padding:5px 10px;border-radius:6px;font-weight:bold;">${y}</div><button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(${i})">${(i===s.length-1)?'NOU':'ENTRE'}</button>`;
             });
         }
-        function resetGame() { localStorage.removeItem(KEY); window.location.href = window.location.origin + window.location.pathname; }
+        function resetGame() { localStorage.removeItem(STORAGE_KEY); window.location.href = window.location.origin + window.location.pathname; }
         function goToMenu() { window.location.href = window.location.origin + window.location.pathname; }
-        function startScanner() { alert("Usa el mode Jugar en línia."); }
+        function startScanner() { window.location.href = window.location.origin + window.location.pathname + "?scan=true"; }
     </script>
 </body>
 </html>
