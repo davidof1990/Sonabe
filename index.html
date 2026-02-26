@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 163 MASTER</title>
+    <title>Sonabé! 🎶 - Versió 164 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -112,9 +112,8 @@
         const audio = document.getElementById('audio-player');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let html5QrCode = null, fadeInterval = null, currentYear = null;
-        let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [] };
+        let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null };
 
-        // David: RESET AUTOMÀTIC DELS ICONES QUAN ACABA LA CANÇÓ
         audio.onended = () => { resetPlayIcons(); };
 
         function load() { const saved = localStorage.getItem('sonabe_master_stable_v137'); if (saved) { const parsed = JSON.parse(saved); if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed}; } }
@@ -127,35 +126,16 @@
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
         function showLoader(txt) { document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt || "CARREGANT..."; }
         function hideLoader() { document.getElementById('loading-overlay').style.display = 'none'; }
-
-        function resetPlayIcons() {
-            document.getElementById('icon-play').style.display = 'block';
-            document.getElementById('icon-stop').style.display = 'none';
-        }
+        function resetPlayIcons() { document.getElementById('icon-play').style.display = 'block'; document.getElementById('icon-stop').style.display = 'none'; }
 
         function handlePlayClick() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
             clearInterval(fadeInterval);
-            
-            if (audio.paused) {
-                // FADE IN
-                pi.style.display = 'none'; si.style.display = 'block'; 
-                audio.volume = 0; 
-                audio.play();
+            if (audio.paused) { pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play();
                 fadeInterval = setInterval(() => { if (audio.volume < 0.95) audio.volume += 0.05; else { audio.volume = 1; clearInterval(fadeInterval); } }, 30);
             } else {
-                // FADE OUT MANUAL
-                fadeInterval = setInterval(() => { 
-                    if (audio.volume > 0.1) {
-                        audio.volume -= 0.1;
-                    } else {
-                        audio.volume = 0;
-                        audio.pause();
-                        resetPlayIcons();
-                        clearInterval(fadeInterval);
-                    }
-                }, 30);
+                fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.volume = 0; audio.pause(); resetPlayIcons(); clearInterval(fadeInterval); } }, 30);
             }
         }
 
@@ -163,37 +143,16 @@
             showLoader("CARREGANT...");
             clearInterval(fadeInterval);
             if (audio.paused || audio.volume <= 0.05) { setTimeout(callback, 600); return; }
-            fadeInterval = setInterval(() => { 
-                if (audio.volume > 0.1) { 
-                    audio.volume -= 0.1; 
-                } else { 
-                    audio.volume = 0; 
-                    audio.pause(); 
-                    resetPlayIcons();
-                    clearInterval(fadeInterval); 
-                    callback(); 
-                } 
-            }, 40);
+            fadeInterval = setInterval(() => { if (audio.volume > 0.1) { audio.volume -= 0.1; } else { audio.volume = 0; audio.pause(); resetPlayIcons(); clearInterval(fadeInterval); callback(); } }, 40);
         }
 
         async function startScanner() { hideLoader(); showScreen('landing-screen'); document.getElementById('scanner-screen').style.display = 'block'; if (html5QrCode) { try { await html5QrCode.stop(); } catch(e) {} } html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => { html5QrCode.stop().then(() => { window.location.href = t; }); }).catch(() => { cancelScanner(); }); }
         function cancelScanner() { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); else document.getElementById('scanner-screen').style.display = 'none'; window.location.href = window.location.origin + window.location.pathname; }
 
         function addPlayer() { const n = document.getElementById('player-input').value.trim(); if (n) { gameState.players.push({ name: n, cards: [2000] }); document.getElementById('player-input').value = ""; save(); updateSetupList(); renderBoards(); } }
-        function updateSetupList() { 
-            const list = document.getElementById('player-list-setup'); if (!list) return;
-            list.innerHTML = gameState.players.map((p, i) => `<div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.05); padding:10px; margin:5px; border-radius:8px;"><span>👤 ${p.name.toUpperCase()}</span><span style="color:red; cursor:pointer;" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span></div>`).join('');
-            document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none';
-            document.getElementById('win-input').value = gameState.winCondition;
-            setMode(gameState.mode);
-        }
+        function updateSetupList() { const list = document.getElementById('player-list-setup'); if (!list) return; list.innerHTML = gameState.players.map((p, i) => `<div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.05); padding:10px; margin:5px; border-radius:8px;"><span>👤 ${p.name.toUpperCase()}</span><span style="color:red; cursor:pointer;" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span></div>`).join(''); document.getElementById('config-area').style.display = (gameState.players.length > 0) ? 'block' : 'none'; document.getElementById('win-input').value = gameState.winCondition; setMode(gameState.mode); }
         function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); renderBoards(); }
-        function setMode(m) {
-            gameState.mode = m || 'timeline';
-            const btnT = document.getElementById('mode-timeline'), btnE = document.getElementById('mode-exact');
-            if (btnT && btnE) { btnT.className = (gameState.mode === 'timeline') ? 'btn mode-selected' : 'btn btn-outline'; btnE.className = (gameState.mode === 'exact') ? 'btn mode-selected' : 'btn btn-outline'; }
-            save();
-        }
+        function setMode(m) { gameState.mode = m || 'timeline'; const btnT = document.getElementById('mode-timeline'), btnE = document.getElementById('mode-exact'); if (btnT && btnE) { btnT.className = (gameState.mode === 'timeline') ? 'btn mode-selected' : 'btn btn-outline'; btnE.className = (gameState.mode === 'exact') ? 'btn mode-selected' : 'btn btn-outline'; } save(); }
 
         async function loadSong(id) {
             showLoader("Sincronitzant...");
@@ -227,7 +186,9 @@
             showScreen('game-screen'); document.getElementById('solution-card').style.display = 'none';
             if (gameState.players.length > 0) {
                 document.getElementById('ui-online-mode').style.display = 'block'; document.getElementById('ui-cards-mode').style.display = 'none';
-                const actual = gameState.players[gameState.currentTurn]; document.getElementById('turn-indicator').innerText = "TORN DE: " + actual.name.toUpperCase();
+                const actual = gameState.players[gameState.currentTurn]; 
+                const turnBox = document.getElementById('turn-indicator');
+                turnBox.innerText = gameState.isRobberyActive ? `🚨 ROBATORI: ${actual.name.toUpperCase()}` : `TORN DE: ${actual.name.toUpperCase()}`;
                 renderTimelineSlots(gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : actual); renderBoards();
             } else {
                 document.getElementById('ui-online-mode').style.display = 'none'; document.getElementById('ui-cards-mode').style.display = 'block';
@@ -235,7 +196,25 @@
             }
         }
 
-        function nextAction() { performFadeOut(() => { if (gameState.players.length > 0) { gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; gameState.originalTurn = gameState.currentTurn; gameState.isRobberyActive = false; gameState.robbersTried = []; save(); jugarAleatori('online'); } else { startScanner(); } }); }
+        function nextAction() {
+            performFadeOut(() => {
+                if (gameState.pendingWinner) {
+                    showScreen('winner-screen');
+                    document.getElementById('winner-name').innerText = gameState.pendingWinner.toUpperCase();
+                    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                    gameState.pendingWinner = null; save();
+                    return;
+                }
+                if (gameState.players.length > 0) {
+                    gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
+                    gameState.originalTurn = gameState.currentTurn;
+                    gameState.isRobberyActive = false; gameState.robbersTried = []; save();
+                    jugarAleatori('online');
+                } else {
+                    startScanner();
+                }
+            });
+        }
 
         function revealSolution(correct) {
             const res = document.getElementById('guess-result'); const details = document.getElementById('song-details');
@@ -246,13 +225,45 @@
             document.getElementById('ui-online-mode').style.display='none'; document.getElementById('ui-cards-mode').style.display='none'; document.getElementById('solution-card').style.display='flex';
         }
 
+        function renderBoards() { const container = document.getElementById('all-boards'); if (!container) return; container.style.display = 'block'; container.innerHTML = `<h3>Objectiu: ${gameState.winCondition}</h3>`; gameState.players.forEach((p, i) => { const active = (i === (gameState.isRobberyActive ? gameState.originalTurn : gameState.currentTurn)) ? 'active-row' : ''; container.innerHTML += `<div class="player-row ${active}"><div style="font-size:0.75rem; font-weight:bold; color:var(--primary);">${p.name.toUpperCase()} (${p.cards.length})</div><div style="display:flex;gap:4px;flex-wrap:wrap;">${[...p.cards].sort().map(y => `<div style="background:white;color:black;padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:bold;">${y}</div>`).join('')}</div></div>`; }); }
+        function renderTimelineSlots(player) { const container = document.getElementById('timeline-slots'); if (!container) return; container.innerHTML = ""; const sorted = [...player.cards].sort(); container.innerHTML += `<button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(-1)">ANTIC</button>`; sorted.forEach((y, i) => { container.innerHTML += `<div style="background:white;color:black;padding:5px 10px;border-radius:6px;font-weight:bold;">${y}</div><button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(${i})">${(i === sorted.length-1) ? 'NOU' : 'ENTRE'}</button>`; }); }
+        
+        function checkTimelineGuess(idx) {
+            const thief = gameState.players[gameState.currentTurn];
+            const target = gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : thief;
+            const sorted = [...target.cards].sort();
+            let ok = (idx === -1) ? (currentYear <= sorted[0]) : (idx === sorted.length-1) ? (currentYear >= sorted[sorted.length-1]) : (currentYear >= sorted[idx] && currentYear <= sorted[idx+1]);
+            
+            if(ok) {
+                thief.cards.push(currentYear);
+                if(thief.cards.length >= gameState.winCondition) {
+                    gameState.pendingWinner = thief.name;
+                }
+                save(); revealSolution(true);
+            } else {
+                // David: LÒGICA DE ROBATORI REPARADA
+                if (!gameState.isRobberyActive) {
+                    gameState.originalTurn = gameState.currentTurn;
+                    gameState.robbersTried = [gameState.currentTurn];
+                } else {
+                    gameState.robbersTried.push(gameState.currentTurn);
+                }
+                
+                let nextRobber = findNextInCircle();
+                if (nextRobber !== -1) {
+                    gameState.currentTurn = nextRobber;
+                    gameState.isRobberyActive = true;
+                    save(); renderGameUI(); // No ensenyem la solució encara!
+                } else {
+                    revealSolution(false); // Ja no queda ningú per robar
+                }
+            }
+        }
+
+        function findNextInCircle() { for (let i = 1; i < gameState.players.length; i++) { let c = (gameState.originalTurn + i) % gameState.players.length; if (!gameState.robbersTried.includes(c)) return c; } return -1; }
         function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_master_stable_v137'); window.location.href = window.location.origin + window.location.pathname; }); }
         function goToMenu() { performFadeOut(() => { window.location.href = window.location.origin + window.location.pathname; }); }
-        function playAgain() { performFadeOut(() => { gameState.players.forEach(p => p.cards = [2000]); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = []; save(); jugarAleatori('online'); }); }
-        function renderBoards() { const container = document.getElementById('all-boards'); if (!container) return; container.style.display = 'block'; container.innerHTML = `<h3>Objectiu: ${gameState.winCondition}</h3>`; gameState.players.forEach((p, i) => { const active = (i === gameState.currentTurn) ? 'active-row' : ''; container.innerHTML += `<div class="player-row ${active}"><div style="font-size:0.75rem; font-weight:bold; color:var(--primary);">${p.name.toUpperCase()} (${p.cards.length})</div><div style="display:flex;gap:4px;flex-wrap:wrap;">${[...p.cards].sort().map(y => `<div style="background:white;color:black;padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:bold;">${y}</div>`).join('')}</div></div>`; }); }
-        function renderTimelineSlots(player) { const container = document.getElementById('timeline-slots'); if (!container) return; container.innerHTML = ""; const sorted = [...player.cards].sort(); container.innerHTML += `<button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(-1)">ANTIC</button>`; sorted.forEach((y, i) => { container.innerHTML += `<div style="background:white;color:black;padding:5px 10px;border-radius:6px;font-weight:bold;">${y}</div><button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(${i})">${(i === sorted.length-1) ? 'NOU' : 'ENTRE'}</button>`; }); }
-        function checkTimelineGuess(idx) { const thief = gameState.players[gameState.currentTurn]; const target = gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : thief; const sorted = [...target.cards].sort(); let ok = (idx === -1) ? (currentYear <= sorted[0]) : (idx === sorted.length-1) ? (currentYear >= sorted[sorted.length-1]) : (currentYear >= sorted[idx] && currentYear <= sorted[idx+1]); if(ok) { thief.cards.push(currentYear); save(); renderBoards(); if(thief.cards.length >= gameState.winCondition) { showScreen('winner-screen'); document.getElementById('winner-name').innerText = thief.name.toUpperCase(); confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); return; } gameState.isRobberyActive = false; gameState.robbersTried = []; save(); revealSolution(true); } else { if (!gameState.isRobberyActive) { gameState.originalTurn = gameState.currentTurn; gameState.robbersTried = [gameState.currentTurn]; } else { gameState.robbersTried.push(gameState.currentTurn); } const nextIdx = findNextInCircle(); revealSolution(false, nextIdx !== -1); } }
-        function findNextInCircle() { for (let i = 1; i < gameState.players.length; i++) { let c = (gameState.currentTurn + i) % gameState.players.length; if (!gameState.robbersTried.includes(c)) return c; } return -1; }
+        function playAgain() { performFadeOut(() => { gameState.players.forEach(p => p.cards = [2000]); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = []; gameState.pendingWinner = null; save(); jugarAleatori('online'); }); }
     </script>
 </body>
 </html>
