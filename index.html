@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - Versió 169 MASTER</title>
+    <title>Sonabé! 🎶 - Versió 170 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -57,7 +57,7 @@
             <div class="btn-list">
                 <button id="mode-timeline" class="btn" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn" onclick="setMode('exact')">ANY EXACTE</button>
-                <button class="btn btn-primary" style="margin-top:10px;" onclick="jugarAleatori('online')">COMENÇAR PARTIDA</button>
+                <button class="btn btn-primary" style="margin-top:10px; border: 2px solid white;" onclick="jugarAleatori('online')">COMENÇAR PARTIDA</button>
             </div>
         </div>
         <button class="btn btn-secondary" style="margin-top:10px;" onclick="goToMenu()">Tornar</button>
@@ -104,8 +104,8 @@
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, nextRobberIdx: -1 };
 
         audio.onended = () => { resetPlayIcons(); };
-        function load() { const saved = localStorage.getItem('sonabe_v169'); if (saved) { const parsed = JSON.parse(saved); if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed}; } }
-        function save() { localStorage.setItem('sonabe_v169', JSON.stringify(gameState)); }
+        function load() { const saved = localStorage.getItem('sonabe_v170'); if (saved) { const parsed = JSON.parse(saved); if (parsed && Array.isArray(parsed.players)) gameState = {...gameState, ...parsed}; } }
+        function save() { localStorage.setItem('sonabe_v170', JSON.stringify(gameState)); }
         load();
 
         window.onload = () => { load(); const urlParams = new URLSearchParams(window.location.search); const appleId = urlParams.get('id'); if (appleId) { renderGameUI(); loadSong(appleId); } else { hideLoader(); showScreen('landing-screen'); if (gameState.players.length > 0) renderBoards(); } };
@@ -149,7 +149,7 @@
             } catch (e) { console.error(e); } finally { hideLoader(); }
         }
 
-        async function jugarAleatori(type) {
+        async function jugarAleatori() {
             showLoader("Calculant...");
             try {
                 const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
@@ -205,10 +205,9 @@
             const btnNext = document.getElementById('btn-next');
             
             if (isCorrect) {
-                // David: Anunciem la victòria aquí mateix!
                 if (hasWon) {
                     res.innerHTML = "🏆 HAS GUANYAT LA PARTIDA!";
-                    res.style.color = var(--gold);
+                    res.style.color = "#ffd700";
                     btnNext.innerText = "VEURE CELEBRACIÓ";
                 } else {
                     res.innerText = "✅ ENCERTAT!";
@@ -220,11 +219,7 @@
             } else {
                 res.innerText = "❌ INCORRECTE"; res.style.color = "#fa2d48";
                 if (canRob) { document.getElementById('btn-rob').style.display = "block"; }
-                else { 
-                    document.getElementById('song-details').style.display = "flex"; 
-                    btnNext.style.display = "block"; 
-                    btnNext.innerText = "Següent Cançó";
-                }
+                else { document.getElementById('song-details').style.display = "flex"; btnNext.style.display = "block"; btnNext.innerText = "Següent Cançó"; }
             }
         }
 
@@ -237,13 +232,13 @@
                     hideLoader();
                     showScreen('winner-screen');
                     document.getElementById('winner-name').innerText = gameState.pendingWinner.toUpperCase();
-                    confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 }, colors: ['#fa2d48', '#ffd700', '#ffffff'] });
+                    confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
                     gameState.pendingWinner = null; save();
                 } else {
                     gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
                     gameState.originalTurn = gameState.currentTurn;
                     gameState.isRobberyActive = false; gameState.robbersTried = []; save();
-                    jugarAleatori('online');
+                    jugarAleatori();
                 }
             });
         }
@@ -254,9 +249,9 @@
         function setMode(m) { gameState.mode = m || 'timeline'; const btnT = document.getElementById('mode-timeline'), btnE = document.getElementById('mode-exact'); if (btnT && btnE) { btnT.className = (gameState.mode === 'timeline') ? 'btn mode-selected' : 'btn btn-outline'; btnE.className = (gameState.mode === 'exact') ? 'btn mode-selected' : 'btn btn-outline'; } save(); }
         function renderBoards() { const container = document.getElementById('all-boards'); if (!container) return; container.style.display = 'block'; container.innerHTML = `<h3>Objectiu: ${gameState.winCondition}</h3>`; gameState.players.forEach((p, i) => { const active = (i === (gameState.isRobberyActive ? gameState.originalTurn : gameState.currentTurn)) ? 'active-row' : ''; container.innerHTML += `<div class="player-row ${active}"><div style="font-size:0.75rem; font-weight:bold; color:var(--primary);">${p.name.toUpperCase()} (${p.cards.length})</div><div style="display:flex;gap:4px;flex-wrap:wrap;">${[...p.cards].sort().map(y => `<div style="background:white;color:black;padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:bold;">${y}</div>`).join('')}</div></div>`; }); }
         function renderTimelineSlots(player) { const container = document.getElementById('timeline-slots'); if (!container) return; container.innerHTML = ""; const sorted = [...player.cards].sort(); container.innerHTML += `<button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(-1)">ANTIC</button>`; sorted.forEach((y, i) => { container.innerHTML += `<div style="background:white;color:black;padding:5px 10px;border-radius:6px;font-weight:bold;">${y}</div><button class="btn btn-outline" style="width:70px;padding:5px;" onclick="checkTimelineGuess(${i})">${(i === sorted.length-1) ? 'NOU' : 'ENTRE'}</button>`; }); }
-        function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_v169'); window.location.href = window.location.origin + window.location.pathname; }); }
+        function resetGame() { performFadeOut(() => { localStorage.removeItem('sonabe_v170'); window.location.href = window.location.origin + window.location.pathname; }); }
         function goToMenu() { performFadeOut(() => { window.location.href = window.location.origin + window.location.pathname; }); }
-        function playAgain() { performFadeOut(() => { gameState.players.forEach(p => p.cards = [2000]); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = []; gameState.pendingWinner = null; save(); jugarAleatori('online'); }); }
+        function playAgain() { performFadeOut(() => { gameState.players.forEach(p => p.cards = [2000]); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.playedIds = []; gameState.pendingWinner = null; save(); jugarAleatori(); }); }
         async function startScanner() { hideLoader(); document.getElementById('scanner-screen').style.display = 'block'; html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (t) => { html5QrCode.stop().then(() => { window.location.href = t; }); }); }
         function cancelScanner() { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-screen').style.display = 'none'; }); else document.getElementById('scanner-screen').style.display = 'none'; }
     </script>
