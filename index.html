@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v178 MASTER</title>
+    <title>Sonabé! 🎶 - v179 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; --gold: #ffd700; --purple: #a020f0; }
         body { background-color: var(--bg); color: white; font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; text-align: center; overflow-x: hidden; }
-        .neon-logo { font-weight: bold; font-size: 2.8rem; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px var(--neon); margin-bottom: 20px; }
+        .neon-logo { font-weight: bold; font-size: 2.8rem; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px var(--neon); margin-bottom: 5px; }
+        .song-count-badge { font-size: 0.8rem; color: #888; margin-bottom: 25px; font-weight: bold; letter-spacing: 1px; }
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; gap: 15px; }
         .active { display: flex; }
         
@@ -44,6 +45,8 @@
 
     <div id="landing-screen" class="screen">
         <div class="neon-logo">Sonabé!</div>
+        <div id="total-songs-display" class="song-count-badge">CARREGANT DATABASE...</div>
+        
         <div class="btn-list">
             <button class="btn btn-primary" onclick="startScanner()">Tinc les cartes! 📷</button>
             <button class="btn btn-outline" onclick="openSetup()">Jugar en línia 🎲</button>
@@ -71,7 +74,7 @@
     </div>
 
     <div id="game-screen" class="screen">
-        <div id="turn-indicator" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%;">TORN DE...</div>
+        <div id="turn-indicator" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%;">...</div>
         <button id="play-btn-main" onclick="handlePlayClick()">
             <div id="icon-play" style="width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px;"></div>
             <div id="icon-stop" style="width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none;"></div>
@@ -107,11 +110,29 @@
         let html5QrCode = null, fadeInterval = null, currentYear = null;
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false };
 
-        const KEY = 'sonabe_v178';
+        const KEY = 'sonabe_v179';
+        const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
+
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
         function load() { const s = localStorage.getItem(KEY); if(s) { try { gameState = JSON.parse(s); } catch(e){} } }
 
-        window.onload = () => { load(); showScreen('landing-screen'); };
+        window.onload = () => { 
+            load(); 
+            showScreen('landing-screen'); 
+            loadTotalCount(); // David: Busquem el total només obrir
+        };
+
+        // David: Funció nova per comptar cançons
+        async function loadTotalCount() {
+            try {
+                const r = await fetch(SHEET_CSV + "&t=" + Date.now());
+                const t = await r.text();
+                const total = t.split("\n").length - 1; // Restem la capçalera
+                document.getElementById('total-songs-display').innerText = `${total} CANÇONS DISPONIBLES`;
+            } catch(e) {
+                document.getElementById('total-songs-display').innerText = "DATABASE CONNECTADA";
+            }
+        }
 
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
         function showLoader(txt) { document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt; }
@@ -133,18 +154,10 @@
         function performFadeOut(callback) {
             clearInterval(fadeInterval);
             fadeInterval = setInterval(() => {
-                if (audio.volume > 0.1) {
-                    audio.volume -= 0.1;
-                } else {
-                    audio.pause();
-                    audio.volume = 1;
-                    resetPlayIcons();
-                    clearInterval(fadeInterval);
-                    if (callback) callback();
-                }
+                if (audio.volume > 0.1) { audio.volume -= 0.1; } 
+                else { audio.pause(); audio.volume = 1; resetPlayIcons(); clearInterval(fadeInterval); if (callback) callback(); }
             }, 50);
         }
-
         audio.onended = () => { resetPlayIcons(); };
 
         // --- ESCÀNER ---
@@ -191,8 +204,8 @@
         async function fetchNextSong() {
             showLoader("Buscant cançó...");
             try {
-                const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv&t=" + Date.now();
-                const r = await fetch(sheet); const t = await r.text();
+                const r = await fetch(SHEET_CSV + "&t=" + Date.now());
+                const t = await r.text();
                 const lines = t.split("\n").slice(1);
                 const avail = lines.map(l => {
                     const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
@@ -207,7 +220,7 @@
         async function loadSong(id, sheetYear = null) {
             showLoader("Carregant música...");
             showScreen('game-screen');
-            resetPlayIcons(); // David: Forcem el triangle al carregar nova cançó
+            resetPlayIcons();
             try {
                 const ri = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
                 const di = await ri.json();
@@ -315,11 +328,8 @@
 
         function playAgain() {
             performFadeOut(() => {
-                gameState.playedIds = []; 
-                gameState.players.forEach(p => p.cards = []);
-                gameState.currentTurn = 0; 
-                gameState.originalTurn = 0; 
-                gameState.pendingWinner = null;
+                gameState.playedIds = []; gameState.players.forEach(p => p.cards = []);
+                gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.pendingWinner = null;
                 save(); startGame();
             });
         }
