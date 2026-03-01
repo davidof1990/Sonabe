@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v189 MASTER</title>
+    <title>Sonabé! 🎶 - v190 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -34,13 +34,7 @@
         }
 
         .progress-ring { position: absolute; top: 0; left: 0; transform: rotate(-90deg); z-index: 1; }
-        
-        /* David: Afegim transició per al color (stroke) */
-        .progress-ring__circle { 
-            stroke: white; 
-            stroke-linecap: round; 
-            transition: stroke 0.3s ease; 
-        }
+        .progress-ring__circle { stroke: white; stroke-linecap: round; transition: stroke 0.2s; }
 
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
@@ -140,7 +134,7 @@
         let html5QrCode = null, fadeInterval = null, animationFrame = null, currentYear = null;
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false };
 
-        const KEY = 'sonabe_v189';
+        const KEY = 'sonabe_v190';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
 
         const circle = document.querySelector('.progress-ring__circle');
@@ -154,21 +148,22 @@
             circle.style.strokeDashoffset = offset;
         }
 
-        // David: Funció que controla el moviment i el color d'alerta
+        // David: Funció d'animació amb parpalleig als últims 5 segons
         function updateSmoothProgress() {
             if (!audio.paused && audio.duration) {
                 const percent = (audio.currentTime / audio.duration) * 100;
                 const remaining = audio.duration - audio.currentTime;
-                
                 setProgress(percent);
                 
-                // David: ALERTA ROJA (Menys de 5 segons)
                 if (remaining < 5) {
                     circle.style.stroke = "var(--primary)";
+                    // David: PARPALLEIG - Alternem opacitat cada 0.25 segons (2 cops per segon)
+                    const blink = Math.floor(audio.currentTime * 4) % 2;
+                    circle.style.opacity = blink ? "1" : "0.2";
                 } else {
                     circle.style.stroke = "white";
+                    circle.style.opacity = "1";
                 }
-                
                 animationFrame = requestAnimationFrame(updateSmoothProgress);
             }
         }
@@ -195,7 +190,8 @@
             document.getElementById('icon-play').style.display = 'block'; 
             document.getElementById('icon-stop').style.display = 'none'; 
             cancelAnimationFrame(animationFrame);
-            circle.style.stroke = "white"; // Resetejem el color
+            circle.style.stroke = "white";
+            circle.style.opacity = "1";
             setProgress(0);
         }
 
@@ -218,7 +214,6 @@
         }
         audio.onended = () => { resetPlayIcons(); };
 
-        // --- RESTA DE LÒGICA (SENSE CANVIS PER SEGURETAT) ---
         function startScanner() {
             document.getElementById('scanner-container').style.display = 'block';
             html5QrCode = new Html5Qrcode("reader");
@@ -365,7 +360,7 @@
         function playAgain() { performFadeOut(() => { gameState.playedIds = []; gameState.players.forEach(p => p.cards = []); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.pendingWinner = null; save(); startGame(); }); }
         function renderBoards() {
             const container = document.getElementById('game-board-container'); if(!container) return;
-            container.style.display = 'block'; container.innerHTML = `<h3>Objectiu: ${gameState.winCondition} cartes</h3>`;
+            container.style.display = 'block'; container.innerHTML = `<h3>Objectiu: ${gameState.winCondition}</h3>`;
             gameState.players.forEach((p, i) => {
                 const act = (i === (gameState.isRobberyActive ? gameState.originalTurn : gameState.currentTurn)) ? 'active-row' : '';
                 container.innerHTML += `<div class="player-row ${act}"><div style="font-size:0.8rem; font-weight:bold; color:var(--primary);">${p.name.toUpperCase()} (${p.cards.length})</div><div style="display:flex; gap:4px; flex-wrap:wrap;">${[...p.cards].sort((a,b)=>a-b).map(y => `<div style="background:white; color:black; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;">${y}</div>`).join('')}</div></div>`;
