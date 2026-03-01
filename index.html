@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v190 MASTER</title>
+    <title>Sonabé! 🎶 - v191 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -132,9 +132,10 @@
     <script>
         const audio = document.getElementById('audio-player');
         let html5QrCode = null, fadeInterval = null, animationFrame = null, currentYear = null;
+        let isFadingOutAuto = false; // David: Flag per evitar bucles al fade-out final
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false };
 
-        const KEY = 'sonabe_v190';
+        const KEY = 'sonabe_v191';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
 
         const circle = document.querySelector('.progress-ring__circle');
@@ -148,16 +149,20 @@
             circle.style.strokeDashoffset = offset;
         }
 
-        // David: Funció d'animació amb parpalleig als últims 5 segons
         function updateSmoothProgress() {
             if (!audio.paused && audio.duration) {
                 const percent = (audio.currentTime / audio.duration) * 100;
                 const remaining = audio.duration - audio.currentTime;
                 setProgress(percent);
                 
+                // David: AUTO FADE-OUT (Quan falten 2 segons)
+                if (remaining < 2 && !isFadingOutAuto) {
+                    isFadingOutAuto = true;
+                    performFadeOut();
+                }
+
                 if (remaining < 5) {
                     circle.style.stroke = "var(--primary)";
-                    // David: PARPALLEIG - Alternem opacitat cada 0.25 segons (2 cops per segon)
                     const blink = Math.floor(audio.currentTime * 4) % 2;
                     circle.style.opacity = blink ? "1" : "0.2";
                 } else {
@@ -212,6 +217,8 @@
                 else { audio.pause(); audio.volume = 1; resetPlayIcons(); clearInterval(fadeInterval); if (callback) callback(); }
             }, 50);
         }
+        
+        // David: Si la cançó acaba per accident o sense fade, resetejem
         audio.onended = () => { resetPlayIcons(); };
 
         function startScanner() {
@@ -266,6 +273,7 @@
         }
         async function loadSong(id, sheetYear = null) {
             showLoader("Carregant música..."); showScreen('game-screen'); resetPlayIcons();
+            isFadingOutAuto = false; // David: Resetejem el flag per a la nova cançó
             try {
                 const ri = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
                 const di = await ri.json();
