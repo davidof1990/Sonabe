@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v180 MASTER</title>
+    <title>Sonabé! 🎶 - v181 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -34,7 +34,7 @@
         #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; }
         #reader { width: 100%; height: 100%; }
 
-        .exact-input { width: 120px; padding: 15px; font-size: 1.5rem; border-radius: 10px; border: 2px solid var(--neon); background: #222; color: white; text-align: center; margin-bottom: 10px; }
+        .text-input-field { width: 250px; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--neon); background: #222; color: white; text-align: center; margin-bottom: 10px; outline: none; }
     </style>
 </head>
 <body>
@@ -58,7 +58,7 @@
     <div id="setup-screen" class="screen">
         <div class="neon-logo" style="font-size: 2.2rem;">Jugar en línia</div>
         <div style="display:flex; gap:10px; width: 280px; margin-bottom: 10px;">
-            <input type="text" id="player-input" placeholder="Nom del jugador..." style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white;">
+            <input type="text" id="player-input" placeholder="Nom..." style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white;">
             <button class="btn btn-primary" onclick="addPlayer()" style="width:60px; padding:0;">+</button>
         </div>
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
@@ -68,6 +68,8 @@
             <div class="btn-list">
                 <button id="mode-timeline" class="btn" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn" onclick="setMode('exact')">ANY EXACTE</button>
+                <button id="mode-song" class="btn" onclick="setMode('song')">NOM DE LA CANÇÓ</button>
+                <button id="mode-artist" class="btn" onclick="setMode('artist')">NOM DEL GRUP</button>
                 <button class="btn btn-primary" style="margin-top:10px;" onclick="startGame()">COMENÇAR PARTIDA</button>
             </div>
         </div>
@@ -85,9 +87,9 @@
             <div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div>
         </div>
 
-        <div id="ui-exact-mode" class="btn-list" style="display:none;">
-            <input type="number" id="exact-year-input" class="exact-input" placeholder="ANY?">
-            <button class="btn btn-primary" onclick="checkExactGuess()">COMPROVAR ANY</button>
+        <div id="ui-input-mode" class="btn-list" style="display:none;">
+            <input type="text" id="game-text-input" class="text-input-field" placeholder="">
+            <button class="btn btn-primary" onclick="processInputGuess()">COMPROVAR</button>
         </div>
         
         <div id="solution-card" style="display:none; flex-direction:column; align-items:center; width: 100%;">
@@ -116,10 +118,10 @@
 
     <script>
         const audio = document.getElementById('audio-player');
-        let html5QrCode = null, fadeInterval = null, currentYear = null;
+        let html5QrCode = null, fadeInterval = null, currentYear = null, currentSongName = "", currentArtistName = "";
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false };
 
-        const KEY = 'sonabe_v180';
+        const KEY = 'sonabe_v181';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
 
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
@@ -187,6 +189,8 @@
             gameState.mode = m;
             document.getElementById('mode-timeline').className = m === 'timeline' ? 'btn mode-selected' : 'btn btn-outline';
             document.getElementById('mode-exact').className = m === 'exact' ? 'btn mode-selected' : 'btn btn-outline';
+            document.getElementById('mode-song').className = m === 'song' ? 'btn mode-selected' : 'btn btn-outline';
+            document.getElementById('mode-artist').className = m === 'artist' ? 'btn mode-selected' : 'btn btn-outline';
             save();
         }
 
@@ -224,8 +228,12 @@
                 const s = di.results[0];
                 audio.src = s.previewUrl;
                 document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600');
-                document.getElementById('song-title').innerText = s.trackName;
-                document.getElementById('song-artist').innerText = s.artistName;
+                
+                currentSongName = s.trackName;
+                currentArtistName = s.artistName;
+                document.getElementById('song-title').innerText = currentSongName;
+                document.getElementById('song-artist').innerText = currentArtistName;
+                
                 currentYear = sheetYear || parseInt(s.releaseDate.substring(0,4));
                 document.getElementById('song-year').innerText = currentYear;
                 renderGameUI();
@@ -239,7 +247,7 @@
             document.getElementById('btn-next').style.display = 'none';
             document.getElementById('winner-actions').style.display = 'none';
             document.getElementById('ui-timeline-mode').style.display = 'none';
-            document.getElementById('ui-exact-mode').style.display = 'none';
+            document.getElementById('ui-input-mode').style.display = 'none';
 
             if (gameState.isOnline) {
                 const p = gameState.players[gameState.currentTurn];
@@ -249,8 +257,12 @@
                     document.getElementById('ui-timeline-mode').style.display = 'block';
                     renderTimelineSlots(gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : p);
                 } else {
-                    document.getElementById('ui-exact-mode').style.display = 'block';
-                    document.getElementById('exact-year-input').value = "";
+                    document.getElementById('ui-input-mode').style.display = 'block';
+                    const inp = document.getElementById('game-text-input');
+                    inp.value = "";
+                    if (gameState.mode === 'exact') { inp.placeholder = "ESCRIU L'ANY"; inp.type="number"; }
+                    else if (gameState.mode === 'song') { inp.placeholder = "NOM DE LA CANÇÓ"; inp.type="text"; }
+                    else if (gameState.mode === 'artist') { inp.placeholder = "NOM DEL GRUP"; inp.type="text"; }
                 }
                 renderBoards();
             } else {
@@ -272,16 +284,26 @@
             });
         }
 
-        // David: Comprovació per al mode ANY EXACTE
-        function checkExactGuess() {
-            const val = parseInt(document.getElementById('exact-year-input').value);
-            if (isNaN(val)) return;
+        // David: Normalitzador de text (elimina accents, majúscules i espais)
+        function normalizeString(str) {
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        }
+
+        function processInputGuess() {
+            const val = document.getElementById('game-text-input').value;
+            if (!val) return;
             
-            const isOk = (val === currentYear);
+            let isOk = false;
+            if (gameState.mode === 'exact') {
+                isOk = (parseInt(val) === currentYear);
+            } else if (gameState.mode === 'song') {
+                isOk = (normalizeString(val) === normalizeString(currentSongName));
+            } else if (gameState.mode === 'artist') {
+                isOk = (normalizeString(val) === normalizeString(currentArtistName));
+            }
             processResult(isOk);
         }
 
-        // David: Comprovació per al mode LÍNIA DEL TEMPS
         function checkGuess(idx) {
             const p = gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : gameState.players[gameState.currentTurn];
             const s = [...p.cards].sort((a,b) => a-b);
@@ -311,7 +333,7 @@
 
         function revealUI(correct, canRob, win) {
             document.getElementById('ui-timeline-mode').style.display = 'none';
-            document.getElementById('ui-exact-mode').style.display = 'none';
+            document.getElementById('ui-input-mode').style.display = 'none';
             document.getElementById('solution-card').style.display = 'flex';
             const res = document.getElementById('guess-result');
             if (correct) {
