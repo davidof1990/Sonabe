@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Sonabé! 🎶 - v184 FULL APP</title>
+    <title>Sonabé! 🎶 - v185 MASTER APP</title>
     
     <meta name="theme-color" content="#121212">
     <meta name="mobile-web-app-capable" content="yes">
@@ -15,17 +15,19 @@
 
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
     <style>
         :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; --gold: #ffd700; --purple: #a020f0; }
         
-        /* David: Evitem que es pugui fer scroll vertical "rebotant" */
-        html, body { height: 100%; overflow: hidden; position: fixed; width: 100%; }
+        /* Bloqueig d'scroll per a mode App */
+        html, body { height: 100%; overflow: hidden; position: fixed; width: 100%; margin: 0; padding: 0; }
         
-        body { background-color: var(--bg); color: white; font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; box-sizing: border-box; text-align: center; }
+        body { background-color: var(--bg); color: white; font-family: -apple-system, system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; text-align: center; }
         
         .neon-logo { font-weight: bold; font-size: 2.8rem; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px var(--neon); margin-top: env(safe-area-inset-top, 20px); margin-bottom: 5px; }
-        .song-count-badge { font-size: 0.8rem; color: #888; margin-bottom: 20px; font-weight: bold; }
-        .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; gap: 12px; height: 100%; overflow-y: auto; padding-bottom: 50px; }
+        .song-count-badge { font-size: 0.8rem; color: #888; margin-bottom: 20px; font-weight: bold; letter-spacing: 1px; }
+        
+        .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; gap: 12px; height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; padding-bottom: 80px; }
         .active { display: flex; }
         
         #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: var(--bg); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
@@ -33,18 +35,24 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         .btn-list { display: flex; flex-direction: column; gap: 10px; width: 100%; align-items: center; }
-        .btn { background: rgba(255,255,255,0.1); border: 1px solid #444; color: #eee; padding: 16px 25px; border-radius: 40px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; width: 280px; transition: 0.2s; outline: none; }
+        .btn { background: rgba(255,255,255,0.1); border: 1px solid #444; color: #eee; padding: 16px 25px; border-radius: 40px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; width: 280px; transition: 0.2s; outline: none; -webkit-tap-highlight-color: transparent; }
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-purple { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple) !important; border: none !important; }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 15px var(--neon); }
         
-        #play-btn-main { width:90px; height:90px; background-color:var(--primary); border-radius:50%; border:none; margin: 10px 0; display:flex; align-items:center; justify-content:center; cursor: pointer; outline: none; }
+        #play-btn-main { width:90px; height:90px; background-color:var(--primary); border-radius:50%; border:none; margin: 10px 0; display:flex; align-items:center; justify-content:center; cursor: pointer; }
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.2rem; padding: 5px 30px; border-radius: 10px; }
         .album-art { width: 140px; height: 140px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+        
         .player-row { background: #1e1e1e; padding: 10px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; width: 100%; box-sizing: border-box; }
         .active-row { border: 2px solid white !important; box-shadow: 0 0 15px var(--primary); }
-        .text-input-field { width: 250px; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--neon); background: #222; color: white; text-align: center; margin-bottom: 10px; outline: none; }
+        
+        .text-input-field { width: 250px; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--neon); background: #222; color: white; text-align: center; margin-bottom: 5px; outline: none; }
+        
+        /* Guia d'instal·lació iOS */
+        #ios-guide { display: none; position: fixed; bottom: 20px; background: white; color: black; padding: 15px; border-radius: 15px; width: 90%; max-width: 350px; z-index: 1000; font-size: 0.85rem; font-weight: bold; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+
         #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; }
         #reader { width: 100%; height: 100%; }
     </style>
@@ -54,12 +62,18 @@
 
     <div id="scanner-container">
         <div id="reader"></div>
-        <button class="btn btn-secondary" onclick="stopScanner()" style="position:absolute; bottom:50px; left:50%; transform:translateX(-50%); z-index:5100;">CANCEL·LAR</button>
+        <button class="btn btn-secondary" onclick="stopScanner()" style="position:absolute; bottom:50px; left:50%; transform:translateX(-50%);">CANCEL·LAR</button>
     </div>
 
     <div id="landing-screen" class="screen active">
         <div class="neon-logo">Sonabé!</div>
         <div id="total-songs-display" class="song-count-badge">CONNECTANT...</div>
+        
+        <div id="install-area" style="display:none; margin-bottom: 20px;">
+            <button class="btn btn-gold" onclick="triggerInstall()">INSTAL·LAR APP 📲</button>
+            <p style="font-size: 0.7rem; color: #888; margin-top: 5px;">Per jugar a pantalla completa i sense barres</p>
+        </div>
+
         <div class="btn-list">
             <button class="btn btn-primary" onclick="startScanner()">Tinc les cartes! 📷</button>
             <button class="btn btn-outline" onclick="openSetup()">Jugar en línia 🎲</button>
@@ -67,8 +81,13 @@
         </div>
     </div>
 
+    <div id="ios-guide" onclick="this.style.display='none'">
+        Toca el botó de compartir <img src="https://img.icons8.com/ios/50/000000/share.png" style="width:18px; vertical-align:middle;"> i després <b>"Afegir a la pantalla d'inici"</b> per jugar a pantalla completa. 
+        <div style="margin-top:5px; color:var(--primary); font-size:0.7rem;">(Toca per tancar)</div>
+    </div>
+
     <div id="setup-screen" class="screen">
-        <div class="neon-logo" style="font-size: 2rem;">Jugar en línia</div>
+        <div class="neon-logo" style="font-size: 2rem;">Configuració</div>
         <div style="display:flex; gap:10px; width: 280px; margin-bottom: 10px;">
             <input type="text" id="player-input" placeholder="Nom..." style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white;">
             <button class="btn btn-primary" onclick="addPlayer()" style="width:60px; padding:0;">+</button>
@@ -127,21 +146,46 @@
         const audio = document.getElementById('audio-player');
         let html5QrCode = null, fadeInterval = null, currentYear = null, currentSongName = "", currentArtistName = "";
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false };
-        const KEY = 'sonabe_v184';
+        const KEY = 'sonabe_v185';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
 
-        // Service Worker
+        // --- LÒGICA PWA / INSTAL·LACIÓ ---
+        let deferredPrompt;
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const blob = new Blob([`self.addEventListener('fetch', function(e){});`], {type: 'text/javascript'});
-                const swUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(swUrl).catch(() => {});
+                navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
             });
         }
 
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (!isStandalone) document.getElementById('install-area').style.display = 'block';
+        });
+
+        async function triggerInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') document.getElementById('install-area').style.display = 'none';
+                deferredPrompt = null;
+            }
+        }
+
+        // --- MOTOR DEL JOC ---
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
         function load() { const s = localStorage.getItem(KEY); if(s) { try { gameState = JSON.parse(s); } catch(e){} } }
-        window.onload = () => { load(); loadTotalCount(); };
+        
+        window.onload = () => { 
+            load(); 
+            loadTotalCount();
+            // Guia iOS si és iPhone i no està instal·lat
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS && !isStandalone) document.getElementById('ios-guide').style.display = 'block';
+        };
 
         async function loadTotalCount() {
             try {
@@ -330,9 +374,10 @@
         function executeRobbery() { gameState.currentTurn = gameState.nextRobberIdx; gameState.isRobberyActive = true; save(); renderGameUI(); }
         function nextAction() { performFadeOut(() => { if (!gameState.isOnline) { startScanner(); return; } gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; gameState.originalTurn = gameState.currentTurn; gameState.isRobberyActive = false; gameState.robbersTried = []; save(); fetchNextSong(); }); }
         function playAgain() { performFadeOut(() => { gameState.playedIds = []; gameState.players.forEach(p => p.cards = []); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.pendingWinner = null; save(); startGame(); }); }
+        
         function renderBoards() {
             const container = document.getElementById('game-board-container'); if(!container) return;
-            container.style.display = 'block'; container.innerHTML = `<h3 style="font-size:0.8rem;color:#888;">Objectiu: ${gameState.winCondition}</h3>`;
+            container.style.display = 'block'; container.innerHTML = `<h3 style="font-size:0.75rem;color:#888;">OBJECTIU: ${gameState.winCondition}</h3>`;
             gameState.players.forEach((p, i) => {
                 const act = (i === (gameState.isRobberyActive ? gameState.originalTurn : gameState.currentTurn)) ? 'active-row' : '';
                 container.innerHTML += `<div class="player-row ${act}"><div style="font-size:0.75rem; font-weight:bold; color:var(--primary);">${p.name.toUpperCase()}</div><div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;">${[...p.cards].sort((a,b)=>a-b).map(y => `<div style="background:white; color:black; padding:1px 5px; border-radius:4px; font-size:0.65rem; font-weight:bold;">${y}</div>`).join('')}</div></div>`;
