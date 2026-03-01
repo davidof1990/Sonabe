@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v192 MASTER PRESSIÓ</title>
+    <title>Sonabé! 🎶 - v193 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -38,7 +38,6 @@
         #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; }
         #reader { width: 100%; height: 100%; }
 
-        /* Estils nous per al Mode Pressió */
         #pressure-timer-display { font-size: 1.2rem; font-weight: 900; color: var(--gold); margin-left: 10px; text-shadow: 0 0 10px var(--gold); }
         .config-group { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; width: 100%; box-sizing: border-box; }
     </style>
@@ -144,7 +143,7 @@
             isOnline: false, pressureMode: 0 
         };
 
-        const KEY = 'sonabe_v192';
+        const KEY = 'sonabe_v193';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
 
         const circle = document.querySelector('.progress-ring__circle');
@@ -170,7 +169,6 @@
             }
         }
 
-        // --- David: LÒGICA MODE PRESSIÓ ---
         function setPressure(sec) {
             gameState.pressureMode = sec;
             const btns = ['p-off', 'p-15', 'p-20', 'p-30'];
@@ -187,26 +185,17 @@
             const display = document.getElementById('pressure-timer-display');
             display.style.display = 'inline-block';
             display.innerText = `⏱️ ${timeLeft}`;
-            
             pressureInterval = setInterval(() => {
                 timeLeft--;
                 display.innerText = `⏱️ ${timeLeft}`;
                 if (timeLeft <= 5) display.style.color = "var(--primary)";
                 else display.style.color = "var(--gold)";
-                
-                if (timeLeft <= 0) {
-                    clearInterval(pressureInterval);
-                    processResult(false); // Temps esgotat = Fallada
-                }
+                if (timeLeft <= 0) { clearInterval(pressureInterval); processResult(false); }
             }, 1000);
         }
 
-        function stopPressureTimer() {
-            clearInterval(pressureInterval);
-            document.getElementById('pressure-timer-display').style.display = 'none';
-        }
+        function stopPressureTimer() { clearInterval(pressureInterval); document.getElementById('pressure-timer-display').style.display = 'none'; }
 
-        // --- MOTOR ---
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
         function load() { const s = localStorage.getItem(KEY); if(s) { try { gameState = JSON.parse(s); } catch(e){} } }
         window.onload = () => { load(); showScreen('landing-screen'); loadTotalCount(); };
@@ -231,7 +220,7 @@
             if (audio.paused) {
                 pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play();
                 updateSmoothProgress();
-                startPressureTimer(); // David: Iniciem temporitzador al donar al Play
+                startPressureTimer();
                 fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else clearInterval(fadeInterval); }, 50);
             } else { performFadeOut(); }
         }
@@ -342,9 +331,10 @@
             let ok = (idx === -1) ? (currentYear <= s[0]) : (idx === s.length-1) ? (currentYear >= s[s.length-1]) : (currentYear >= s[idx] && currentYear <= s[idx+1]);
             processResult(ok);
         }
+        
+        // David: Aquí hem tret el performFadeOut() perquè la música segueixi
         function processResult(isOk) {
-            stopPressureTimer(); // David: Aturem sempre el rellotge en processar
-            performFadeOut();
+            stopPressureTimer(); 
             const thief = gameState.players[gameState.currentTurn];
             if (isOk) {
                 thief.cards.push(currentYear); const win = (thief.cards.length >= gameState.winCondition);
@@ -360,6 +350,7 @@
                 else { save(); revealUI(false, false, false); }
             }
         }
+        
         function revealUI(correct, canRob, win) {
             document.getElementById('ui-timeline-mode').style.display = 'none'; document.getElementById('ui-input-mode').style.display = 'none';
             document.getElementById('solution-card').style.display = 'flex'; const res = document.getElementById('guess-result');
@@ -376,7 +367,10 @@
             }
         }
         function executeRobbery() { gameState.currentTurn = gameState.nextRobberIdx; gameState.isRobberyActive = true; save(); renderGameUI(); }
+        
+        // David: Aquí sí que tallem la música abans de passar de pantalla
         function nextAction() { performFadeOut(() => { if (!gameState.isOnline) { startScanner(); return; } gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; gameState.originalTurn = gameState.currentTurn; gameState.isRobberyActive = false; gameState.robbersTried = []; save(); fetchNextSong(); }); }
+        
         function playAgain() { performFadeOut(() => { gameState.playedIds = []; gameState.players.forEach(p => p.cards = []); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.pendingWinner = null; save(); startGame(); }); }
         function renderBoards() {
             const container = document.getElementById('game-board-container'); if(!container) return;
