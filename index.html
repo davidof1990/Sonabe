@@ -2,26 +2,30 @@
 <html lang="ca">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v183 MASTER APP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Sonabé! 🎶 - v184 FULL APP</title>
     
     <meta name="theme-color" content="#121212">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Sonabé!">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/neon/512/musical-notes.png">
     
-    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Sonab%C3%A9!%22,%22short_name%22:%22Sonab%C3%A9%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22#121212%22,%22theme_color%22:%22#fa2d48%22,%22icons%22:[{%22src%22:%22https://img.icons8.com/neon/512/musical-notes.png%22,%22sizes%22:%22512x512%22,%22type%22:%22image/png%22}]}">
+    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Sonab%C3%A9!%20Joc%22,%22short_name%22:%22Sonab%C3%A9!%22,%22start_url%22:%22index.html%22,%22display%22:%22standalone%22,%22orientation%22:%22portrait%22,%22background_color%22:%22#121212%22,%22theme_color%22:%22#fa2d48%22,%22icons%22:[{%22src%22:%22https://img.icons8.com/neon/512/musical-notes.png%22,%22sizes%22:%22512x512%22,%22type%22:%22image/png%22,%22purpose%22:%22any%20maskable%22}]}">
 
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; --gold: #ffd700; --purple: #a020f0; }
-        body { background-color: var(--bg); color: white; font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; text-align: center; overflow-x: hidden; }
-        .neon-logo { font-weight: bold; font-size: 2.8rem; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px var(--neon); margin-bottom: 5px; }
-        .song-count-badge { font-size: 0.8rem; color: #888; margin-bottom: 25px; font-weight: bold; letter-spacing: 1px; }
-        .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; gap: 15px; }
+        
+        /* David: Evitem que es pugui fer scroll vertical "rebotant" */
+        html, body { height: 100%; overflow: hidden; position: fixed; width: 100%; }
+        
+        body { background-color: var(--bg); color: white; font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; box-sizing: border-box; text-align: center; }
+        
+        .neon-logo { font-weight: bold; font-size: 2.8rem; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px var(--neon); margin-top: env(safe-area-inset-top, 20px); margin-bottom: 5px; }
+        .song-count-badge { font-size: 0.8rem; color: #888; margin-bottom: 20px; font-weight: bold; }
+        .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; gap: 12px; height: 100%; overflow-y: auto; padding-bottom: 50px; }
         .active { display: flex; }
         
         #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: var(--bg); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
@@ -35,9 +39,9 @@
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 15px var(--neon); }
         
-        #play-btn-main { width:90px; height:90px; background-color:var(--primary); border-radius:50%; border:none; margin: 15px 0; display:flex; align-items:center; justify-content:center; cursor: pointer; outline: none; }
-        .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
-        .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+        #play-btn-main { width:90px; height:90px; background-color:var(--primary); border-radius:50%; border:none; margin: 10px 0; display:flex; align-items:center; justify-content:center; cursor: pointer; outline: none; }
+        .year-badge { background: white; color: black; font-weight: 900; font-size: 2.2rem; padding: 5px 30px; border-radius: 10px; }
+        .album-art { width: 140px; height: 140px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .player-row { background: #1e1e1e; padding: 10px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; width: 100%; box-sizing: border-box; }
         .active-row { border: 2px solid white !important; box-shadow: 0 0 15px var(--primary); }
         .text-input-field { width: 250px; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--neon); background: #222; color: white; text-align: center; margin-bottom: 10px; outline: none; }
@@ -53,9 +57,9 @@
         <button class="btn btn-secondary" onclick="stopScanner()" style="position:absolute; bottom:50px; left:50%; transform:translateX(-50%); z-index:5100;">CANCEL·LAR</button>
     </div>
 
-    <div id="landing-screen" class="screen">
+    <div id="landing-screen" class="screen active">
         <div class="neon-logo">Sonabé!</div>
-        <div id="total-songs-display" class="song-count-badge">CARREGANT DATABASE...</div>
+        <div id="total-songs-display" class="song-count-badge">CONNECTANT...</div>
         <div class="btn-list">
             <button class="btn btn-primary" onclick="startScanner()">Tinc les cartes! 📷</button>
             <button class="btn btn-outline" onclick="openSetup()">Jugar en línia 🎲</button>
@@ -64,16 +68,16 @@
     </div>
 
     <div id="setup-screen" class="screen">
-        <div class="neon-logo" style="font-size: 2.2rem;">Jugar en línia</div>
+        <div class="neon-logo" style="font-size: 2rem;">Jugar en línia</div>
         <div style="display:flex; gap:10px; width: 280px; margin-bottom: 10px;">
             <input type="text" id="player-input" placeholder="Nom..." style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white;">
             <button class="btn btn-primary" onclick="addPlayer()" style="width:60px; padding:0;">+</button>
         </div>
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
         <div id="config-area" style="display:none; width: 100%;">
-            <p style="font-size:0.75rem; font-weight:bold; color:#888;">CARTES PER GUANYAR:</p>
-            <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:20px; padding: 12px; border-radius: 10px; background: #222; color: white; text-align: center; border: 1px solid #444;">
-            <p style="font-size:0.75rem; font-weight:bold; color:#888;">MODES DE JOC:</p>
+            <p style="font-size:0.7rem; font-weight:bold; color:#888;">CARTES PER GUANYAR:</p>
+            <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:15px; padding: 10px; border-radius: 10px; background: #222; color: white; text-align: center; border: 1px solid #444;">
+            <p style="font-size:0.7rem; font-weight:bold; color:#888;">MODES DE JOC:</p>
             <div class="btn-list">
                 <button id="mode-timeline" class="btn" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn" onclick="setMode('exact')">ANY EXACTE</button>
@@ -86,10 +90,10 @@
     </div>
 
     <div id="game-screen" class="screen">
-        <div id="turn-indicator" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%;">...</div>
+        <div id="turn-indicator" style="background: var(--primary); color: white; padding: 10px; border-radius: 10px; font-weight: 900; width: 100%;">...</div>
         <button id="play-btn-main" onclick="handlePlayClick()">
             <div id="icon-play" style="width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px;"></div>
-            <div id="icon-stop" style="width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none;"></div>
+            <div id="icon-stop" style="width: 25px; height: 25px; background-color: white; border-radius: 4px; display: none;"></div>
         </button>
         <div id="ui-timeline-mode" class="btn-list" style="display:none;"><div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div></div>
         <div id="ui-input-mode" class="btn-list" style="display:none;">
@@ -97,12 +101,12 @@
             <button class="btn btn-primary" onclick="processInputGuess()">COMPROVAR</button>
         </div>
         <div id="solution-card" style="display:none; flex-direction:column; align-items:center; width: 100%;">
-            <div id="guess-result" style="font-weight:bold; font-size:1.5rem; margin-bottom:10px;"></div>
+            <div id="guess-result" style="font-weight:bold; font-size:1.3rem; margin-bottom:10px;"></div>
             <div id="song-details" style="display:none; flex-direction:column; align-items:center;">
                 <div id="song-year" class="year-badge">----</div>
                 <img id="album-img" class="album-art" src="" style="margin:10px 0;">
-                <div id="song-title" style="font-weight:bold;"></div>
-                <div id="song-artist" style="color:var(--primary);"></div>
+                <div id="song-title" style="font-weight:bold; font-size: 0.9rem;"></div>
+                <div id="song-artist" style="color:var(--primary); font-size: 0.8rem;"></div>
             </div>
             <div id="action-buttons" class="btn-list" style="margin-top:15px;">
                 <button id="btn-rob" class="btn btn-purple" style="display:none;" onclick="executeRobbery()">ROBAR CARTA 🚨</button>
@@ -113,7 +117,7 @@
                 </div>
             </div>
         </div>
-        <div id="game-board-container" style="width: 100%; margin-top: 20px;"></div>
+        <div id="game-board-container" style="width: 100%; margin-top: 15px;"></div>
         <button class="btn btn-secondary" style="margin-top:10px;" onclick="goToMenu()">Menú Principal</button>
     </div>
 
@@ -123,10 +127,10 @@
         const audio = document.getElementById('audio-player');
         let html5QrCode = null, fadeInterval = null, currentYear = null, currentSongName = "", currentArtistName = "";
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false };
-        const KEY = 'sonabe_v183';
+        const KEY = 'sonabe_v184';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
 
-        // David: Service Worker bàsic per a la PWA
+        // Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const blob = new Blob([`self.addEventListener('fetch', function(e){});`], {type: 'text/javascript'});
@@ -137,7 +141,7 @@
 
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
         function load() { const s = localStorage.getItem(KEY); if(s) { try { gameState = JSON.parse(s); } catch(e){} } }
-        window.onload = () => { load(); showScreen('landing-screen'); loadTotalCount(); };
+        window.onload = () => { load(); loadTotalCount(); };
 
         async function loadTotalCount() {
             try {
@@ -145,7 +149,7 @@
                 const t = await r.text();
                 const total = t.split("\n").length - 1;
                 document.getElementById('total-songs-display').innerText = `${total} CANÇONS DISPONIBLES`;
-            } catch(e) { document.getElementById('total-songs-display').innerText = "DATABASE CONNECTADA"; }
+            } catch(e) { document.getElementById('total-songs-display').innerText = "ONLINE"; }
         }
 
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
@@ -194,7 +198,6 @@
             setMode(gameState.mode || 'timeline');
         }
         function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); }
-        
         function setMode(m) {
             gameState.mode = m;
             document.getElementById('mode-timeline').className = m === 'timeline' ? 'btn mode-selected' : 'btn btn-outline';
@@ -254,14 +257,13 @@
                 if (gameState.mode === 'timeline') { document.getElementById('ui-timeline-mode').style.display = 'block'; renderTimelineSlots(gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : p); } 
                 else {
                     document.getElementById('ui-input-mode').style.display = 'block'; const inp = document.getElementById('game-text-input'); inp.value = "";
-                    if (gameState.mode === 'exact') { inp.placeholder = "ESCRIU L'ANY"; inp.type="number"; }
-                    else if (gameState.mode === 'song') { inp.placeholder = "NOM DE LA CANÇÓ"; inp.type="text"; }
-                    else if (gameState.mode === 'artist') { inp.placeholder = "NOM DEL GRUP"; inp.type="text"; }
+                    if (gameState.mode === 'exact') { inp.placeholder = "ANY?"; inp.type="number"; }
+                    else { inp.placeholder = "RESPOSTA"; inp.type="text"; }
                 }
                 renderBoards();
             } else {
                 document.getElementById('turn-indicator').innerText = "MODE FÍSIC"; document.getElementById('solution-card').style.display = 'flex';
-                document.getElementById('btn-next').style.display = 'block'; document.getElementById('guess-result').innerText = "CARTA ESCANEJADA";
+                document.getElementById('btn-next').style.display = 'block'; document.getElementById('guess-result').innerText = "ESCANEJAT";
             }
         }
 
@@ -315,9 +317,9 @@
             if (correct) {
                 document.getElementById('song-details').style.display = "flex";
                 if (win) {
-                    res.innerHTML = "🏆 HAS GUANYAT LA PARTIDA!"; res.style.color = "#ffd700";
+                    res.innerHTML = "🏆 VICTÒRIA!"; res.style.color = "#ffd700";
                     document.getElementById('winner-actions').style.display = "flex"; confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
-                } else { res.innerText = "✅ ENCERTAT!"; res.style.color = "#28a745"; document.getElementById('btn-next').style.display = "block"; }
+                } else { res.innerText = "✅ CORRECTE!"; res.style.color = "#28a745"; document.getElementById('btn-next').style.display = "block"; }
             } else {
                 res.innerText = "❌ INCORRECTE"; res.style.color = "#fa2d48";
                 if (canRob) document.getElementById('btn-rob').style.display = "block";
@@ -330,10 +332,10 @@
         function playAgain() { performFadeOut(() => { gameState.playedIds = []; gameState.players.forEach(p => p.cards = []); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.pendingWinner = null; save(); startGame(); }); }
         function renderBoards() {
             const container = document.getElementById('game-board-container'); if(!container) return;
-            container.style.display = 'block'; container.innerHTML = `<h3>Objectiu: ${gameState.winCondition} cartes</h3>`;
+            container.style.display = 'block'; container.innerHTML = `<h3 style="font-size:0.8rem;color:#888;">Objectiu: ${gameState.winCondition}</h3>`;
             gameState.players.forEach((p, i) => {
                 const act = (i === (gameState.isRobberyActive ? gameState.originalTurn : gameState.currentTurn)) ? 'active-row' : '';
-                container.innerHTML += `<div class="player-row ${act}"><div style="font-size:0.8rem; font-weight:bold; color:var(--primary);">${p.name.toUpperCase()} (${p.cards.length})</div><div style="display:flex; gap:4px; flex-wrap:wrap;">${[...p.cards].sort((a,b)=>a-b).map(y => `<div style="background:white; color:black; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;">${y}</div>`).join('')}</div></div>`;
+                container.innerHTML += `<div class="player-row ${act}"><div style="font-size:0.75rem; font-weight:bold; color:var(--primary);">${p.name.toUpperCase()}</div><div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;">${[...p.cards].sort((a,b)=>a-b).map(y => `<div style="background:white; color:black; padding:1px 5px; border-radius:4px; font-size:0.65rem; font-weight:bold;">${y}</div>`).join('')}</div></div>`;
             });
         }
         function resetGame() { performFadeOut(() => { localStorage.removeItem(KEY); window.location.reload(); }); }
