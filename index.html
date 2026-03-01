@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v193 MASTER</title>
+    <title>Sonabé! 🎶 - v194 WAVE EDITION</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -25,10 +25,11 @@
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 15px var(--neon); }
         
-        .play-container { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin: 10px 0; }
-        #play-btn-main { width: 90px; height: 90px; min-width: 90px; min-height: 90px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; }
-        .progress-ring { position: absolute; top: 0; left: 0; transform: rotate(-90deg); z-index: 1; }
-        .progress-ring__circle { stroke: white; stroke-linecap: round; transition: stroke 0.2s; }
+        .play-container { position: relative; width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin: 10px 0; }
+        #play-btn-main { width: 90px; height: 90px; min-width: 90px; min-height: 90px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        
+        /* David: El Canvas on dibuixem l'ona */
+        #wave-canvas { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
 
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
@@ -37,14 +38,12 @@
         .text-input-field { width: 250px; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--neon); background: #222; color: white; text-align: center; margin-bottom: 10px; outline: none; }
         #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; }
         #reader { width: 100%; height: 100%; }
-
         #pressure-timer-display { font-size: 1.2rem; font-weight: 900; color: var(--gold); margin-left: 10px; text-shadow: 0 0 10px var(--gold); }
         .config-group { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; width: 100%; box-sizing: border-box; }
     </style>
 </head>
 <body>
     <div id="loading-overlay"><div class="spinner"></div><p id="loading-text" style="margin-top:15px;">CARREGANT...</p></div>
-
     <div id="scanner-container"><div id="reader"></div><button class="btn btn-secondary" onclick="stopScanner()" style="position:absolute; bottom:50px; left:50%; transform:translateX(-50%); z-index:5100;">CANCEL·LAR</button></div>
 
     <div id="landing-screen" class="screen">
@@ -64,13 +63,11 @@
             <button class="btn btn-primary" onclick="addPlayer()" style="width:60px; padding:0;">+</button>
         </div>
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
-        
         <div id="config-area" style="display:none; width: 100%;">
             <div class="config-group">
                 <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-top:0;">CARTES PER GUANYAR:</p>
                 <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; padding: 10px; border-radius: 10px; background: #222; color: white; text-align: center; border: 1px solid #444;">
             </div>
-
             <div class="config-group">
                 <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-top:0;">MODE PRESSIÓ (TEMPS):</p>
                 <div style="display:flex; gap:5px; justify-content:center;">
@@ -80,7 +77,6 @@
                     <button id="p-30" class="btn" style="width:60px; padding:10px;" onclick="setPressure(30)">30s</button>
                 </div>
             </div>
-            
             <p style="font-size:0.75rem; font-weight:bold; color:#888;">MODES DE JOC:</p>
             <div class="btn-list">
                 <button id="mode-timeline" class="btn" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
@@ -100,7 +96,7 @@
         </div>
         
         <div class="play-container">
-            <svg class="progress-ring" width="110" height="110"><circle class="progress-ring__circle" stroke-width="5" fill="transparent" r="52" cx="55" cy="55" /></svg>
+            <canvas id="wave-canvas" width="130" height="130"></canvas>
             <button id="play-btn-main" onclick="handlePlayClick()">
                 <div id="icon-play" style="width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px;"></div>
                 <div id="icon-stop" style="width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none;"></div>
@@ -136,45 +132,63 @@
     <script>
         const audio = document.getElementById('audio-player');
         let html5QrCode = null, fadeInterval = null, animationFrame = null, pressureInterval = null;
-        let currentYear = null, isFadingOutAuto = false;
-        let gameState = { 
-            players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], 
-            winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, 
-            isOnline: false, pressureMode: 0 
-        };
+        let currentYear = null, isFadingOutAuto = false, waveRotation = 0;
+        let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        const KEY = 'sonabe_v193';
+        const canvas = document.getElementById('wave-canvas');
+        const ctx = canvas.getContext('2d');
+        const KEY = 'sonabe_v194';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
 
-        const circle = document.querySelector('.progress-ring__circle');
-        const radius = circle.r.baseVal.value;
-        const circumference = radius * 2 * Math.PI;
-        circle.style.strokeDasharray = `${circumference} ${circumference}`;
-        circle.style.strokeDashoffset = circumference;
-
-        function setProgress(percent) { const offset = circumference - (percent / 100 * circumference); circle.style.strokeDashoffset = offset; }
-
-        function updateSmoothProgress() {
-            if (!audio.paused && audio.duration) {
-                const percent = (audio.currentTime / audio.duration) * 100;
+        // David: Funció que dibuixa l'ona de so circular
+        function drawWave() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (audio.duration) {
+                const percent = audio.currentTime / audio.duration;
                 const remaining = audio.duration - audio.currentTime;
-                setProgress(percent);
-                if (remaining < 2 && !isFadingOutAuto) { isFadingOutAuto = true; performFadeOut(); }
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const radius = 52;
+                
+                // Configurar color i efecte alerta
+                let color = "white";
+                let opacity = 1;
                 if (remaining < 5) {
-                    circle.style.stroke = "var(--primary)";
-                    const blink = Math.floor(audio.currentTime * 4) % 2;
-                    circle.style.opacity = blink ? "1" : "0.2";
-                } else { circle.style.stroke = "white"; circle.style.opacity = "1"; }
-                animationFrame = requestAnimationFrame(updateSmoothProgress);
+                    color = "#fa2d48";
+                    opacity = (Math.floor(Date.now() / 250) % 2) ? 1 : 0.2;
+                }
+                
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 4;
+                ctx.lineCap = "round";
+                ctx.globalAlpha = opacity;
+
+                // David: Dibuixem l'ona mitjançant una sèrie de punts calculats amb sinus
+                const totalPoints = 120;
+                const progressPoints = Math.floor(totalPoints * percent);
+                
+                for (let i = 0; i <= progressPoints; i++) {
+                    const angle = (i / totalPoints) * Math.PI * 2 - Math.PI / 2;
+                    // L'ona vibra més segons si hi ha música (un batec simulat)
+                    const waveIntensity = audio.paused ? 0 : 3;
+                    const vibration = Math.sin(i * 0.5 + (Date.now() / 100)) * waveIntensity;
+                    
+                    const x = centerX + (radius + vibration) * Math.cos(angle);
+                    const y = centerY + (radius + vibration) * Math.sin(angle);
+                    
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
             }
+            animationFrame = requestAnimationFrame(drawWave);
         }
 
         function setPressure(sec) {
             gameState.pressureMode = sec;
-            const btns = ['p-off', 'p-15', 'p-20', 'p-30'];
-            btns.forEach(b => document.getElementById(b).className = 'btn btn-outline');
-            const activeId = sec === 0 ? 'p-off' : 'p-' + sec;
-            document.getElementById(activeId).className = 'btn mode-selected';
+            ['p-off', 'p-15', 'p-20', 'p-30'].forEach(b => document.getElementById(b).className = 'btn btn-outline');
+            document.getElementById(sec === 0 ? 'p-off' : 'p-' + sec).className = 'btn mode-selected';
             save();
         }
 
@@ -188,17 +202,15 @@
             pressureInterval = setInterval(() => {
                 timeLeft--;
                 display.innerText = `⏱️ ${timeLeft}`;
-                if (timeLeft <= 5) display.style.color = "var(--primary)";
-                else display.style.color = "var(--gold)";
+                display.style.color = (timeLeft <= 5) ? "var(--primary)" : "var(--gold)";
                 if (timeLeft <= 0) { clearInterval(pressureInterval); processResult(false); }
             }, 1000);
         }
 
         function stopPressureTimer() { clearInterval(pressureInterval); document.getElementById('pressure-timer-display').style.display = 'none'; }
-
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
         function load() { const s = localStorage.getItem(KEY); if(s) { try { gameState = JSON.parse(s); } catch(e){} } }
-        window.onload = () => { load(); showScreen('landing-screen'); loadTotalCount(); };
+        window.onload = () => { load(); showScreen('landing-screen'); loadTotalCount(); drawWave(); };
 
         async function loadTotalCount() {
             try {
@@ -212,14 +224,13 @@
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
         function showLoader(txt) { document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt; }
         function hideLoader() { document.getElementById('loading-overlay').style.display = 'none'; }
-        function resetPlayIcons() { document.getElementById('icon-play').style.display = 'block'; document.getElementById('icon-stop').style.display = 'none'; cancelAnimationFrame(animationFrame); circle.style.stroke = "white"; circle.style.opacity = "1"; setProgress(0); }
+        function resetPlayIcons() { document.getElementById('icon-play').style.display = 'block'; document.getElementById('icon-stop').style.display = 'none'; }
 
         function handlePlayClick() {
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
             clearInterval(fadeInterval);
             if (audio.paused) {
                 pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play();
-                updateSmoothProgress();
                 startPressureTimer();
                 fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else clearInterval(fadeInterval); }, 50);
             } else { performFadeOut(); }
@@ -231,6 +242,11 @@
                 if (audio.volume > 0.1) { audio.volume -= 0.1; } 
                 else { audio.pause(); audio.volume = 1; resetPlayIcons(); clearInterval(fadeInterval); if (callback) callback(); }
             }, 50);
+        }
+        
+        audio.ontimeupdate = () => {
+            const remaining = audio.duration - audio.currentTime;
+            if (remaining < 2 && !isFadingOutAuto) { isFadingOutAuto = true; performFadeOut(); }
         }
         audio.onended = () => { resetPlayIcons(); };
 
@@ -331,8 +347,6 @@
             let ok = (idx === -1) ? (currentYear <= s[0]) : (idx === s.length-1) ? (currentYear >= s[s.length-1]) : (currentYear >= s[idx] && currentYear <= s[idx+1]);
             processResult(ok);
         }
-        
-        // David: Aquí hem tret el performFadeOut() perquè la música segueixi
         function processResult(isOk) {
             stopPressureTimer(); 
             const thief = gameState.players[gameState.currentTurn];
@@ -350,7 +364,6 @@
                 else { save(); revealUI(false, false, false); }
             }
         }
-        
         function revealUI(correct, canRob, win) {
             document.getElementById('ui-timeline-mode').style.display = 'none'; document.getElementById('ui-input-mode').style.display = 'none';
             document.getElementById('solution-card').style.display = 'flex'; const res = document.getElementById('guess-result');
@@ -367,10 +380,7 @@
             }
         }
         function executeRobbery() { gameState.currentTurn = gameState.nextRobberIdx; gameState.isRobberyActive = true; save(); renderGameUI(); }
-        
-        // David: Aquí sí que tallem la música abans de passar de pantalla
         function nextAction() { performFadeOut(() => { if (!gameState.isOnline) { startScanner(); return; } gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; gameState.originalTurn = gameState.currentTurn; gameState.isRobberyActive = false; gameState.robbersTried = []; save(); fetchNextSong(); }); }
-        
         function playAgain() { performFadeOut(() => { gameState.playedIds = []; gameState.players.forEach(p => p.cards = []); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.pendingWinner = null; save(); startGame(); }); }
         function renderBoards() {
             const container = document.getElementById('game-board-container'); if(!container) return;
