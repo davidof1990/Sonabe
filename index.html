@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v181 MASTER</title>
+    <title>Sonabé! 🎶 - v182 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -62,9 +62,12 @@
             <button class="btn btn-primary" onclick="addPlayer()" style="width:60px; padding:0;">+</button>
         </div>
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
+        
         <div id="config-area" style="display:none; width: 100%;">
             <p style="font-size:0.75rem; font-weight:bold; color:#888;">CARTES PER GUANYAR:</p>
             <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; margin-bottom:20px; padding: 12px; border-radius: 10px; background: #222; color: white; text-align: center; border: 1px solid #444;">
+            
+            <p style="font-size:0.75rem; font-weight:bold; color:#888;">MODES DE JOC:</p>
             <div class="btn-list">
                 <button id="mode-timeline" class="btn" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn" onclick="setMode('exact')">ANY EXACTE</button>
@@ -121,7 +124,7 @@
         let html5QrCode = null, fadeInterval = null, currentYear = null, currentSongName = "", currentArtistName = "";
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false };
 
-        const KEY = 'sonabe_v181';
+        const KEY = 'sonabe_v182';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
 
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
@@ -178,6 +181,7 @@
         }
         function updateSetupList() {
             const list = document.getElementById('player-list-setup');
+            if(!list) return;
             list.innerHTML = gameState.players.map((p, i) => `<div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.05); padding:10px; margin:5px; border-radius:8px;"><span>👤 ${p.name.toUpperCase()}</span><span style="color:red; cursor:pointer;" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span></div>`).join('');
             document.getElementById('config-area').style.display = gameState.players.length > 0 ? 'block' : 'none';
             document.getElementById('win-input').value = gameState.winCondition;
@@ -228,12 +232,10 @@
                 const s = di.results[0];
                 audio.src = s.previewUrl;
                 document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600');
-                
                 currentSongName = s.trackName;
                 currentArtistName = s.artistName;
                 document.getElementById('song-title').innerText = currentSongName;
                 document.getElementById('song-artist').innerText = currentArtistName;
-                
                 currentYear = sheetYear || parseInt(s.releaseDate.substring(0,4));
                 document.getElementById('song-year').innerText = currentYear;
                 renderGameUI();
@@ -284,7 +286,6 @@
             });
         }
 
-        // David: Normalitzador de text (elimina accents, majúscules i espais)
         function normalizeString(str) {
             return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
         }
@@ -292,15 +293,10 @@
         function processInputGuess() {
             const val = document.getElementById('game-text-input').value;
             if (!val) return;
-            
             let isOk = false;
-            if (gameState.mode === 'exact') {
-                isOk = (parseInt(val) === currentYear);
-            } else if (gameState.mode === 'song') {
-                isOk = (normalizeString(val) === normalizeString(currentSongName));
-            } else if (gameState.mode === 'artist') {
-                isOk = (normalizeString(val) === normalizeString(currentArtistName));
-            }
+            if (gameState.mode === 'exact') { isOk = (parseInt(val) === currentYear); } 
+            else if (gameState.mode === 'song') { isOk = (normalizeString(val) === normalizeString(currentSongName)); } 
+            else if (gameState.mode === 'artist') { isOk = (normalizeString(val) === normalizeString(currentArtistName)); }
             processResult(isOk);
         }
 
@@ -376,6 +372,7 @@
 
         function renderBoards() {
             const container = document.getElementById('game-board-container');
+            if(!container) return;
             container.style.display = 'block';
             container.innerHTML = `<h3>Objectiu: ${gameState.winCondition} cartes</h3>`;
             gameState.players.forEach((p, i) => {
