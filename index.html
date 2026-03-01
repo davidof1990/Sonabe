@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v186 MASTER</title>
+    <title>Sonabé! 🎶 - v187 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -25,7 +25,18 @@
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 15px var(--neon); }
         
-        /* David: Fix del botó aixafat - Afegit flex-shrink: 0 i mides fixes */
+        /* David: Contenidor del botó per l'anella de progrés */
+        .play-container {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin: 10px 0;
+        }
+
         #play-btn-main { 
             width: 90px; 
             height: 90px; 
@@ -35,15 +46,29 @@
             background-color: var(--primary); 
             border-radius: 50%; 
             border: none; 
-            margin: 15px 0; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
             cursor: pointer; 
-            outline: none; 
+            z-index: 2;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
         }
-        
+
+        /* L'anella SVG */
+        .progress-ring {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: rotate(-90deg);
+            z-index: 1;
+        }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.1s linear;
+            stroke: white;
+            stroke-linecap: round;
+        }
+
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         .player-row { background: #1e1e1e; padding: 10px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; width: 100%; box-sizing: border-box; }
@@ -100,10 +125,22 @@
     <div id="game-screen" class="screen">
         <div id="turn-indicator" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%;">...</div>
         
-        <button id="play-btn-main" onclick="handlePlayClick()">
-            <div id="icon-play" style="width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px;"></div>
-            <div id="icon-stop" style="width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none;"></div>
-        </button>
+        <div class="play-container">
+            <svg class="progress-ring" width="110" height="110">
+                <circle
+                  class="progress-ring__circle"
+                  stroke-width="5"
+                  fill="transparent"
+                  r="52"
+                  cx="55"
+                  cy="55"
+                />
+            </svg>
+            <button id="play-btn-main" onclick="handlePlayClick()">
+                <div id="icon-play" style="width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px;"></div>
+                <div id="icon-stop" style="width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none;"></div>
+            </button>
+        </div>
         
         <div id="ui-timeline-mode" class="btn-list" style="display:none;">
             <div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div>
@@ -143,8 +180,27 @@
         let html5QrCode = null, fadeInterval = null, currentYear = null, currentSongName = "", currentArtistName = "";
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false };
 
-        const KEY = 'sonabe_v186';
+        const KEY = 'sonabe_v187';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
+
+        // David: Configuració de l'anella de progrés
+        const circle = document.querySelector('.progress-ring__circle');
+        const radius = circle.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+        circle.style.strokeDasharray = `${circumference} ${circumference}`;
+        circle.style.strokeDashoffset = circumference;
+
+        function setProgress(percent) {
+            const offset = circumference - (percent / 100 * circumference);
+            circle.style.strokeDashoffset = offset;
+        }
+
+        audio.ontimeupdate = () => {
+            if (audio.duration) {
+                const percent = (audio.currentTime / audio.duration) * 100;
+                setProgress(percent);
+            }
+        };
 
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
         function load() { const s = localStorage.getItem(KEY); if(s) { try { gameState = JSON.parse(s); } catch(e){} } }
@@ -163,7 +219,12 @@
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
         function showLoader(txt) { document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt; }
         function hideLoader() { document.getElementById('loading-overlay').style.display = 'none'; }
-        function resetPlayIcons() { document.getElementById('icon-play').style.display = 'block'; document.getElementById('icon-stop').style.display = 'none'; }
+        
+        function resetPlayIcons() { 
+            document.getElementById('icon-play').style.display = 'block'; 
+            document.getElementById('icon-stop').style.display = 'none'; 
+            setProgress(0); // David: Tornem l'anella a zero
+        }
 
         function handlePlayClick() {
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
