@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v188 MASTER</title>
+    <title>Sonabé! 🎶 - v189 MASTER</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -35,8 +35,12 @@
 
         .progress-ring { position: absolute; top: 0; left: 0; transform: rotate(-90deg); z-index: 1; }
         
-        /* David: Hem tret el 'transition' de CSS perquè ara ho fem per JS a 60fps */
-        .progress-ring__circle { stroke: white; stroke-linecap: round; }
+        /* David: Afegim transició per al color (stroke) */
+        .progress-ring__circle { 
+            stroke: white; 
+            stroke-linecap: round; 
+            transition: stroke 0.3s ease; 
+        }
 
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
@@ -136,7 +140,7 @@
         let html5QrCode = null, fadeInterval = null, animationFrame = null, currentYear = null;
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false };
 
-        const KEY = 'sonabe_v188';
+        const KEY = 'sonabe_v189';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
 
         const circle = document.querySelector('.progress-ring__circle');
@@ -150,11 +154,21 @@
             circle.style.strokeDashoffset = offset;
         }
 
-        // David: Aquesta és la funció que fa l'animació fluida a 60fps
+        // David: Funció que controla el moviment i el color d'alerta
         function updateSmoothProgress() {
             if (!audio.paused && audio.duration) {
                 const percent = (audio.currentTime / audio.duration) * 100;
+                const remaining = audio.duration - audio.currentTime;
+                
                 setProgress(percent);
+                
+                // David: ALERTA ROJA (Menys de 5 segons)
+                if (remaining < 5) {
+                    circle.style.stroke = "var(--primary)";
+                } else {
+                    circle.style.stroke = "white";
+                }
+                
                 animationFrame = requestAnimationFrame(updateSmoothProgress);
             }
         }
@@ -181,6 +195,7 @@
             document.getElementById('icon-play').style.display = 'block'; 
             document.getElementById('icon-stop').style.display = 'none'; 
             cancelAnimationFrame(animationFrame);
+            circle.style.stroke = "white"; // Resetejem el color
             setProgress(0);
         }
 
@@ -189,7 +204,7 @@
             clearInterval(fadeInterval);
             if (audio.paused) {
                 pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play();
-                updateSmoothProgress(); // David: Iniciem el bucle d'animació
+                updateSmoothProgress();
                 fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else clearInterval(fadeInterval); }, 50);
             } else { performFadeOut(); }
         }
