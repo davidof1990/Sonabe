@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v193 MASTER</title>
+    <title>Sonabé! 🎶 - v196 ADMIN EDITION</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -37,24 +37,37 @@
         .text-input-field { width: 250px; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--neon); background: #222; color: white; text-align: center; margin-bottom: 10px; outline: none; }
         #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; }
         #reader { width: 100%; height: 100%; }
-
         #pressure-timer-display { font-size: 1.2rem; font-weight: 900; color: var(--gold); margin-left: 10px; text-shadow: 0 0 10px var(--gold); }
         .config-group { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; width: 100%; box-sizing: border-box; }
+
+        /* Estils Admin */
+        .admin-result-card { background: #1e1e1e; padding: 10px; border-radius: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 5px; width: 100%; text-align: left; }
+        .admin-result-card img { width: 50px; height: 50px; border-radius: 5px; }
     </style>
 </head>
 <body>
     <div id="loading-overlay"><div class="spinner"></div><p id="loading-text" style="margin-top:15px;">CARREGANT...</p></div>
-
     <div id="scanner-container"><div id="reader"></div><button class="btn btn-secondary" onclick="stopScanner()" style="position:absolute; bottom:50px; left:50%; transform:translateX(-50%); z-index:5100;">CANCEL·LAR</button></div>
 
-    <div id="landing-screen" class="screen">
+    <div id="landing-screen" class="screen active">
         <div class="neon-logo">Sonabé!</div>
         <div id="total-songs-display" class="song-count-badge">CARREGANT DATABASE...</div>
         <div class="btn-list">
             <button class="btn btn-primary" onclick="startScanner()">Tinc les cartes! 📷</button>
             <button class="btn btn-outline" onclick="openSetup()">Jugar en línia 🎲</button>
             <button class="btn btn-secondary" onclick="resetGame()">Reiniciar Tot</button>
+            <button class="btn btn-secondary" onclick="openAdmin()" style="width: 50px; padding: 10px; margin-top: 20px; font-size: 1.2rem;">⚙️</button>
         </div>
+    </div>
+
+    <div id="admin-screen" class="screen">
+        <div class="neon-logo" style="font-size: 2rem;">Panell Admin</div>
+        <div class="config-group">
+            <input type="text" id="admin-search-input" class="text-input-field" placeholder="Busca cançó o grup..." style="width: 90%;">
+            <button class="btn btn-primary" onclick="searchITunes()">BUSCAR</button>
+        </div>
+        <div id="admin-results" style="width: 100%; max-height: 300px; overflow-y: auto;"></div>
+        <button class="btn btn-secondary" onclick="showScreen('landing-screen')">Sortir</button>
     </div>
 
     <div id="setup-screen" class="screen">
@@ -64,13 +77,11 @@
             <button class="btn btn-primary" onclick="addPlayer()" style="width:60px; padding:0;">+</button>
         </div>
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
-        
         <div id="config-area" style="display:none; width: 100%;">
             <div class="config-group">
                 <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-top:0;">CARTES PER GUANYAR:</p>
                 <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; padding: 10px; border-radius: 10px; background: #222; color: white; text-align: center; border: 1px solid #444;">
             </div>
-
             <div class="config-group">
                 <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-top:0;">MODE PRESSIÓ (TEMPS):</p>
                 <div style="display:flex; gap:5px; justify-content:center;">
@@ -80,7 +91,6 @@
                     <button id="p-30" class="btn" style="width:60px; padding:10px;" onclick="setPressure(30)">30s</button>
                 </div>
             </div>
-            
             <p style="font-size:0.75rem; font-weight:bold; color:#888;">MODES DE JOC:</p>
             <div class="btn-list">
                 <button id="mode-timeline" class="btn" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
@@ -98,7 +108,6 @@
             <span id="turn-text">...</span>
             <span id="pressure-timer-display" style="display:none;">⏱️ 00</span>
         </div>
-        
         <div class="play-container">
             <svg class="progress-ring" width="110" height="110"><circle class="progress-ring__circle" stroke-width="5" fill="transparent" r="52" cx="55" cy="55" /></svg>
             <button id="play-btn-main" onclick="handlePlayClick()">
@@ -106,10 +115,8 @@
                 <div id="icon-stop" style="width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none;"></div>
             </button>
         </div>
-        
         <div id="ui-timeline-mode" class="btn-list" style="display:none;"><div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div></div>
         <div id="ui-input-mode" class="btn-list" style="display:none;"><input type="text" id="game-text-input" class="text-input-field" placeholder=""><button class="btn btn-primary" onclick="processInputGuess()">COMPROVAR</button></div>
-        
         <div id="solution-card" style="display:none; flex-direction:column; align-items:center; width: 100%;">
             <div id="guess-result" style="font-weight:bold; font-size:1.5rem; margin-bottom:10px;"></div>
             <div id="song-details" style="display:none; flex-direction:column; align-items:center;">
@@ -136,15 +143,12 @@
     <script>
         const audio = document.getElementById('audio-player');
         let html5QrCode = null, fadeInterval = null, animationFrame = null, pressureInterval = null;
-        let currentYear = null, isFadingOutAuto = false;
-        let gameState = { 
-            players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], 
-            winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, 
-            isOnline: false, pressureMode: 0 
-        };
+        let currentYear = null, isFadingOutAuto = false, allExistingIds = [];
+        let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        const KEY = 'sonabe_v193';
+        const KEY = 'sonabe_v196';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
+        const WEB_APP_URL = "POSA_AQUI_LA_TEVA_URL_DEL_APPS_SCRIPT"; 
 
         const circle = document.querySelector('.progress-ring__circle');
         const radius = circle.r.baseVal.value;
@@ -153,7 +157,6 @@
         circle.style.strokeDashoffset = circumference;
 
         function setProgress(percent) { const offset = circumference - (percent / 100 * circumference); circle.style.strokeDashoffset = offset; }
-
         function updateSmoothProgress() {
             if (!audio.paused && audio.duration) {
                 const percent = (audio.currentTime / audio.duration) * 100;
@@ -169,15 +172,77 @@
             }
         }
 
-        function setPressure(sec) {
-            gameState.pressureMode = sec;
-            const btns = ['p-off', 'p-15', 'p-20', 'p-30'];
-            btns.forEach(b => document.getElementById(b).className = 'btn btn-outline');
-            const activeId = sec === 0 ? 'p-off' : 'p-' + sec;
-            document.getElementById(activeId).className = 'btn mode-selected';
-            save();
+        // --- FUNCIONS ADMIN ---
+        function openAdmin() {
+            const user = prompt("Usuari:");
+            const pass = prompt("Contrasenya:");
+            if (user === "admin" && pass === "admin") {
+                showScreen('admin-screen');
+            } else {
+                alert("Accés denegat");
+            }
         }
 
+        async function searchITunes() {
+            const term = document.getElementById('admin-search-input').value;
+            if (!term) return;
+            showLoader("Buscant...");
+            try {
+                const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=10&country=es`);
+                const d = await r.json();
+                const container = document.getElementById('admin-results');
+                container.innerHTML = "";
+                d.results.forEach(s => {
+                    const card = document.createElement('div');
+                    card.className = "admin-result-card";
+                    card.innerHTML = `<img src="${s.artworkUrl100}"><div><b>${s.trackName}</b><br>${s.artistName} (${s.releaseDate.substring(0,4)})</div>`;
+                    card.onclick = () => confirmAddSong(s);
+                    container.appendChild(card);
+                });
+            } catch(e) { alert("Error de cerca"); } finally { hideLoader(); }
+        }
+
+        async function confirmAddSong(s) {
+            const songId = s.trackId.toString();
+            // David: Comprovació de duplicats
+            if (allExistingIds.includes(songId)) {
+                alert("🛑 AQUESTA CANÇÓ JA EXISTEIX A LA BASE DE DADES!");
+                return;
+            }
+
+            if (confirm(`Vols afegir "${s.trackName}" a la base de dades?`)) {
+                showLoader("Afegint...");
+                const songData = {
+                    artista: s.artistName,
+                    titol: s.trackName,
+                    album: s.collectionName || "Single",
+                    any: s.releaseDate.substring(0,4),
+                    genere: s.primaryGenreName,
+                    imatge: s.artworkUrl100.replace("100x100bb","600x600bb"),
+                    link: `https://itunes.apple.com/lookup?id=${songId}`
+                };
+
+                try {
+                    const res = await fetch(WEB_APP_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(songData)
+                    });
+                    alert("✅ Cançó enviada correctament! (Tarda uns segons a aparèixer al Sheets)");
+                    loadTotalCount(); // Recarregar comptador i llista d'IDs
+                    showScreen('landing-screen');
+                } catch(e) { alert("Error enviant al Sheets."); } finally { hideLoader(); }
+            }
+        }
+
+        // --- LÒGICA JOC ---
+        function setPressure(sec) {
+            gameState.pressureMode = sec;
+            ['p-off', 'p-15', 'p-20', 'p-30'].forEach(b => document.getElementById(b).className = 'btn btn-outline');
+            document.getElementById(sec === 0 ? 'p-off' : 'p-' + sec).className = 'btn mode-selected';
+            save();
+        }
         function startPressureTimer() {
             if (gameState.pressureMode <= 0 || gameState.isRobberyActive) return;
             clearInterval(pressureInterval);
@@ -188,14 +253,11 @@
             pressureInterval = setInterval(() => {
                 timeLeft--;
                 display.innerText = `⏱️ ${timeLeft}`;
-                if (timeLeft <= 5) display.style.color = "var(--primary)";
-                else display.style.color = "var(--gold)";
+                display.style.color = (timeLeft <= 5) ? "var(--primary)" : "var(--gold)";
                 if (timeLeft <= 0) { clearInterval(pressureInterval); processResult(false); }
             }, 1000);
         }
-
         function stopPressureTimer() { clearInterval(pressureInterval); document.getElementById('pressure-timer-display').style.display = 'none'; }
-
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
         function load() { const s = localStorage.getItem(KEY); if(s) { try { gameState = JSON.parse(s); } catch(e){} } }
         window.onload = () => { load(); showScreen('landing-screen'); loadTotalCount(); };
@@ -204,8 +266,12 @@
             try {
                 const r = await fetch(SHEET_CSV + "&t=" + Date.now());
                 const t = await r.text();
-                const total = t.split("\n").length - 1;
-                document.getElementById('total-songs-display').innerText = `${total} CANÇONS DISPONIBLES`;
+                const lines = t.split("\n").slice(1);
+                allExistingIds = lines.map(l => {
+                    const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                    return (c[6] ? c[6].match(/id=(\d+)/) || [] : [])[1];
+                }).filter(id => id);
+                document.getElementById('total-songs-display').innerText = `${allExistingIds.length} CANÇONS DISPONIBLES`;
             } catch(e) { document.getElementById('total-songs-display').innerText = "DATABASE CONNECTADA"; }
         }
 
@@ -224,7 +290,6 @@
                 fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else clearInterval(fadeInterval); }, 50);
             } else { performFadeOut(); }
         }
-
         function performFadeOut(callback) {
             clearInterval(fadeInterval);
             fadeInterval = setInterval(() => {
@@ -233,7 +298,6 @@
             }, 50);
         }
         audio.onended = () => { resetPlayIcons(); };
-
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
         function addPlayer() {
             const name = document.getElementById('player-input').value.trim();
@@ -331,8 +395,6 @@
             let ok = (idx === -1) ? (currentYear <= s[0]) : (idx === s.length-1) ? (currentYear >= s[s.length-1]) : (currentYear >= s[idx] && currentYear <= s[idx+1]);
             processResult(ok);
         }
-        
-        // David: Aquí hem tret el performFadeOut() perquè la música segueixi
         function processResult(isOk) {
             stopPressureTimer(); 
             const thief = gameState.players[gameState.currentTurn];
@@ -350,7 +412,6 @@
                 else { save(); revealUI(false, false, false); }
             }
         }
-        
         function revealUI(correct, canRob, win) {
             document.getElementById('ui-timeline-mode').style.display = 'none'; document.getElementById('ui-input-mode').style.display = 'none';
             document.getElementById('solution-card').style.display = 'flex'; const res = document.getElementById('guess-result');
@@ -367,10 +428,7 @@
             }
         }
         function executeRobbery() { gameState.currentTurn = gameState.nextRobberIdx; gameState.isRobberyActive = true; save(); renderGameUI(); }
-        
-        // David: Aquí sí que tallem la música abans de passar de pantalla
         function nextAction() { performFadeOut(() => { if (!gameState.isOnline) { startScanner(); return; } gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; gameState.originalTurn = gameState.currentTurn; gameState.isRobberyActive = false; gameState.robbersTried = []; save(); fetchNextSong(); }); }
-        
         function playAgain() { performFadeOut(() => { gameState.playedIds = []; gameState.players.forEach(p => p.cards = []); gameState.currentTurn = 0; gameState.originalTurn = 0; gameState.pendingWinner = null; save(); startGame(); }); }
         function renderBoards() {
             const container = document.getElementById('game-board-container'); if(!container) return;
