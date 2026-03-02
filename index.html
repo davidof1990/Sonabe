@@ -1,59 +1,53 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ca">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v203 MASTER RESTORED</title>
+    <title>Sonabé! 🎶 - v204 Base v201 + Fullscreen</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --primary: #fa2d48; --neon: #ff007f; --bg: #121212; --gold: #ffd700; --purple: #a020f0; }
+        body { background-color: var(--bg); color: white; font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; text-align: center; overflow-x: hidden; }
         
-        body { background-color: var(--bg); color: white; font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; text-align: center; overflow-x: hidden; }
-        
+        /* ESTILS v201 ORIGINALS */
         .neon-logo { font-weight: bold; font-size: 2.8rem; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px var(--neon); margin-bottom: 5px; }
         .song-count-badge { font-size: 0.8rem; color: #888; margin-bottom: 25px; font-weight: bold; letter-spacing: 1px; }
-        
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; gap: 15px; position: relative; }
         .active { display: flex; }
         
-        /* BOTONS PROFESSIONALS RESTAURATS */
         .btn-list { display: flex; flex-direction: column; gap: 10px; width: 100%; align-items: center; }
         .btn { background: rgba(255,255,255,0.1); border: 1px solid #444; color: #eee; padding: 16px 25px; border-radius: 40px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; width: 280px; transition: 0.2s; outline: none; box-sizing: border-box; }
-        .btn:active { transform: scale(0.96); }
-        
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-purple { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple) !important; border: none !important; }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .btn-outline { border: 1px solid var(--neon); color: var(--neon); background: transparent; }
         .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 15px var(--neon); }
+        
+        /* David: El botó de pantalla completa amb classe única */
+        .fs-btn-top { position: absolute; top: -10px; right: -15px; width: 42px; height: 42px; background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 10px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 999; font-size: 1.2rem; }
 
-        /* PANTALLA COMPLETA UI */
-        .fullscreen-btn { position: absolute; top: -10px; right: -10px; width: 45px; height: 45px; background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 12px; color: white; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100; transition: 0.2s; }
-
-        /* REPRODUCTOR */
         .play-container { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin: 10px 0; }
         #play-btn-main { width: 90px; height: 90px; min-width: 90px; min-height: 90px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; box-shadow: 0 0 15px var(--primary); }
         .progress-ring { position: absolute; top: 0; left: 0; transform: rotate(-90deg); z-index: 1; }
-        .progress-ring__circle { stroke: white; stroke-linecap: round; transition: stroke 0.2s; }
+        .progress-ring__circle { stroke: white; stroke-linecap: round; }
 
-        /* FITXES JUGADORS */
         .player-row { background: #1e1e1e; padding: 12px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; width: 100%; box-sizing: border-box; }
         .active-row { border: 2px solid white !important; box-shadow: 0 0 15px var(--primary); }
         .text-input-field { width: 250px; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--neon); background: #222; color: white; text-align: center; margin-bottom: 10px; outline: none; }
         
-        /* ADMIN CARDS */
-        .admin-result-card { background: #1e1e1e; padding: 12px; border-radius: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 10px; width: 100%; text-align: left; border: 1px solid #333; box-sizing: border-box; }
+        /* ADMIN v201 RESTAURAT */
+        .admin-result-card { background: #1e1e1e; padding: 10px; border-radius: 10px; display: flex; align-items: center; gap: 12px; margin-bottom: 10px; width: 100%; text-align: left; border: 1px solid #333; box-sizing: border-box; }
         .admin-result-card img { width: 50px; height: 50px; border-radius: 8px; flex-shrink: 0; }
-        .admin-preview-btn { width: 42px; height: 42px; border-radius: 50%; border: none; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; box-shadow: 0 0 10px var(--primary); }
+        .admin-btn-add { background: var(--gold); color: black; border: none; padding: 10px 14px; border-radius: 20px; font-weight: 900; cursor: pointer; font-size: 0.65rem; box-shadow: 0 0 10px rgba(255,215,0,0.2); }
+        .admin-preview-btn { width: 42px; height: 42px; border-radius: 50%; border: none; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; box-shadow: 0 0 12px var(--primary); }
         .admin-play-icon { width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 10px solid white; margin-left: 4px; }
         .admin-stop-icon { width: 12px; height: 12px; background: white; border-radius: 2px; }
         .admin-exists { border: 1px solid #444; opacity: 0.5; grayscale: 1; pointer-events: none; }
-
+        
         #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: var(--bg); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; }
         #reader { width: 100%; height: 100%; }
         .config-group { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; width: 100%; box-sizing: border-box; }
@@ -61,10 +55,10 @@
 </head>
 <body>
     <div id="loading-overlay"><div class="spinner"></div><p id="loading-text" style="margin-top:15px;">CARREGANT...</p></div>
-    <div id="scanner-container"><div id="reader"></div><button class="btn btn-secondary" onclick="stopScanner()" style="position:absolute; bottom:50px; left:50%; transform:translateX(-50%); z-index:5100;">CANCEL·LAR</button></div>
+    <div id="scanner-container"><div id="reader"></div><button class="btn" style="position:absolute; bottom:50px; left:50%; transform:translateX(-50%); z-index:5100; background: #444;" onclick="stopScanner()">CANCEL·LAR</button></div>
 
     <div id="landing-screen" class="screen active">
-        <div id="fullscreen-toggle" class="fullscreen-btn" onclick="toggleFullscreen()">⛶</div>
+        <div id="fs-btn" class="fs-btn-top" onclick="toggleFullscreen()">⛶</div>
         <div class="neon-logo">Sonabé!</div>
         <div id="total-songs-display" class="song-count-badge">CONNECTANT...</div>
         <div class="btn-list">
@@ -94,7 +88,7 @@
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
         <div id="config-area" style="display:none; width: 100%;">
             <div class="config-group"><p style="font-size:0.75rem; font-weight:bold; color:#888;">CARTES PER GUANYAR:</p><input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; padding:10px; border-radius:10px; background:#222; color:white; text-align:center; border:1px solid #444;"></div>
-            <div class="config-group"><p style="font-size:0.75rem; font-weight:bold; color:#888;">MODE PRESSIÓ:</p><div style="display:flex; gap:5px; justify-content:center;"><button id="p-off" class="btn" onclick="setPressure(0)">OFF</button><button id="p-15" class="btn" onclick="setPressure(15)">15s</button><button id="p-20" class="btn" onclick="setPressure(20)">20s</button><button id="p-30" class="btn" onclick="setPressure(30)">30s</button></div></div>
+            <div class="config-group"><p style="font-size:0.75rem; font-weight:bold; color:#888;">MODE PRESSIÓ:</p><div style="display:flex; gap:5px; justify-content:center;"><button id="p-off" class="btn" style="width:60px; padding:10px;" onclick="setPressure(0)">OFF</button><button id="p-15" class="btn" style="width:60px; padding:10px;" onclick="setPressure(15)">15s</button><button id="p-20" class="btn" style="width:60px; padding:10px;" onclick="setPressure(20)">20s</button><button id="p-30" class="btn" style="width:60px; padding:10px;" onclick="setPressure(30)">30s</button></div></div>
             <div class="btn-list">
                 <button id="mode-timeline" class="btn" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn" onclick="setMode('exact')">ANY EXACTE</button>
@@ -125,7 +119,7 @@
         let currentYear = null, isFadingOutAuto = false, allExistingIds = [];
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        const KEY = 'sonabe_v203';
+        const KEY = 'sonabe_v204';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
         const ADMIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_jcMVHYvfhsHF5G8oLVym9RiNVMT25txw8asWEQDFcYf0trXkTOysUj0ujSA4hJ0F/exec"; 
 
@@ -148,14 +142,20 @@
             }
         }
 
+        // --- FULLSCREEN LOGIC ---
         function toggleFullscreen() {
-            const btn = document.getElementById('fullscreen-toggle');
+            const btn = document.getElementById('fs-btn');
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().then(() => btn.innerHTML = "✕").catch(err => alert(err.message));
             } else {
                 if (document.exitFullscreen) document.exitFullscreen().then(() => btn.innerHTML = "⛶");
             }
         }
+        document.addEventListener('fullscreenchange', () => {
+            const btn = document.getElementById('fs-btn');
+            if (!document.fullscreenElement) btn.innerHTML = "⛶";
+            else btn.innerHTML = "✕";
+        });
 
         // --- ADMIN LOGIC ---
         function checkAdminAccess() { const pass = prompt("Contrasenya admin:"); if (pass === "admin") showScreen('admin-screen'); else if (pass !== null) alert("Accés denegat"); }
@@ -185,7 +185,7 @@
             catch(e) { alert("Error"); actionDiv.innerHTML = `<button class="admin-btn-add" onclick='addSongToSheet(${JSON.stringify(s).replace(/'/g, "&apos;")})'>REINTENTAR</button>`; }
         }
 
-        // --- GAME ENGINE ---
+        // --- GAME LOGIC ---
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
         function load() { const s = localStorage.getItem(KEY); if(s) { try { gameState = JSON.parse(s); } catch(e){} } }
         window.onload = () => { load(); showScreen('landing-screen'); loadTotalCount(); };
@@ -209,7 +209,6 @@
             if (audio.paused) { pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play(); updateSmoothProgress(); startPressureTimer(); fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else clearInterval(fadeInterval); }, 50); } 
             else performFadeOut();
         }
-
         function performFadeOut(callback) { clearInterval(fadeInterval); fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.pause(); audio.volume = 1; resetPlayIcons(); clearInterval(fadeInterval); if (callback) callback(); } }, 50); }
         audio.onended = () => resetPlayIcons();
 
@@ -231,27 +230,10 @@
         }
         function stopPressureTimer() { clearInterval(pressureInterval); if(document.getElementById('pressure-timer-display')) document.getElementById('pressure-timer-display').style.display = 'none'; }
         function setMode(m) { gameState.mode = m; ['mode-timeline','mode-exact','mode-song','mode-artist'].forEach(id => document.getElementById(id).className = 'btn'); document.getElementById('mode-' + m).className = 'btn mode-selected'; save(); }
-        
         function startGame() { gameState.isOnline = true; if (gameState.playedIds.length === 0) gameState.players.forEach(p => p.cards = [1960 + Math.floor(Math.random()*60)]); save(); fetchNextSong(); }
         async function fetchNextSong() { showLoader("Buscant cançó..."); try { const r = await fetch(SHEET_CSV + "&t=" + Date.now()); const t = await r.text(); const lines = t.split("\n").filter(l => l.trim() !== "").slice(1); const avail = lines.map(l => { const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); return { id: (c[5] ? c[5].trim() : ""), year: parseInt(c[3]) }; }).filter(s => s.id && !gameState.playedIds.includes(s.id)); const sel = avail[Math.floor(Math.random()*avail.length)]; gameState.playedIds.push(sel.id); loadSong(sel.id, sel.year); } catch(e) { hideLoader(); } }
-        async function loadSong(id, sheetYear = null) {
-            showLoader("Carregant música..."); showScreen('game-screen'); resetPlayIcons(); stopPressureTimer(); isFadingOutAuto = false;
-            try {
-                const ri = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`); const di = await ri.json(); const s = di.results[0];
-                audio.src = s.previewUrl; document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600');
-                currentSongName = s.trackName; currentArtistName = s.artistName; document.getElementById('song-title').innerText = currentSongName; document.getElementById('song-artist').innerText = currentArtistName;
-                currentYear = sheetYear || parseInt(s.releaseDate.substring(0,4)); document.getElementById('song-year').innerText = currentYear; renderGameUI();
-            } catch(e) { hideLoader(); } finally { hideLoader(); }
-        }
-        function renderGameUI() {
-            document.getElementById('solution-card').style.display = 'none'; document.getElementById('song-details').style.display = 'none'; document.getElementById('btn-rob').style.display = 'none'; document.getElementById('btn-next').style.display = 'none'; document.getElementById('winner-actions').style.display = 'none'; document.getElementById('ui-timeline-mode').style.display = 'none'; document.getElementById('ui-input-mode').style.display = 'none';
-            if (gameState.isOnline) {
-                const p = gameState.players[gameState.currentTurn]; document.getElementById('turn-text').innerText = gameState.isRobberyActive ? `🚨 ROBATORI: ${p.name.toUpperCase()}` : `TORN DE: ${p.name.toUpperCase()}`;
-                if (gameState.mode === 'timeline') { document.getElementById('ui-timeline-mode').style.display = 'block'; renderTimelineSlots(gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : p); } 
-                else { document.getElementById('ui-input-mode').style.display = 'block'; document.getElementById('game-text-input').value = ""; }
-                renderBoards();
-            } else { document.getElementById('turn-text').innerText = "MODE FÍSIC"; document.getElementById('solution-card').style.display = 'flex'; document.getElementById('btn-next').style.display = 'block'; document.getElementById('guess-result').innerText = "ENCERTAT"; }
-        }
+        async function loadSong(id, sheetYear = null) { showLoader("Carregant música..."); showScreen('game-screen'); resetPlayIcons(); stopPressureTimer(); isFadingOutAuto = false; try { const ri = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`); const di = await ri.json(); const s = di.results[0]; audio.src = s.previewUrl; document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600'); currentSongName = s.trackName; currentArtistName = s.artistName; document.getElementById('song-title').innerText = currentSongName; document.getElementById('song-artist').innerText = currentArtistName; currentYear = sheetYear || parseInt(s.releaseDate.substring(0,4)); document.getElementById('song-year').innerText = currentYear; renderGameUI(); } catch(e) { hideLoader(); } finally { hideLoader(); } }
+        function renderGameUI() { document.getElementById('solution-card').style.display = 'none'; document.getElementById('song-details').style.display = 'none'; document.getElementById('btn-rob').style.display = 'none'; document.getElementById('btn-next').style.display = 'none'; document.getElementById('winner-actions').style.display = 'none'; document.getElementById('ui-timeline-mode').style.display = 'none'; document.getElementById('ui-input-mode').style.display = 'none'; if (gameState.isOnline) { const p = gameState.players[gameState.currentTurn]; document.getElementById('turn-text').innerText = gameState.isRobberyActive ? `🚨 ROBATORI: ${p.name.toUpperCase()}` : `TORN DE: ${p.name.toUpperCase()}`; if (gameState.mode === 'timeline') { document.getElementById('ui-timeline-mode').style.display = 'block'; renderTimelineSlots(gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : p); } else { document.getElementById('ui-input-mode').style.display = 'block'; document.getElementById('game-text-input').value = ""; } renderBoards(); } else { document.getElementById('turn-text').innerText = "MODE FÍSIC"; document.getElementById('solution-card').style.display = 'flex'; document.getElementById('btn-next').style.display = 'block'; document.getElementById('guess-result').innerText = "ENCERTAT"; } }
         function renderTimelineSlots(p) { const container = document.getElementById('timeline-slots'); container.innerHTML = ""; const s = [...p.cards].sort((a,b) => a-b); container.innerHTML += `<button class="btn" style="width:70px;padding:5px;" onclick="checkGuess(-1)">ANTIC</button>`; s.forEach((y, i) => { container.innerHTML += `<div style="background:white;color:black;padding:4px 8px;border-radius:6px;font-weight:bold;font-size:0.8rem;">${y}</div>`; container.innerHTML += `<button class="btn" style="width:70px;padding:5px;" onclick="checkGuess(${i})">${(i === s.length-1) ? 'NOU' : 'ENTRE'}</button>`; }); }
         function normalizeString(str) { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); }
         function processInputGuess() { const val = document.getElementById('game-text-input').value; if (!val) return; let isOk = false; if (gameState.mode === 'exact') isOk = (parseInt(val) === currentYear); else if (gameState.mode === 'song') isOk = (normalizeString(val) === normalizeString(currentSongName)); else if (gameState.mode === 'artist') isOk = (normalizeString(val) === normalizeString(currentArtistName)); processResult(isOk); }
