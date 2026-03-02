@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v196 ADMIN EDITION</title>
+    <title>Sonabé! 🎶 - v197 ADMIN SAFE</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -28,7 +28,7 @@
         .play-container { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin: 10px 0; }
         #play-btn-main { width: 90px; height: 90px; min-width: 90px; min-height: 90px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; }
         .progress-ring { position: absolute; top: 0; left: 0; transform: rotate(-90deg); z-index: 1; }
-        .progress-ring__circle { stroke: white; stroke-linecap: round; transition: stroke 0.2s; }
+        .progress-ring__circle { stroke: white; stroke-linecap: round; }
 
         .year-badge { background: white; color: black; font-weight: 900; font-size: 2.5rem; padding: 5px 30px; border-radius: 10px; }
         .album-art { width: 160px; height: 160px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
@@ -40,9 +40,12 @@
         #pressure-timer-display { font-size: 1.2rem; font-weight: 900; color: var(--gold); margin-left: 10px; text-shadow: 0 0 10px var(--gold); }
         .config-group { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; width: 100%; box-sizing: border-box; }
 
-        /* Estils Admin */
-        .admin-result-card { background: #1e1e1e; padding: 10px; border-radius: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 5px; width: 100%; text-align: left; }
-        .admin-result-card img { width: 50px; height: 50px; border-radius: 5px; }
+        /* Estils Admin v197 */
+        .admin-result-card { background: #1e1e1e; padding: 10px; border-radius: 10px; display: flex; align-items: center; gap: 10px; margin-bottom: 10px; width: 100%; text-align: left; border: 1px solid #333; }
+        .admin-result-card img { width: 60px; height: 60px; border-radius: 8px; }
+        .admin-btn-add { background: var(--gold); color: black; border: none; padding: 8px 12px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.7rem; }
+        .admin-exists { border: 1px solid var(--primary); opacity: 0.7; }
+        .error-tag { color: var(--primary); font-size: 0.7rem; font-weight: bold; display: block; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -51,23 +54,23 @@
 
     <div id="landing-screen" class="screen active">
         <div class="neon-logo">Sonabé!</div>
-        <div id="total-songs-display" class="song-count-badge">CARREGANT DATABASE...</div>
+        <div id="total-songs-display" class="song-count-badge">CONNECTANT...</div>
         <div class="btn-list">
             <button class="btn btn-primary" onclick="startScanner()">Tinc les cartes! 📷</button>
             <button class="btn btn-outline" onclick="openSetup()">Jugar en línia 🎲</button>
             <button class="btn btn-secondary" onclick="resetGame()">Reiniciar Tot</button>
-            <button class="btn btn-secondary" onclick="openAdmin()" style="width: 50px; padding: 10px; margin-top: 20px; font-size: 1.2rem;">⚙️</button>
+            <div style="margin-top: 20px; opacity: 0.3;" onclick="checkAdminAccess()">⚙️</div>
         </div>
     </div>
 
     <div id="admin-screen" class="screen">
-        <div class="neon-logo" style="font-size: 2rem;">Panell Admin</div>
+        <div class="neon-logo" style="font-size: 1.8rem;">Afegir Cançons</div>
         <div class="config-group">
-            <input type="text" id="admin-search-input" class="text-input-field" placeholder="Busca cançó o grup..." style="width: 90%;">
-            <button class="btn btn-primary" onclick="searchITunes()">BUSCAR</button>
+            <input type="text" id="admin-search-input" class="text-input-field" placeholder="Títol o Artista..." style="width: 80%;">
+            <button class="btn btn-primary" onclick="searchITunes()">BUSCAR A ITUNES</button>
         </div>
-        <div id="admin-results" style="width: 100%; max-height: 300px; overflow-y: auto;"></div>
-        <button class="btn btn-secondary" onclick="showScreen('landing-screen')">Sortir</button>
+        <div id="admin-results" style="width: 100%; max-height: 350px; overflow-y: auto; padding-right: 5px;"></div>
+        <button class="btn btn-secondary" onclick="showScreen('landing-screen')">Tornar</button>
     </div>
 
     <div id="setup-screen" class="screen">
@@ -146,9 +149,11 @@
         let currentYear = null, isFadingOutAuto = false, allExistingIds = [];
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        const KEY = 'sonabe_v196';
+        const KEY = 'sonabe_v197';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
-        const WEB_APP_URL = "POSA_AQUI_LA_TEVA_URL_DEL_APPS_SCRIPT"; 
+        
+        // David: Recorda posar aquí la teva URL d'Apps Script nova (la que has tornat a implementar)
+        const ADMIN_SCRIPT_URL = "URL_DE_LA_TEVA_WEBAPP_AQUI"; 
 
         const circle = document.querySelector('.progress-ring__circle');
         const radius = circle.r.baseVal.value;
@@ -173,9 +178,9 @@
         }
 
         // --- FUNCIONS ADMIN ---
-        function openAdmin() {
-            const user = prompt("Usuari:");
-            const pass = prompt("Contrasenya:");
+        function checkAdminAccess() {
+            const user = prompt("Usuari admin:");
+            const pass = prompt("Contrasenya admin:");
             if (user === "admin" && pass === "admin") {
                 showScreen('admin-screen');
             } else {
@@ -186,61 +191,75 @@
         async function searchITunes() {
             const term = document.getElementById('admin-search-input').value;
             if (!term) return;
-            showLoader("Buscant...");
+            showLoader("Buscant a iTunes...");
             try {
-                const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=10&country=es`);
+                const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=15&country=es`);
                 const d = await r.json();
                 const container = document.getElementById('admin-results');
                 container.innerHTML = "";
+                
                 d.results.forEach(s => {
+                    const sid = s.trackId.toString();
+                    const exists = allExistingIds.includes(sid);
+                    
                     const card = document.createElement('div');
-                    card.className = "admin-result-card";
-                    card.innerHTML = `<img src="${s.artworkUrl100}"><div><b>${s.trackName}</b><br>${s.artistName} (${s.releaseDate.substring(0,4)})</div>`;
-                    card.onclick = () => confirmAddSong(s);
+                    card.className = `admin-result-card ${exists ? 'admin-exists' : ''}`;
+                    card.innerHTML = `
+                        <img src="${s.artworkUrl100}">
+                        <div style="flex:1">
+                            <b style="font-size:0.85rem">${s.trackName}</b><br>
+                            <span style="font-size:0.75rem; color:#888">${s.artistName} (${s.releaseDate.substring(0,4)})</span>
+                            ${exists ? '<span class="error-tag">DUPLICADA AL SHEETS</span>' : ''}
+                        </div>
+                        ${!exists ? `<button class="admin-btn-add" onclick='addSongToSheet(${JSON.stringify(s).replace(/'/g, "&apos;")})'>AFEGIR</button>` : ''}
+                    `;
                     container.appendChild(card);
                 });
-            } catch(e) { alert("Error de cerca"); } finally { hideLoader(); }
+            } catch(e) { alert("Error en la cerca d'iTunes"); } finally { hideLoader(); }
         }
 
-        async function confirmAddSong(s) {
-            const songId = s.trackId.toString();
-            // David: Comprovació de duplicats
-            if (allExistingIds.includes(songId)) {
-                alert("🛑 AQUESTA CANÇÓ JA EXISTEIX A LA BASE DE DADES!");
+        async function addSongToSheet(s) {
+            if (!ADMIN_SCRIPT_URL || ADMIN_SCRIPT_URL.includes("URL_DE_LA_TEVA")) {
+                alert("Error: No has configurat l'URL de l'Apps Script al codi!");
                 return;
             }
-
-            if (confirm(`Vols afegir "${s.trackName}" a la base de dades?`)) {
-                showLoader("Afegint...");
-                const songData = {
+            if (confirm(`Vols afegir "${s.trackName}" de ${s.artistName} al Google Sheet?`)) {
+                showLoader("Afegeix-la al Sheet...");
+                const payload = {
                     artista: s.artistName,
                     titol: s.trackName,
                     album: s.collectionName || "Single",
                     any: s.releaseDate.substring(0,4),
-                    genere: s.primaryGenreName,
-                    imatge: s.artworkUrl100.replace("100x100bb","600x600bb"),
-                    link: `https://itunes.apple.com/lookup?id=${songId}`
+                    link: s.trackViewUrl,
+                    id: s.trackId.toString(),
+                    genere: s.primaryGenreName
                 };
 
                 try {
-                    const res = await fetch(WEB_APP_URL, {
+                    // David: No-cors és necessari per Apps Script, però no podem llegir la resposta "OK" exactament.
+                    // Si no falla el fetch, normalment és que ha anat bé.
+                    await fetch(ADMIN_SCRIPT_URL, {
                         method: 'POST',
                         mode: 'no-cors',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(songData)
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
                     });
-                    alert("✅ Cançó enviada correctament! (Tarda uns segons a aparèixer al Sheets)");
-                    loadTotalCount(); // Recarregar comptador i llista d'IDs
+                    
+                    alert("✅ Peticion enviada! En uns segons apareixerà al teu Sheets.");
+                    loadTotalCount(); // Recarregar la llista de IDs
+                    document.getElementById('admin-results').innerHTML = "";
+                    document.getElementById('admin-search-input').value = "";
                     showScreen('landing-screen');
-                } catch(e) { alert("Error enviant al Sheets."); } finally { hideLoader(); }
+                } catch(e) { alert("Error enviant dades: " + e.message); } finally { hideLoader(); }
             }
         }
 
-        // --- LÒGICA JOC ---
+        // --- LÒGICA JOC (PROTEGIDA) ---
         function setPressure(sec) {
             gameState.pressureMode = sec;
             ['p-off', 'p-15', 'p-20', 'p-30'].forEach(b => document.getElementById(b).className = 'btn btn-outline');
-            document.getElementById(sec === 0 ? 'p-off' : 'p-' + sec).className = 'btn mode-selected';
+            const activeId = sec === 0 ? 'p-off' : 'p-' + sec;
+            document.getElementById(activeId).className = 'btn mode-selected';
             save();
         }
         function startPressureTimer() {
@@ -269,10 +288,10 @@
                 const lines = t.split("\n").slice(1);
                 allExistingIds = lines.map(l => {
                     const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                    return (c[6] ? c[6].match(/id=(\d+)/) || [] : [])[1];
+                    return (c[5] ? c[5].trim() : ""); // Columna F (ID)
                 }).filter(id => id);
                 document.getElementById('total-songs-display').innerText = `${allExistingIds.length} CANÇONS DISPONIBLES`;
-            } catch(e) { document.getElementById('total-songs-display').innerText = "DATABASE CONNECTADA"; }
+            } catch(e) { document.getElementById('total-songs-display').innerText = "DATABASE ONLINE"; }
         }
 
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
@@ -327,7 +346,7 @@
                 const lines = t.split("\n").slice(1);
                 const avail = lines.map(l => {
                     const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                    return { id: (c[6] ? c[6].match(/id=(\d+)/) || [] : [])[1], year: parseInt(c[3]) };
+                    return { id: (c[5] ? c[5].trim() : ""), year: parseInt(c[3]) };
                 }).filter(s => s.id && !gameState.playedIds.includes(s.id));
                 const sel = avail[Math.floor(Math.random()*avail.length)];
                 gameState.playedIds.push(sel.id);
@@ -368,7 +387,7 @@
                 renderBoards();
             } else {
                 document.getElementById('turn-text').innerText = "MODE FÍSIC"; document.getElementById('solution-card').style.display = 'flex';
-                document.getElementById('btn-next').style.display = 'block'; document.getElementById('guess-result').innerText = "ESCANEJAT";
+                document.getElementById('btn-next').style.display = 'block'; document.getElementById('guess-result').innerText = "ENCERTAT";
             }
         }
         function renderTimelineSlots(p) {
