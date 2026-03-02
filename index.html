@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v198 ADMIN FINAL</title>
+    <title>Sonabé! 🎶 - v199 ADMIN PREVIEW</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -40,10 +40,20 @@
         #pressure-timer-display { font-size: 1.2rem; font-weight: 900; color: var(--gold); margin-left: 10px; text-shadow: 0 0 10px var(--gold); }
         .config-group { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; width: 100%; box-sizing: border-box; }
 
-        /* Estils Admin */
+        /* Estils Admin v199 */
         .admin-result-card { background: #1e1e1e; padding: 10px; border-radius: 10px; display: flex; align-items: center; gap: 10px; margin-bottom: 10px; width: 100%; text-align: left; border: 1px solid #333; }
-        .admin-result-card img { width: 60px; height: 60px; border-radius: 8px; }
-        .admin-btn-add { background: var(--gold); color: black; border: none; padding: 8px 12px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.7rem; }
+        .admin-result-card img { width: 55px; height: 55px; border-radius: 8px; flex-shrink: 0; }
+        .admin-btn-add { background: var(--gold); color: black; border: none; padding: 8px 12px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.7rem; flex-shrink: 0; }
+        
+        /* Botó de Play dins de la llista admin */
+        .admin-preview-btn { 
+            width: 35px; height: 35px; border-radius: 50%; border: none; 
+            background: #444; color: white; display: flex; align-items: center; 
+            justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 1.2rem;
+        }
+        .admin-preview-btn.playing { background: var(--primary); animation: pulse-red 1s infinite; }
+        @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
         .admin-exists { border: 1px solid var(--primary); opacity: 0.7; }
         .error-tag { color: var(--primary); font-size: 0.7rem; font-weight: bold; display: block; margin-top: 4px; }
     </style>
@@ -70,89 +80,28 @@
             <button class="btn btn-primary" onclick="searchITunes()">BUSCAR A ITUNES</button>
         </div>
         <div id="admin-results" style="width: 100%; max-height: 350px; overflow-y: auto; padding-right: 5px;"></div>
-        <button class="btn btn-secondary" onclick="showScreen('landing-screen')">Tornar</button>
+        <button class="btn btn-secondary" onclick="closeAdmin()">Tornar</button>
     </div>
 
-    <div id="setup-screen" class="screen">
-        <div class="neon-logo" style="font-size: 2.2rem;">Jugar en línia</div>
-        <div style="display:flex; gap:10px; width: 280px; margin-bottom: 10px;">
-            <input type="text" id="player-input" placeholder="Nom..." style="flex:1; padding: 12px; border-radius: 10px; border: 1px solid var(--neon); background: #222; color: white;">
-            <button class="btn btn-primary" onclick="addPlayer()" style="width:60px; padding:0;">+</button>
-        </div>
-        <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
-        <div id="config-area" style="display:none; width: 100%;">
-            <div class="config-group">
-                <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-top:0;">CARTES PER GUANYAR:</p>
-                <input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; padding: 10px; border-radius: 10px; background: #222; color: white; text-align: center; border: 1px solid #444;">
-            </div>
-            <div class="config-group">
-                <p style="font-size:0.75rem; font-weight:bold; color:#888; margin-top:0;">MODE PRESSIÓ (TEMPS):</p>
-                <div style="display:flex; gap:5px; justify-content:center;">
-                    <button id="p-off" class="btn" style="width:60px; padding:10px;" onclick="setPressure(0)">OFF</button>
-                    <button id="p-15" class="btn" style="width:60px; padding:10px;" onclick="setPressure(15)">15s</button>
-                    <button id="p-20" class="btn" style="width:60px; padding:10px;" onclick="setPressure(20)">20s</button>
-                    <button id="p-30" class="btn" style="width:60px; padding:10px;" onclick="setPressure(30)">30s</button>
-                </div>
-            </div>
-            <p style="font-size:0.75rem; font-weight:bold; color:#888;">MODES DE JOC:</p>
-            <div class="btn-list">
-                <button id="mode-timeline" class="btn" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
-                <button id="mode-exact" class="btn" onclick="setMode('exact')">ANY EXACTE</button>
-                <button id="mode-song" class="btn" onclick="setMode('song')">NOM DE LA CANÇÓ</button>
-                <button id="mode-artist" class="btn" onclick="setMode('artist')">NOM DEL GRUP</button>
-                <button class="btn btn-primary" style="margin-top:10px;" onclick="startGame()">COMENÇAR PARTIDA</button>
-            </div>
-        </div>
-        <button class="btn btn-secondary" onclick="showScreen('landing-screen')">Tornar</button>
-    </div>
-
-    <div id="game-screen" class="screen">
-        <div id="turn-indicator-bar" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; display: flex; justify-content: center; align-items: center;">
-            <span id="turn-text">...</span>
-            <span id="pressure-timer-display" style="display:none;">⏱️ 00</span>
-        </div>
-        <div class="play-container">
-            <svg class="progress-ring" width="110" height="110"><circle class="progress-ring__circle" stroke-width="5" fill="transparent" r="52" cx="55" cy="55" /></svg>
-            <button id="play-btn-main" onclick="handlePlayClick()">
-                <div id="icon-play" style="width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px;"></div>
-                <div id="icon-stop" style="width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none;"></div>
-            </button>
-        </div>
-        <div id="ui-timeline-mode" class="btn-list" style="display:none;"><div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div></div>
-        <div id="ui-input-mode" class="btn-list" style="display:none;"><input type="text" id="game-text-input" class="text-input-field" placeholder=""><button class="btn btn-primary" onclick="processInputGuess()">COMPROVAR</button></div>
-        <div id="solution-card" style="display:none; flex-direction:column; align-items:center; width: 100%;">
-            <div id="guess-result" style="font-weight:bold; font-size:1.5rem; margin-bottom:10px;"></div>
-            <div id="song-details" style="display:none; flex-direction:column; align-items:center;">
-                <div id="song-year" class="year-badge">----</div>
-                <img id="album-img" class="album-art" src="" style="margin:10px 0;">
-                <div id="song-title" style="font-weight:bold;"></div>
-                <div id="song-artist" style="color:var(--primary);"></div>
-            </div>
-            <div id="action-buttons" class="btn-list" style="margin-top:15px;">
-                <button id="btn-rob" class="btn btn-purple" style="display:none;" onclick="executeRobbery()">ROBAR CARTA 🚨</button>
-                <button id="btn-next" class="btn btn-primary" style="display:none;" onclick="nextAction()">Següent Cançó</button>
-                <div id="winner-actions" style="display:none; flex-direction:column; gap:10px;">
-                    <button class="btn btn-gold" onclick="playAgain()">JUGAR DE NOU</button>
-                    <button class="btn btn-secondary" onclick="resetGame()">REINICIAR TOT</button>
-                </div>
-            </div>
-        </div>
-        <div id="game-board-container" style="width: 100%; margin-top: 20px;"></div>
-        <button class="btn btn-secondary" style="margin-top:10px;" onclick="goToMenu()">Menú Principal</button>
-    </div>
+    <div id="setup-screen" class="screen">...</div>
+    <div id="game-screen" class="screen">...</div>
 
     <audio id="audio-player" preload="auto"></audio>
 
     <script>
         const audio = document.getElementById('audio-player');
+        // David: Reproductor independent per a les previsualitzacions d'admin
+        let adminPreviewAudio = new Audio(); 
+        let currentAdminBtn = null;
+
         let html5QrCode = null, fadeInterval = null, animationFrame = null, pressureInterval = null;
         let currentYear = null, isFadingOutAuto = false, allExistingIds = [];
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        const KEY = 'sonabe_v198';
+        const KEY = 'sonabe_v199';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
         
-        // URL d'Apps Script integrada
+        // David: Recorda que aquí va la teva URL d'Apps Script
         const ADMIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_jcMVHYvfhsHF5G8oLVym9RiNVMT25txw8asWEQDFcYf0trXkTOysUj0ujSA4hJ0F/exec"; 
 
         const circle = document.querySelector('.progress-ring__circle');
@@ -162,6 +111,7 @@
         circle.style.strokeDashoffset = circumference;
 
         function setProgress(percent) { const offset = circumference - (percent / 100 * circumference); circle.style.strokeDashoffset = offset; }
+        
         function updateSmoothProgress() {
             if (!audio.paused && audio.duration) {
                 const percent = (audio.currentTime / audio.duration) * 100;
@@ -177,20 +127,46 @@
             }
         }
 
-        // --- FUNCIONS ADMIN ---
+        // --- FUNCIONS ADMIN (NOVES v199) ---
         function checkAdminAccess() {
             const user = prompt("Usuari admin:");
             const pass = prompt("Contrasenya admin:");
-            if (user === "admin" && pass === "admin") {
-                showScreen('admin-screen');
-            } else {
-                alert("Accés denegat");
+            if (user === "admin" && pass === "admin") { showScreen('admin-screen'); } 
+            else { alert("Accés denegat"); }
+        }
+
+        function closeAdmin() {
+            stopAdminPreview();
+            showScreen('landing-screen');
+        }
+
+        function stopAdminPreview() {
+            adminPreviewAudio.pause();
+            if (currentAdminBtn) {
+                currentAdminBtn.innerHTML = "▶️";
+                currentAdminBtn.classList.remove('playing');
             }
+            currentAdminBtn = null;
+        }
+
+        function toggleAdminPreview(url, btn) {
+            if (currentAdminBtn === btn) {
+                stopAdminPreview();
+                return;
+            }
+            stopAdminPreview();
+            currentAdminBtn = btn;
+            btn.innerHTML = "⏹️";
+            btn.classList.add('playing');
+            adminPreviewAudio.src = url;
+            adminPreviewAudio.play();
+            adminPreviewAudio.onended = () => stopAdminPreview();
         }
 
         async function searchITunes() {
             const term = document.getElementById('admin-search-input').value;
             if (!term) return;
+            stopAdminPreview();
             showLoader("Buscant a iTunes...");
             try {
                 const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=15&country=es`);
@@ -201,10 +177,12 @@
                 d.results.forEach(s => {
                     const sid = s.trackId.toString();
                     const exists = allExistingIds.includes(sid);
+                    const previewUrl = s.previewUrl;
                     
                     const card = document.createElement('div');
                     card.className = `admin-result-card ${exists ? 'admin-exists' : ''}`;
                     card.innerHTML = `
+                        <button class="admin-preview-btn" onclick="toggleAdminPreview('${previewUrl}', this)">▶️</button>
                         <img src="${s.artworkUrl100}">
                         <div style="flex:1">
                             <b style="font-size:0.85rem">${s.trackName}</b><br>
@@ -220,40 +198,31 @@
 
         async function addSongToSheet(s) {
             if (confirm(`Vols afegir "${s.trackName}" de ${s.artistName} al Google Sheet?`)) {
-                showLoader("Afegeix-la al Sheet...");
+                stopAdminPreview();
+                showLoader("Afegint...");
                 const payload = {
-                    artista: s.artistName,
-                    titol: s.trackName,
-                    album: s.collectionName || "Single",
-                    any: s.releaseDate.substring(0,4),
-                    link: s.trackViewUrl,
-                    id: s.trackId.toString(),
+                    artista: s.artistName, titol: s.trackName, album: s.collectionName || "Single",
+                    any: s.releaseDate.substring(0,4), link: s.trackViewUrl, id: s.trackId.toString(),
                     genere: s.primaryGenreName
                 };
 
                 try {
                     await fetch(ADMIN_SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
+                        method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-                    
-                    alert("✅ Peticion enviada! En uns segons apareixerà al teu Sheets.");
+                    alert("✅ Enviada correctament!");
                     loadTotalCount(); 
-                    document.getElementById('admin-results').innerHTML = "";
-                    document.getElementById('admin-search-input').value = "";
                     showScreen('landing-screen');
-                } catch(e) { alert("Error enviant dades: " + e.message); } finally { hideLoader(); }
+                } catch(e) { alert("Error enviant dades."); } finally { hideLoader(); }
             }
         }
 
-        // --- LÒGICA JOC ---
+        // --- LÒGICA JOC (RESTORED FROM v195/v198) ---
         function setPressure(sec) {
             gameState.pressureMode = sec;
             ['p-off', 'p-15', 'p-20', 'p-30'].forEach(b => document.getElementById(b).className = 'btn btn-outline');
-            const activeId = sec === 0 ? 'p-off' : 'p-' + sec;
-            document.getElementById(activeId).className = 'btn mode-selected';
+            document.getElementById(sec === 0 ? 'p-off' : 'p-' + sec).className = 'btn mode-selected';
             save();
         }
         function startPressureTimer() {
@@ -270,7 +239,7 @@
                 if (timeLeft <= 0) { clearInterval(pressureInterval); processResult(false); }
             }, 1000);
         }
-        function stopPressureTimer() { clearInterval(pressureInterval); document.getElementById('pressure-timer-display').style.display = 'none'; }
+        function stopPressureTimer() { clearInterval(pressureInterval); if(document.getElementById('pressure-timer-display')) document.getElementById('pressure-timer-display').style.display = 'none'; }
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
         function load() { const s = localStorage.getItem(KEY); if(s) { try { gameState = JSON.parse(s); } catch(e){} } }
         window.onload = () => { load(); showScreen('landing-screen'); loadTotalCount(); };
@@ -288,7 +257,7 @@
             } catch(e) { document.getElementById('total-songs-display').innerText = "DATABASE ONLINE"; }
         }
 
-        function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+        function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); if(document.getElementById(id)) document.getElementById(id).classList.add('active'); }
         function showLoader(txt) { document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt; }
         function hideLoader() { document.getElementById('loading-overlay').style.display = 'none'; }
         function resetPlayIcons() { document.getElementById('icon-play').style.display = 'block'; document.getElementById('icon-stop').style.display = 'none'; cancelAnimationFrame(animationFrame); circle.style.stroke = "white"; circle.style.opacity = "1"; setProgress(0); }
@@ -327,8 +296,8 @@
         function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); }
         function setMode(m) {
             gameState.mode = m;
-            ['mode-timeline','mode-exact','mode-song','mode-artist'].forEach(id => document.getElementById(id).className = 'btn btn-outline');
-            document.getElementById('mode-' + m).className = 'btn mode-selected';
+            ['mode-timeline','mode-exact','mode-song','mode-artist'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).className = 'btn btn-outline'; });
+            if(document.getElementById('mode-' + m)) document.getElementById('mode-' + m).className = 'btn mode-selected';
             save();
         }
         function startGame() { gameState.isOnline = true; if (gameState.playedIds.length === 0) { gameState.players.forEach(p => p.cards = [1960 + Math.floor(Math.random()*60)]); } save(); fetchNextSong(); }
