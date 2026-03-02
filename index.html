@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v197 ADMIN SAFE</title>
+    <title>Sonabé! 🎶 - v198 ADMIN FINAL</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -40,7 +40,7 @@
         #pressure-timer-display { font-size: 1.2rem; font-weight: 900; color: var(--gold); margin-left: 10px; text-shadow: 0 0 10px var(--gold); }
         .config-group { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; width: 100%; box-sizing: border-box; }
 
-        /* Estils Admin v197 */
+        /* Estils Admin */
         .admin-result-card { background: #1e1e1e; padding: 10px; border-radius: 10px; display: flex; align-items: center; gap: 10px; margin-bottom: 10px; width: 100%; text-align: left; border: 1px solid #333; }
         .admin-result-card img { width: 60px; height: 60px; border-radius: 8px; }
         .admin-btn-add { background: var(--gold); color: black; border: none; padding: 8px 12px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.7rem; }
@@ -149,11 +149,11 @@
         let currentYear = null, isFadingOutAuto = false, allExistingIds = [];
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        const KEY = 'sonabe_v197';
+        const KEY = 'sonabe_v198';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
         
-        // David: Recorda posar aquí la teva URL d'Apps Script nova (la que has tornat a implementar)
-        const ADMIN_SCRIPT_URL = "URL_DE_LA_TEVA_WEBAPP_AQUI"; 
+        // URL d'Apps Script integrada
+        const ADMIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_jcMVHYvfhsHF5G8oLVym9RiNVMT25txw8asWEQDFcYf0trXkTOysUj0ujSA4hJ0F/exec"; 
 
         const circle = document.querySelector('.progress-ring__circle');
         const radius = circle.r.baseVal.value;
@@ -219,10 +219,6 @@
         }
 
         async function addSongToSheet(s) {
-            if (!ADMIN_SCRIPT_URL || ADMIN_SCRIPT_URL.includes("URL_DE_LA_TEVA")) {
-                alert("Error: No has configurat l'URL de l'Apps Script al codi!");
-                return;
-            }
             if (confirm(`Vols afegir "${s.trackName}" de ${s.artistName} al Google Sheet?`)) {
                 showLoader("Afegeix-la al Sheet...");
                 const payload = {
@@ -236,8 +232,6 @@
                 };
 
                 try {
-                    // David: No-cors és necessari per Apps Script, però no podem llegir la resposta "OK" exactament.
-                    // Si no falla el fetch, normalment és que ha anat bé.
                     await fetch(ADMIN_SCRIPT_URL, {
                         method: 'POST',
                         mode: 'no-cors',
@@ -246,7 +240,7 @@
                     });
                     
                     alert("✅ Peticion enviada! En uns segons apareixerà al teu Sheets.");
-                    loadTotalCount(); // Recarregar la llista de IDs
+                    loadTotalCount(); 
                     document.getElementById('admin-results').innerHTML = "";
                     document.getElementById('admin-search-input').value = "";
                     showScreen('landing-screen');
@@ -254,7 +248,7 @@
             }
         }
 
-        // --- LÒGICA JOC (PROTEGIDA) ---
+        // --- LÒGICA JOC ---
         function setPressure(sec) {
             gameState.pressureMode = sec;
             ['p-off', 'p-15', 'p-20', 'p-30'].forEach(b => document.getElementById(b).className = 'btn btn-outline');
@@ -288,7 +282,7 @@
                 const lines = t.split("\n").slice(1);
                 allExistingIds = lines.map(l => {
                     const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                    return (c[5] ? c[5].trim() : ""); // Columna F (ID)
+                    return (c[5] ? c[5].trim() : ""); 
                 }).filter(id => id);
                 document.getElementById('total-songs-display').innerText = `${allExistingIds.length} CANÇONS DISPONIBLES`;
             } catch(e) { document.getElementById('total-songs-display').innerText = "DATABASE ONLINE"; }
