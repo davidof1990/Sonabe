@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v208 PRECISION FIX</title>
+    <title>Sonabé! 🎶 - v209 STABLE RECOVERY</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -25,29 +25,12 @@
         
         .fs-btn-top { position: absolute; top: -10px; right: -15px; width: 42px; height: 42px; background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 10px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 999; font-size: 1.2rem; }
 
-        /* ESCÀNER v208: SINCRO TOTAL */
-        #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; overflow: hidden; }
-        #reader { width: 100% !important; height: 100% !important; border: none !important; }
-        #reader video { object-fit: cover !important; }
-        
-        .scanner-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            pointer-events: none; z-index: 5002;
-        }
-        .scanner-box {
-            width: 260px; height: 260px;
-            border: 4px solid var(--neon);
-            box-shadow: 0 0 30px var(--neon), inset 0 0 20px var(--neon);
-            border-radius: 24px;
-            position: relative;
-        }
-        .scan-line {
-            position: absolute; width: 100%; height: 4px;
-            background: var(--neon); box-shadow: 0 0 15px var(--neon);
-            top: 0; animation: scanAnim 2.5s ease-in-out infinite;
-        }
-        @keyframes scanAnim { 0% { top: 0; opacity: 0.2; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0.2; } }
+        /* ESCÀNER FIX v209 */
+        #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; }
+        #reader { width: 100% !important; height: 100% !important; }
+        /* Forcem que el quadrat de lectura de la llibreria sigui rosa de neó */
+        #reader__scan_region { border: 3px solid var(--neon) !important; box-shadow: 0 0 20px var(--neon) !important; border-radius: 20px; }
+        #reader__dashboard { background: transparent !important; border: none !important; }
 
         .play-container { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin: 10px 0; }
         #play-btn-main { width: 90px; height: 90px; min-width: 90px; min-height: 90px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; box-shadow: 0 0 15px var(--primary); }
@@ -77,11 +60,7 @@
     
     <div id="scanner-container">
         <div id="reader"></div>
-        <div class="scanner-overlay">
-            <div class="scanner-box"><div class="scan-line"></div></div>
-            <p style="margin-top: 30px; font-weight: bold; color: var(--neon); text-shadow: 0 0 15px var(--neon); letter-spacing: 2px;">ESCANEJANT...</p>
-        </div>
-        <button class="btn" style="position:absolute; bottom:50px; left:50%; transform:translateX(-50%); z-index:5100; background: #333;" onclick="stopScanner()">SORTIR</button>
+        <button class="btn" style="position:absolute; bottom:50px; left:50%; transform:translateX(-50%); z-index:5100; background: #444;" onclick="stopScanner()">CANCEL·LAR</button>
     </div>
 
     <div id="landing-screen" class="screen active">
@@ -129,7 +108,6 @@
         <div class="play-container"><svg class="progress-ring" width="110" height="110"><circle class="progress-ring__circle" stroke-width="5" fill="transparent" r="52" cx="55" cy="55" /></svg><button id="play-btn-main" onclick="handlePlayClick()"><div id="icon-play" style="width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid white; margin-left: 8px;"></div><div id="icon-stop" style="width: 30px; height: 30px; background-color: white; border-radius: 4px; display: none;"></div></button></div>
         <div id="ui-timeline-mode" class="btn-list" style="display:none;"><div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div></div>
         <div id="ui-input-mode" class="btn-list" style="display:none;"><input type="text" id="game-text-input" class="text-input-field" placeholder=""><button class="btn btn-primary" onclick="processInputGuess()">COMPROVAR</button></div>
-        
         <div id="solution-card" style="display:none; flex-direction:column; align-items:center; width: 100%;">
             <div id="guess-result" style="font-weight:bold; font-size:1.5rem; margin-bottom:10px;"></div>
             <div id="song-details" style="display:none; flex-direction:column; align-items:center;">
@@ -145,7 +123,6 @@
                 <div id="winner-actions" style="display:none; flex-direction:column; gap:10px;"><button class="btn btn-gold" onclick="playAgain()">JUGAR DE NOU</button><button class="btn" onclick="resetGame()">REINICIAR</button></div>
             </div>
         </div>
-
         <div id="game-board-container" style="width: 100%; margin-top: 20px;"></div>
         <button class="btn" style="margin-top:10px;" onclick="goToMenu()">Menú Principal</button>
     </div>
@@ -159,7 +136,7 @@
         let currentYear = null, isFadingOutAuto = false, allExistingIds = [];
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        const KEY = 'sonabe_v208';
+        const KEY = 'sonabe_v209';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
         const ADMIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_jcMVHYvfhsHF5G8oLVym9RiNVMT25txw8asWEQDFcYf0trXkTOysUj0ujSA4hJ0F/exec"; 
 
@@ -184,14 +161,11 @@
 
         function toggleFullscreen() {
             const btn = document.getElementById('fs-btn');
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().then(() => btn.innerHTML = "✕").catch(err => alert(err.message));
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen().then(() => btn.innerHTML = "⛶");
-            }
+            if (!document.fullscreenElement) { document.documentElement.requestFullscreen().then(() => btn.innerHTML = "✕").catch(e => {}); } 
+            else { if (document.exitFullscreen) document.exitFullscreen().then(() => btn.innerHTML = "⛶"); }
         }
 
-        // --- ADMIN (INTÀCTE) ---
+        // --- ADMIN ---
         function checkAdminAccess() { const pass = prompt("Contrasenya admin:"); if (pass === "admin") showScreen('admin-screen'); else if (pass !== null) alert("Accés denegat"); }
         function closeAdmin() { stopAdminPreview(); showScreen('landing-screen'); loadTotalCount(); }
         function stopAdminPreview() { adminPreviewAudio.pause(); if (currentAdminBtn) currentAdminBtn.innerHTML = '<div class="admin-play-icon"></div>'; currentAdminBtn = null; }
@@ -216,7 +190,7 @@
             const sid = s.trackId.toString(); const actionDiv = document.getElementById(`action-${sid}`); actionDiv.innerHTML = "⏳";
             const payload = { artista: s.artistName, titol: s.trackName, album: s.collectionName || "Single", any: s.releaseDate.substring(0,4), link: s.trackViewUrl, id: sid, genere: s.primaryGenreName };
             try { await fetch(ADMIN_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); allExistingIds.push(sid); document.getElementById(`status-${sid}`).innerHTML = '<span style="color:#28a745;font-size:0.7rem;font-weight:bold;">✅ ENVIADA!</span>'; document.getElementById(`result-${sid}`).classList.add('admin-exists'); actionDiv.innerHTML = ""; } 
-            catch(e) { alert("Error"); actionDiv.innerHTML = `<button class="btn btn-primary" onclick='addSongToSheet(${JSON.stringify(s).replace(/'/g, "&apos;")})'>REINTENTAR</button>`; }
+            catch(e) { alert("Error"); actionDiv.innerHTML = `<button class="btn" onclick='addSongToSheet(${JSON.stringify(s).replace(/'/g, "&apos;")})'>REINTENTAR</button>`; }
         }
 
         // --- GAME ---
@@ -242,9 +216,11 @@
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop'); clearInterval(fadeInterval);
             if (audio.paused) { 
                 pi.style.display = 'none'; si.style.display = 'block'; 
-                audio.volume = 0; audio.play().catch(e => { console.log("Error play", e); }); 
-                updateSmoothProgress(); startPressureTimer(); 
-                fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else clearInterval(fadeInterval); }, 50); 
+                audio.volume = 0; 
+                audio.play().then(() => {
+                    updateSmoothProgress(); startPressureTimer(); 
+                    fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else clearInterval(fadeInterval); }, 50);
+                }).catch(e => { console.error("Audio block", e); resetPlayIcons(); });
             } else performFadeOut();
         }
         function performFadeOut(callback) { clearInterval(fadeInterval); fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.pause(); audio.volume = 1; resetPlayIcons(); clearInterval(fadeInterval); if (callback) callback(); } }, 50); }
@@ -270,15 +246,13 @@
         function stopPressureTimer() { clearInterval(pressureInterval); if(document.getElementById('pressure-timer-display')) document.getElementById('pressure-timer-display').style.display = 'none'; }
         function setMode(m) { gameState.mode = m; ['mode-timeline','mode-exact','mode-song','mode-artist'].forEach(id => document.getElementById(id).className = 'btn'); document.getElementById('mode-' + m).className = 'btn mode-selected'; save(); }
         function startGame() { gameState.isOnline = true; if (gameState.playedIds.length === 0) gameState.players.forEach(p => p.cards = [1960 + Math.floor(Math.random()*60)]); save(); fetchNextSong(); }
-        
         async function fetchNextSong() { showLoader("Buscant cançó..."); try { const r = await fetch(SHEET_CSV + "&t=" + Date.now()); const t = await r.text(); const lines = t.split("\n").filter(l => l.trim() !== "").slice(1); const avail = lines.map(l => { const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); return { id: (c[5] ? c[5].trim() : ""), year: parseInt(c[3]) }; }).filter(s => s.id && !gameState.playedIds.includes(s.id)); const sel = avail[Math.floor(Math.random()*avail.length)]; gameState.playedIds.push(sel.id); loadSong(sel.id, sel.year); } catch(e) { hideLoader(); } }
-        
         async function loadSong(id, sheetYear = null) {
             showLoader("Carregant música..."); showScreen('game-screen'); resetPlayIcons(); stopPressureTimer(); isFadingOutAuto = false;
             try {
                 const ri = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`); const di = await ri.json(); const s = di.results[0];
                 audio.src = s.previewUrl; 
-                audio.load(); // DAVID: FORCEM CÀRREGA DE SO
+                audio.load();
                 document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600');
                 currentSongName = s.trackName; currentArtistName = s.artistName; 
                 document.getElementById('song-title').innerText = currentSongName; document.getElementById('song-artist').innerText = currentArtistName;
@@ -305,7 +279,7 @@
             } else {
                 document.getElementById('turn-text').innerText = "MODE FÍSIC";
                 document.getElementById('solution-card').style.display = 'flex';
-                document.getElementById('guess-result').innerText = "ESCOLTANT...";
+                document.getElementById('guess-result').innerText = "CARTA ESCANEJADA";
                 document.getElementById('btn-reveal-physical').style.display = 'block';
             }
         }
@@ -318,7 +292,7 @@
         }
 
         function renderTimelineSlots(p) { const container = document.getElementById('timeline-slots'); container.innerHTML = ""; const s = [...p.cards].sort((a,b) => a-b); container.innerHTML += `<button class="btn" style="width:70px;padding:5px;" onclick="checkGuess(-1)">ANTIC</button>`; s.forEach((y, i) => { container.innerHTML += `<div style="background:white;color:black;padding:4px 8px;border-radius:6px;font-weight:bold;font-size:0.8rem;">${y}</div>`; container.innerHTML += `<button class="btn" style="width:70px;padding:5px;" onclick="checkGuess(${i})">${(i === s.length-1) ? 'NOU' : 'ENTRE'}</button>`; }); }
-        function normalizeString(str) { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); }
+        function normalizeString(str) { return str.normalize("NFD").replace(/[\u0300(\u036f]/g, "").toLowerCase().trim(); }
         function processInputGuess() { const val = document.getElementById('game-text-input').value; if (!val) return; let isOk = false; if (gameState.mode === 'exact') isOk = (parseInt(val) === currentYear); else if (gameState.mode === 'song') isOk = (normalizeString(val) === normalizeString(currentSongName)); else if (gameState.mode === 'artist') isOk = (normalizeString(val) === normalizeString(currentArtistName)); processResult(isOk); }
         function checkGuess(idx) { const p = gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : gameState.players[gameState.currentTurn]; const s = [...p.cards].sort((a,b) => a-b); let ok = (idx === -1) ? (currentYear <= s[0]) : (idx === s.length-1) ? (currentYear >= s[s.length-1]) : (currentYear >= s[idx] && currentYear <= s[idx+1]); processResult(ok); }
         function processResult(isOk) { stopPressureTimer(); const thief = gameState.players[gameState.currentTurn]; if (isOk) { thief.cards.push(currentYear); const win = (thief.cards.length >= gameState.winCondition); if (win) gameState.pendingWinner = thief.name; save(); revealUI(true, false, win); } else { if (!gameState.isRobberyActive) { gameState.originalTurn = gameState.currentTurn; gameState.robbersTried = [gameState.currentTurn]; } else gameState.robbersTried.push(gameState.currentTurn); let nextR = -1; for (let i=1; i<gameState.players.length; i++) { let c = (gameState.originalTurn + i) % gameState.players.length; if (!gameState.robbersTried.includes(c)) { nextR = c; break; } } if (nextR !== -1) { gameState.nextRobberIdx = nextR; save(); revealUI(false, true, false); } else { save(); revealUI(false, false, false); } } }
@@ -330,13 +304,16 @@
         function resetGame() { performFadeOut(() => { localStorage.removeItem(KEY); window.location.reload(); }); }
         function goToMenu() { performFadeOut(() => { window.location.reload(); }); }
 
-        // --- ESCÀNER SINCRO v208 ---
+        // --- RECURS ESCÀNER STABLE v209 ---
         function startScanner() { 
+            // DAVID: Despertem l'àudio amb un play mut per guanyar permís del navegador
+            audio.play().then(() => audio.pause()).catch(() => {});
+            
             document.getElementById('scanner-container').style.display = 'block'; 
             html5QrCode = new Html5Qrcode("reader"); 
             html5QrCode.start(
                 { facingMode: "environment" }, 
-                { fps: 15, qrbox: { width: 260, height: 260 } }, // David: Sincro amb el CSS
+                { fps: 20, qrbox: 250 }, 
                 (text) => { 
                     const id = new URLSearchParams(text.split('?')[1]).get('id'); 
                     if (id) { stopScanner(); gameState.isOnline = false; loadSong(id); } 
