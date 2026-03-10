@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v211 PUBLIC PREVIEW</title>
+    <title>Sonabé! 🎶 - v212 NEON SCAN REVIVAL</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -21,14 +21,35 @@
         .btn-purple { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple) !important; border: none !important; }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .btn-outline { border: 1px solid var(--neon); color: var(--neon); background: transparent; }
-        .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 15px var(--neon); }
         
         .fs-btn-top { position: absolute; top: -10px; right: -15px; width: 42px; height: 42px; background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 10px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 999; font-size: 1.2rem; }
 
-        #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; }
+        /* ESCÀNER NEÓ v212 */
+        #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; overflow: hidden; }
         #reader { width: 100% !important; height: 100% !important; }
-        #reader__scan_region { border: 3px solid var(--neon) !important; box-shadow: 0 0 20px var(--neon) !important; border-radius: 20px; }
-        #reader__dashboard { background: transparent !important; border: none !important; }
+        #reader video { object-fit: cover !important; }
+        /* Amaguem brossa de la llibreria */
+        #reader__scan_region { border: none !important; }
+        #reader img { display: none !important; }
+
+        .scanner-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            pointer-events: none; z-index: 5002;
+        }
+        .scanner-box {
+            width: 250px; height: 250px;
+            border: 4px solid var(--neon);
+            box-shadow: 0 0 30px var(--neon), inset 0 0 15px var(--neon);
+            border-radius: 30px;
+            position: relative;
+        }
+        .scan-line {
+            position: absolute; width: 100%; height: 4px;
+            background: var(--neon); box-shadow: 0 0 20px var(--neon);
+            top: 0; animation: scanAnim 2s ease-in-out infinite;
+        }
+        @keyframes scanAnim { 0% { top: 0%; opacity: 0.3; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0.3; } }
 
         .play-container { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin: 10px 0; }
         #play-btn-main { width: 90px; height: 90px; min-width: 90px; min-height: 90px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; box-shadow: 0 0 15px var(--primary); }
@@ -39,9 +60,8 @@
         .active-row { border: 2px solid white !important; box-shadow: 0 0 15px var(--primary); }
         .text-input-field { width: 250px; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--neon); background: #222; color: white; text-align: center; margin-bottom: 10px; outline: none; }
         
-        /* CERCADOR RESULTATS PUBLIC */
         .search-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; text-align: left; border: 1px solid #333; display: flex; align-items: center; gap: 12px; }
-        .preview-btn-small { width: 38px; height: 38px; min-width: 38px; border-radius: 50%; border: none; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 10px var(--primary); }
+        .preview-btn-small { width: 38px; height: 38px; min-width: 38px; border-radius: 50%; border: none; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .play-icon-small { width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 8px solid white; margin-left: 3px; }
         .stop-icon-small { width: 10px; height: 10px; background: white; border-radius: 2px; }
 
@@ -56,7 +76,11 @@
     
     <div id="scanner-container">
         <div id="reader"></div>
-        <button class="btn" style="position:absolute; bottom:50px; left:50%; transform:translateX(-50%); z-index:5100; background: #444;" onclick="stopScanner()">CANCEL·LAR</button>
+        <div class="scanner-overlay">
+            <div class="scanner-box"><div class="scan-line"></div></div>
+            <p style="margin-top: 30px; font-weight: 900; color: var(--neon); text-shadow: 0 0 10px var(--neon); letter-spacing: 2px;">ENQUADRA EL BIDI</p>
+        </div>
+        <button class="btn" style="position:absolute; bottom:50px; left:50%; transform:translateX(-50%); z-index:5100; background: #333; border: 1px solid var(--neon);" onclick="stopScanner()">CANCEL·LAR</button>
     </div>
 
     <div id="landing-screen" class="screen active">
@@ -74,20 +98,15 @@
 
     <div id="public-search-screen" class="screen">
         <div class="neon-logo" style="font-size: 1.8rem;">Cercador</div>
-        <div class="config-group">
-            <input type="text" id="public-search-input" class="text-input-field" placeholder="Grup o cançó..." oninput="performPublicSearch()">
-        </div>
-        <div id="public-search-results" style="width: 100%; max-height: 400px; overflow-y: auto; padding-bottom: 20px;"></div>
+        <div class="config-group"><input type="text" id="public-search-input" class="text-input-field" placeholder="Grup o cançó..." oninput="performPublicSearch()"></div>
+        <div id="public-search-results" style="width: 100%; max-height: 400px; overflow-y: auto;"></div>
         <button class="btn" onclick="closePublicSearch()">Tornar al Menú</button>
     </div>
 
     <div id="admin-screen" class="screen">
         <div class="neon-logo" style="font-size: 1.8rem;">Cercador iTunes</div>
-        <div class="config-group">
-            <input type="text" id="admin-search-input" class="text-input-field" placeholder="Títol, artista..." style="width: 85%;">
-            <button class="btn btn-primary" onclick="searchITunes()">BUSCAR CANÇÓ</button>
-        </div>
-        <div id="admin-results" style="width: 100%; max-height: 400px; overflow-y: auto; padding-bottom: 20px;"></div>
+        <div class="config-group"><input type="text" id="admin-search-input" class="text-input-field" placeholder="Títol, artista..." style="width: 85%;"><button class="btn btn-primary" onclick="searchITunes()">BUSCAR CANÇÓ</button></div>
+        <div id="admin-results" style="width: 100%; max-height: 400px; overflow-y: auto;"></div>
         <button class="btn" onclick="closeAdmin()">Tornar al Menú</button>
     </div>
 
@@ -144,7 +163,7 @@
         let databaseSongs = []; 
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        const KEY = 'sonabe_v211';
+        const KEY = 'sonabe_v212';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
         const ADMIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_jcMVHYvfhsHF5G8oLVym9RiNVMT25txw8asWEQDFcYf0trXkTOysUj0ujSA4hJ0F/exec"; 
 
@@ -173,24 +192,22 @@
             else { if (document.exitFullscreen) document.exitFullscreen().then(() => btn.innerHTML = "⛶"); }
         }
 
-        // --- CERCADOR PÚBLIC (NOU v211) ---
+        // --- CERCADOR PÚBLIC ---
         function openPublicSearch() { showScreen('public-search-screen'); document.getElementById('public-search-input').value = ""; document.getElementById('public-search-results').innerHTML = ""; }
         function closePublicSearch() { stopPublicPreview(); showScreen('landing-screen'); }
         function stopPublicPreview() { publicPreviewAudio.pause(); if (currentPublicBtn) currentPublicBtn.innerHTML = '<div class="play-icon-small"></div>'; currentPublicBtn = null; }
 
         async function togglePublicPreview(id, btn) {
             if (currentPublicBtn === btn) { stopPublicPreview(); return; }
-            stopPublicPreview(); currentPublicBtn = btn;
-            btn.innerHTML = "⏳";
+            stopPublicPreview(); currentPublicBtn = btn; btn.innerHTML = "⏳";
             try {
                 const r = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`);
                 const d = await r.json();
                 if (d.results && d.results[0].previewUrl) {
                     btn.innerHTML = '<div class="stop-icon-small"></div>';
-                    publicPreviewAudio.src = d.results[0].previewUrl;
-                    publicPreviewAudio.play();
+                    publicPreviewAudio.src = d.results[0].previewUrl; publicPreviewAudio.play();
                     publicPreviewAudio.onended = () => stopPublicPreview();
-                } else { btn.innerHTML = "❌"; }
+                } else btn.innerHTML = "❌";
             } catch(e) { btn.innerHTML = "❌"; }
         }
 
@@ -198,19 +215,11 @@
             const term = normalizeString(document.getElementById('public-search-input').value);
             const container = document.getElementById('public-search-results');
             if (!term || term.length < 2) { container.innerHTML = ""; return; }
-            
-            const matches = databaseSongs.filter(s => 
-                normalizeString(s.title).includes(term) || 
-                normalizeString(s.artist).includes(term)
-            ).slice(0, 30);
-
+            const matches = databaseSongs.filter(s => normalizeString(s.title).includes(term) || normalizeString(s.artist).includes(term)).slice(0, 30);
             container.innerHTML = matches.length ? matches.map(s => `
                 <div class="search-item">
                     <button class="preview-btn-small" onclick="togglePublicPreview('${s.id}', this)"><div class="play-icon-small"></div></button>
-                    <div style="flex:1">
-                        <b style="color: white; font-size: 0.85rem;">${s.title}</b><br>
-                        <span style="color: var(--primary); font-size: 0.75rem;">${s.artist} (${s.year})</span> 
-                    </div>
+                    <div style="flex:1"><b style="color: white; font-size: 0.85rem;">${s.title}</b><br><span style="color: var(--primary); font-size: 0.75rem;">${s.artist} (${s.year})</span></div>
                 </div>
             `).join('') : '<p style="color: #666; font-size: 0.8rem; margin-top: 20px;">No hi ha coincidències.</p>';
         }
@@ -220,7 +229,6 @@
         function closeAdmin() { stopAdminPreview(); showScreen('landing-screen'); loadTotalCount(); }
         function stopAdminPreview() { adminPreviewAudio.pause(); if (currentAdminBtn) currentAdminBtn.innerHTML = '<div class="admin-play-icon"></div>'; currentAdminBtn = null; }
         function toggleAdminPreview(url, btn) { if (currentAdminBtn === btn) { stopAdminPreview(); return; } stopAdminPreview(); currentAdminBtn = btn; btn.innerHTML = '<div class="admin-stop-icon"></div>'; adminPreviewAudio.src = url; adminPreviewAudio.play(); adminPreviewAudio.onended = () => stopAdminPreview(); }
-
         async function searchITunes() {
             const term = document.getElementById('admin-search-input').value; if (!term) return;
             stopAdminPreview(); showLoader("Buscant...");
@@ -235,53 +243,34 @@
                 });
             } catch(e) { alert("Error"); } finally { hideLoader(); }
         }
-
         async function addSongToSheet(s) {
             const sid = s.trackId.toString(); const actionDiv = document.getElementById(`action-${sid}`); actionDiv.innerHTML = "⏳";
             const payload = { artista: s.artistName, titol: s.trackName, album: s.collectionName || "Single", any: s.releaseDate.substring(0,4), link: s.trackViewUrl, id: sid, genere: s.primaryGenreName };
-            try { await fetch(ADMIN_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); allExistingIds.push(sid); document.getElementById(`status-${sid}`).innerHTML = '<span style="color:#28a745;font-size:0.7rem;font-weight:bold;">✅ ENVIADA!</span>'; document.getElementById(`result-${sid}`).classList.add('admin-exists'); actionDiv.innerHTML = ""; } 
-            catch(e) { alert("Error"); actionDiv.innerHTML = `<button class="btn" onclick='addSongToSheet(${JSON.stringify(s).replace(/'/g, "&apos;")})'>REINTENTAR</button>`; }
+            try { await fetch(ADMIN_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); allExistingIds.push(sid); document.getElementById(`status-${sid}`).innerHTML = '<span style="color:#28a745;font-size:0.7rem;font-weight:bold;">✅ ENVIADA!</span>'; document.getElementById(`result-${sid}`).classList.add('admin-exists'); actionDiv.innerHTML = ""; } catch(e) { alert("Error"); actionDiv.innerHTML = `<button class="btn" onclick='addSongToSheet(${JSON.stringify(s).replace(/'/g, "&apos;")})'>REINTENTAR</button>`; }
         }
 
         // --- GAME ---
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
         function load() { const s = localStorage.getItem(KEY); if(s) { try { gameState = JSON.parse(s); } catch(e){} } }
         window.onload = () => { load(); showScreen('landing-screen'); loadTotalCount(); };
-
         async function loadTotalCount() {
             try {
                 const r = await fetch(SHEET_CSV + "&t=" + Date.now()); const t = await r.text();
                 const lines = t.split("\n").filter(l => l.trim() !== "");
-                databaseSongs = lines.slice(1).map(l => { 
-                    const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
-                    return {
-                        title: c[0] ? c[0].trim() : "",
-                        artist: c[1] ? c[1].trim() : "",
-                        year: c[3] ? c[3].trim() : "",
-                        id: c[5] ? c[5].trim() : ""
-                    };
-                }).filter(s => s.id);
-                allExistingIds = databaseSongs.map(s => s.id);
-                document.getElementById('total-songs-display').innerText = `${allExistingIds.length} CANÇONS DISPONIBLES`;
+                databaseSongs = lines.slice(1).map(l => { const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); return { title: c[0]||"", artist: c[1]||"", year: c[3]||"", id: c[5]||"" }; }).filter(s => s.id);
+                allExistingIds = databaseSongs.map(s => s.id); document.getElementById('total-songs-display').innerText = `${allExistingIds.length} CANÇONS DISPONIBLES`;
             } catch(e) { document.getElementById('total-songs-display').innerText = "DATABASE ONLINE"; }
         }
-
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
         function showLoader(txt) { document.getElementById('loading-overlay').style.display = 'flex'; document.getElementById('loading-text').innerText = txt; }
         function hideLoader() { document.getElementById('loading-overlay').style.display = 'none'; }
         function resetPlayIcons() { document.getElementById('icon-play').style.display = 'block'; document.getElementById('icon-stop').style.display = 'none'; cancelAnimationFrame(animationFrame); circle.style.stroke = "white"; circle.style.opacity = "1"; setProgress(0); }
-
         function handlePlayClick() {
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop'); clearInterval(fadeInterval);
-            if (audio.paused) { 
-                pi.style.display = 'none'; si.style.display = 'block'; 
-                audio.volume = 0; 
-                audio.play().then(() => { updateSmoothProgress(); startPressureTimer(); fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else clearInterval(fadeInterval); }, 50); }).catch(e => { console.error("Audio block", e); resetPlayIcons(); });
-            } else performFadeOut();
+            if (audio.paused) { pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 0; audio.play().then(() => { updateSmoothProgress(); startPressureTimer(); fadeInterval = setInterval(() => { if (audio.volume < 0.9) audio.volume += 0.1; else clearInterval(fadeInterval); }, 50); }).catch(() => resetPlayIcons()); } else performFadeOut();
         }
         function performFadeOut(callback) { clearInterval(fadeInterval); fadeInterval = setInterval(() => { if (audio.volume > 0.1) audio.volume -= 0.1; else { audio.pause(); audio.volume = 1; resetPlayIcons(); clearInterval(fadeInterval); if (callback) callback(); } }, 50); }
         audio.onended = () => resetPlayIcons();
-
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
         function addPlayer() { const name = document.getElementById('player-input').value.trim(); if (name) { gameState.players.push({ name: name, cards: [] }); document.getElementById('player-input').value = ""; save(); updateSetupList(); } }
         function updateSetupList() {
@@ -292,7 +281,6 @@
         }
         function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 5; save(); }
         function setPressure(sec) { gameState.pressureMode = sec; ['p-off', 'p-15', 'p-20', 'p-30'].forEach(b => document.getElementById(b).className = 'btn'); document.getElementById(sec === 0 ? 'p-off' : 'p-' + sec).className = 'btn mode-selected'; save(); }
-        
         function startPressureTimer() {
             if (gameState.pressureMode <= 0 || gameState.isRobberyActive) return;
             clearInterval(pressureInterval); let timeLeft = gameState.pressureMode;
@@ -302,51 +290,27 @@
         function stopPressureTimer() { clearInterval(pressureInterval); if(document.getElementById('pressure-timer-display')) document.getElementById('pressure-timer-display').style.display = 'none'; }
         function setMode(m) { gameState.mode = m; ['mode-timeline','mode-exact','mode-song','mode-artist'].forEach(id => document.getElementById(id).className = 'btn'); document.getElementById('mode-' + m).className = 'btn mode-selected'; save(); }
         function startGame() { gameState.isOnline = true; if (gameState.playedIds.length === 0) gameState.players.forEach(p => p.cards = [1960 + Math.floor(Math.random()*60)]); save(); fetchNextSong(); }
-        async function fetchNextSong() { showLoader("Buscant cançó..."); try { const r = await fetch(SHEET_CSV + "&t=" + Date.now()); const t = await r.text(); const lines = t.split("\n").filter(l => l.trim() !== "").slice(1); const avail = lines.map(l => { const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); return { id: (c[5] ? c[5].trim() : ""), year: parseInt(c[3]) }; }).filter(s => s.id && !gameState.playedIds.includes(s.id)); const sel = avail[Math.floor(Math.random()*avail.length)]; gameState.playedIds.push(sel.id); loadSong(sel.id, sel.year); } catch(e) { hideLoader(); } }
+        async function fetchNextSong() { showLoader("Buscant cançó..."); try { const r = await fetch(SHEET_CSV + "&t=" + Date.now()); const t = await r.text(); const lines = t.split("\n").filter(l => l.trim() !== "").slice(1); const avail = lines.map(l => { const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); return { id: c[5]||"", year: parseInt(c[3]) }; }).filter(s => s.id && !gameState.playedIds.includes(s.id)); const sel = avail[Math.floor(Math.random()*avail.length)]; gameState.playedIds.push(sel.id); loadSong(sel.id, sel.year); } catch(e) { hideLoader(); } }
         async function loadSong(id, sheetYear = null) {
             showLoader("Carregant música..."); showScreen('game-screen'); resetPlayIcons(); stopPressureTimer(); isFadingOutAuto = false;
             try {
                 const ri = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`); const di = await ri.json(); const s = di.results[0];
-                audio.src = s.previewUrl; audio.load();
-                document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600');
-                currentSongName = s.trackName; currentArtistName = s.artistName; 
-                document.getElementById('song-title').innerText = currentSongName; document.getElementById('song-artist').innerText = currentArtistName;
-                currentYear = sheetYear || parseInt(s.releaseDate.substring(0,4)); document.getElementById('song-year').innerText = currentYear; 
-                renderGameUI();
+                audio.src = s.previewUrl; audio.load(); document.getElementById('album-img').src = s.artworkUrl100.replace('100x100','600x600');
+                currentSongName = s.trackName; currentArtistName = s.artistName; document.getElementById('song-title').innerText = currentSongName; document.getElementById('song-artist').innerText = currentArtistName;
+                currentYear = sheetYear || parseInt(s.releaseDate.substring(0,4)); document.getElementById('song-year').innerText = currentYear; renderGameUI();
             } catch(e) { hideLoader(); } finally { hideLoader(); }
         }
-
         function renderGameUI() {
-            document.getElementById('solution-card').style.display = 'none'; 
-            document.getElementById('song-details').style.display = 'none'; 
-            document.getElementById('btn-rob').style.display = 'none'; 
-            document.getElementById('btn-next').style.display = 'none'; 
-            document.getElementById('btn-reveal-physical').style.display = 'none';
-            document.getElementById('winner-actions').style.display = 'none'; 
-            document.getElementById('ui-timeline-mode').style.display = 'none'; 
-            document.getElementById('ui-input-mode').style.display = 'none';
+            document.getElementById('solution-card').style.display = 'none'; document.getElementById('song-details').style.display = 'none'; document.getElementById('btn-rob').style.display = 'none'; document.getElementById('btn-next').style.display = 'none'; document.getElementById('btn-reveal-physical').style.display = 'none'; document.getElementById('winner-actions').style.display = 'none'; document.getElementById('ui-timeline-mode').style.display = 'none'; document.getElementById('ui-input-mode').style.display = 'none';
             if (gameState.isOnline) {
-                const p = gameState.players[gameState.currentTurn]; 
-                document.getElementById('turn-text').innerText = gameState.isRobberyActive ? `🚨 ROBATORI: ${p.name.toUpperCase()}` : `TORN DE: ${p.name.toUpperCase()}`;
+                const p = gameState.players[gameState.currentTurn]; document.getElementById('turn-text').innerText = gameState.isRobberyActive ? `🚨 ROBATORI: ${p.name.toUpperCase()}` : `TORN DE: ${p.name.toUpperCase()}`;
                 if (gameState.mode === 'timeline') { document.getElementById('ui-timeline-mode').style.display = 'block'; renderTimelineSlots(gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : p); } 
                 else { document.getElementById('ui-input-mode').style.display = 'block'; document.getElementById('game-text-input').value = ""; }
                 renderBoards();
-            } else {
-                document.getElementById('turn-text').innerText = "MODE FÍSIC";
-                document.getElementById('solution-card').style.display = 'flex';
-                document.getElementById('guess-result').innerText = "CARTA ESCANEJADA";
-                document.getElementById('btn-reveal-physical').style.display = 'block';
-            }
+            } else { document.getElementById('turn-text').innerText = "MODE FÍSIC"; document.getElementById('solution-card').style.display = 'flex'; document.getElementById('guess-result').innerText = "CARTA ESCANEJADA"; document.getElementById('btn-reveal-physical').style.display = 'block'; }
         }
-
-        function revealPhysicalSolution() {
-            document.getElementById('song-details').style.display = 'flex';
-            document.getElementById('btn-reveal-physical').style.display = 'none';
-            document.getElementById('btn-next').style.display = 'block';
-            document.getElementById('guess-result').innerText = "SOLUCIÓ";
-        }
-
-        function renderTimelineSlots(p) { const container = document.getElementById('timeline-slots'); container.innerHTML = ""; const s = [...p.cards].sort((a,b) => a-b); container.innerHTML += `<button class="btn" style="width:70px;padding:5px;" onclick="checkGuess(-1)">ANTIC</button>`; s.forEach((y, i) => { container.innerHTML += `<div style="background:white;color:black;padding:4px 8px;border-radius:6px;font-weight:bold;font-size:0.8rem;">${y}</div>`; container.innerHTML += `<button class="btn" style="width:70px;padding:5px;" onclick="checkGuess(${i})">${(i === s.length-1) ? 'NOU' : 'ENTRE'}</button>`; }); }
+        function revealPhysicalSolution() { document.getElementById('song-details').style.display = 'flex'; document.getElementById('btn-reveal-physical').style.display = 'none'; document.getElementById('btn-next').style.display = 'block'; document.getElementById('guess-result').innerText = "SOLUCIÓ"; }
+        function renderTimelineSlots(p) { const container = document.getElementById('timeline-slots'); container.innerHTML = ""; const s = [...p.cards].sort((a,b) => a-b); container.innerHTML += `<button class="btn" style="width:70px;padding:5px;" onclick="checkGuess(-1)">ANTIC</button>`; s.forEach((y, i) => { container.innerHTML += `<div style="background:white;color:black;padding:4px 8px;border-radius:6px;font-weight:bold;font-size:0.8rem;">${y}</div><button class="btn" style="width:70px;padding:5px;" onclick="checkGuess(${i})">${(i === s.length-1) ? 'NOU' : 'ENTRE'}</button>`; }); }
         function normalizeString(str) { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); }
         function processInputGuess() { const val = document.getElementById('game-text-input').value; if (!val) return; let isOk = false; if (gameState.mode === 'exact') isOk = (parseInt(val) === currentYear); else if (gameState.mode === 'song') isOk = (normalizeString(val) === normalizeString(currentSongName)); else if (gameState.mode === 'artist') isOk = (normalizeString(val) === normalizeString(currentArtistName)); processResult(isOk); }
         function checkGuess(idx) { const p = gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : gameState.players[gameState.currentTurn]; const s = [...p.cards].sort((a,b) => a-b); let ok = (idx === -1) ? (currentYear <= s[0]) : (idx === s.length-1) ? (currentYear >= s[s.length-1]) : (currentYear >= s[idx] && currentYear <= s[idx+1]); processResult(ok); }
@@ -359,6 +323,7 @@
         function resetGame() { performFadeOut(() => { localStorage.removeItem(KEY); window.location.reload(); }); }
         function goToMenu() { performFadeOut(() => { window.location.reload(); }); }
 
+        // --- ESCÀNER NEÓ v212 ---
         function startScanner() { 
             audio.play().then(() => audio.pause()).catch(() => {});
             document.getElementById('scanner-container').style.display = 'block'; 
