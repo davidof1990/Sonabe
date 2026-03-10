@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v216 PINK ALIGNMENT</title>
+    <title>Sonabé! 🎶 - v217 VIBRANT SQUARE</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -24,13 +24,17 @@
         
         .fs-btn-top { position: absolute; top: -10px; right: -15px; width: 42px; height: 42px; background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 10px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 999; font-size: 1.2rem; }
 
-        /* --- ESCÀNER ALIGNMENT v216 --- */
+        /* --- ESCÀNER VIBRANT v217 --- */
         #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; overflow: hidden; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
-        #reader video { object-fit: cover !important; }
-
-        /* DAVID: No intentem esborrar el blanc, només el "fem maco" */
-        #reader__scan_region { border: 2px solid rgba(255,255,255,0.2) !important; } 
+        #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
+        
+        /* DAVID: Forcem la invisibilitat dels elements blancs que veies a les fotos */
+        #reader__scan_region, #reader__scan_region * { 
+            border: none !important; 
+            box-shadow: none !important; 
+            outline: none !important;
+        }
         #reader__dashboard { display: none !important; }
 
         .scanner-overlay {
@@ -39,10 +43,10 @@
             pointer-events: none; z-index: 5010;
         }
         .scanner-box {
-            width: 250px; height: 250px; /* Mateixa mida que el qrbox del JS */
-            border: 5px solid var(--neon);
-            box-shadow: 0 0 30px var(--neon);
-            border-radius: 20px; /* Reduït per quadrar millor amb els angles de la llibreria */
+            width: 250px; height: 250px;
+            border: 4px solid var(--neon);
+            box-shadow: 0 0 30px var(--neon), inset 0 0 15px var(--neon);
+            border-radius: 35px;
             position: relative;
         }
         .scan-line {
@@ -50,24 +54,24 @@
             background: var(--neon); box-shadow: 0 0 15px var(--neon);
             top: 0; animation: scanAnim 2s ease-in-out infinite;
         }
-        @keyframes scanAnim { 0% { top: 5%; } 100% { top: 95%; } }
+        @keyframes scanAnim { 0% { top: 5%; opacity: 0.2; } 50% { opacity: 1; } 100% { top: 95%; opacity: 0.2; } }
 
-        /* REPRODUCTOR I ALTRES */
+        /* REPRODUCTOR */
         .play-container { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; margin: 10px 0; }
         #play-btn-main { width: 90px; height: 90px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; box-shadow: 0 0 15px var(--primary); }
         .progress-ring { position: absolute; top: 0; left: 0; transform: rotate(-90deg); z-index: 1; }
         .progress-ring__circle { stroke: white; stroke-linecap: round; }
-        .player-row { background: #1e1e1e; padding: 12px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; width: 100%; box-sizing: border-box; }
-        .active-row { border: 2px solid white !important; box-shadow: 0 0 15px var(--primary); }
-        .text-input-field { width: 250px; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--neon); background: #222; color: white; text-align: center; margin-bottom: 10px; outline: none; }
+
         .search-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; text-align: left; border: 1px solid #333; display: flex; align-items: center; gap: 12px; }
         .preview-btn-small { width: 38px; height: 38px; min-width: 38px; border-radius: 50%; border: none; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .play-icon-small { width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 8px solid white; margin-left: 3px; }
         .stop-icon-small { width: 10px; height: 10px; background: white; border-radius: 2px; }
+
         #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: var(--bg); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .config-group { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 15px; width: 100%; box-sizing: border-box; }
+        .text-input-field { width: 250px; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--neon); background: #222; color: white; text-align: center; margin-bottom: 10px; outline: none; }
     </style>
 </head>
 <body>
@@ -162,7 +166,7 @@
         let databaseSongs = []; 
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        const KEY = 'sonabe_v216';
+        const KEY = 'sonabe_v217';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
         const ADMIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_jcMVHYvfhsHF5G8oLVym9RiNVMT25txw8asWEQDFcYf0trXkTOysUj0ujSA4hJ0F/exec"; 
 
@@ -191,7 +195,6 @@
             else { if (document.exitFullscreen) document.exitFullscreen().then(() => btn.innerHTML = "⛶"); }
         }
 
-        // --- CERCADOR PÚBLIC ---
         function openPublicSearch() { showScreen('public-search-screen'); document.getElementById('public-search-input').value = ""; document.getElementById('public-search-results').innerHTML = ""; }
         function closePublicSearch() { stopPublicPreview(); showScreen('landing-screen'); }
         function stopPublicPreview() { publicPreviewAudio.pause(); if (currentPublicBtn) currentPublicBtn.innerHTML = '<div class="play-icon-small"></div>'; currentPublicBtn = null; }
@@ -223,7 +226,6 @@
             `).join('') : '<p style="color: #666; font-size: 0.8rem; margin-top: 20px;">No hi ha coincidències.</p>';
         }
 
-        // --- ADMIN ---
         function checkAdminAccess() { const pass = prompt("Contrasenya admin:"); if (pass === "admin") showScreen('admin-screen'); else if (pass !== null) alert("Accés denegat"); }
         function closeAdmin() { stopAdminPreview(); showScreen('landing-screen'); loadTotalCount(); }
         function stopAdminPreview() { adminPreviewAudio.pause(); if (currentAdminBtn) currentAdminBtn.innerHTML = '<div class="admin-play-icon"></div>'; currentAdminBtn = null; }
@@ -248,7 +250,6 @@
             try { await fetch(ADMIN_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); allExistingIds.push(sid); document.getElementById(`status-${sid}`).innerHTML = '<span style="color:#28a745;font-size:0.7rem;font-weight:bold;">✅ ENVIADA!</span>'; document.getElementById(`result-${sid}`).classList.add('admin-exists'); actionDiv.innerHTML = ""; } catch(e) { alert("Error"); actionDiv.innerHTML = `<button class="btn" onclick='addSongToSheet(${JSON.stringify(s).replace(/'/g, "&apos;")})'>REINTENTAR</button>`; }
         }
 
-        // --- GAME ---
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
         function load() { const s = localStorage.getItem(KEY); if(s) { try { gameState = JSON.parse(s); } catch(e){} } }
         window.onload = () => { load(); showScreen('landing-screen'); loadTotalCount(); };
@@ -322,17 +323,22 @@
         function resetGame() { performFadeOut(() => { localStorage.removeItem(KEY); window.location.reload(); }); }
         function goToMenu() { performFadeOut(() => { window.location.reload(); }); }
 
-        // --- ESCÀNER ALIGNMENT v216 ---
+        // --- ESCÀNER VIBRANT v217 ---
         function startScanner() { 
             audio.play().then(() => audio.pause()).catch(() => {});
             document.getElementById('scanner-container').style.display = 'block'; 
             html5QrCode = new Html5Qrcode("reader"); 
+            // DAVID: Forcem mides 250x250 per evitar rectangles alts
             html5QrCode.start(
                 { facingMode: "environment" }, 
-                { fps: 20, qrbox: 250 }, 
+                { fps: 20, qrbox: { width: 250, height: 250 } }, 
                 (text) => { 
                     const id = new URLSearchParams(text.split('?')[1]).get('id'); 
-                    if (id) { stopScanner(); gameState.isOnline = false; loadSong(id); } 
+                    if (id) { 
+                        // VIBRACIÓ!
+                        if (navigator.vibrate) navigator.vibrate(200);
+                        stopScanner(); gameState.isOnline = false; loadSong(id); 
+                    } 
                 }
             ).catch(() => stopScanner()); 
         }
