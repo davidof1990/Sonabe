@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v225 FULL RESTORE</title>
+    <title>Sonabé! 🎶 - v226 SILENT SAVE</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -16,96 +16,27 @@
         }
         
         body { 
-            background-color: var(--bg); 
-            color: white; 
-            font-family: -apple-system, sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            min-height: 100vh; 
-            margin: 0; 
-            padding: 20px; 
-            box-sizing: border-box; 
-            text-align: center; 
-            overflow-x: hidden; 
+            background-color: var(--bg); color: white; font-family: -apple-system, sans-serif; 
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; 
+            text-align: center; overflow-x: hidden; 
         }
         
-        .neon-logo { 
-            font-weight: bold; 
-            font-size: 2.8rem; 
-            text-transform: uppercase; 
-            color: #fff; 
-            text-shadow: 0 0 10px #fff, 0 0 20px var(--neon); 
-            margin: 20px 0 5px 0;
-        }
-
-        .song-count-badge { 
-            font-size: 0.8rem; 
-            color: #888; 
-            margin-bottom: 30px; 
-            font-weight: bold; 
-            letter-spacing: 1px; 
-        }
-
-        .screen { 
-            display: none; 
-            flex-direction: column; 
-            align-items: center; 
-            width: 100%; 
-            max-width: 400px; 
-            gap: 15px; 
-            position: relative; 
-        }
-
+        .neon-logo { font-weight: bold; font-size: 2.8rem; text-transform: uppercase; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px var(--neon); margin: 20px 0 5px 0; }
+        .song-count-badge { font-size: 0.8rem; color: #888; margin-bottom: 30px; font-weight: bold; letter-spacing: 1px; }
+        .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; gap: 15px; position: relative; }
         .active { display: flex; }
         
-        .btn-list { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-            width: 100%; 
-            align-items: center; 
-        }
-
-        .btn { 
-            background: rgba(255,255,255,0.1); 
-            border: 1px solid #444; 
-            color: #eee; 
-            padding: 16px 25px; 
-            border-radius: 40px; 
-            cursor: pointer; 
-            font-weight: bold; 
-            text-transform: uppercase; 
-            font-size: 0.85rem; 
-            width: 280px; 
-            transition: 0.2s; 
-            outline: none; 
-            box-sizing: border-box; 
-        }
-
+        .btn-list { display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center; }
+        .btn { background: rgba(255,255,255,0.1); border: 1px solid #444; color: #eee; padding: 16px 25px; border-radius: 40px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; width: 280px; transition: 0.2s; outline: none; box-sizing: border-box; }
         .btn-primary { background-color: var(--primary); border: none; color: white; box-shadow: 0 0 15px var(--primary); }
         .btn-purple { background-color: var(--purple) !important; color: white !important; box-shadow: 0 0 20px var(--purple) !important; border: none !important; }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .btn-outline { border: 1px solid var(--neon); color: var(--neon); background: transparent; }
-        
-        .mode-selected { 
-            background-color: var(--neon) !important; 
-            color: white !important; 
-            border: 2px solid white !important; 
-            box-shadow: 0 0 20px var(--neon); 
-        }
-        
-        .fs-btn-top { 
-            position: absolute; top: -10px; right: -15px; 
-            width: 42px; height: 42px; 
-            background: rgba(255,255,255,0.05); 
-            border: 1px solid #333; border-radius: 10px; 
-            color: white; display: flex; 
-            align-items: center; justify-content: center; 
-            cursor: pointer; z-index: 999; font-size: 1.2rem; 
-        }
+        .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon); }
+        .fs-btn-top { position: absolute; top: -10px; right: -15px; width: 42px; height: 42px; background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 10px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 999; font-size: 1.2rem; }
 
-        /* --- ESCÀNER --- */
+        /* ESCÀNER */
         #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; overflow: hidden; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader video { object-fit: cover !important; }
@@ -113,25 +44,20 @@
         #reader__scan_region > div { display: none !important; }
         #reader__dashboard { display: none !important; }
 
-        .scanner-visual-effects { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 5010; }
-        .scan-line-container { width: 250px; height: 250px; position: relative; }
-        .scan-line { position: absolute; width: 100%; height: 3px; background: var(--neon); box-shadow: 0 0 15px var(--neon); top: 0; animation: scanAnim 2s ease-in-out infinite; }
-        @keyframes scanAnim { 0% { top: 5%; opacity: 0.3; } 50% { opacity: 1; } 100% { top: 95%; opacity: 0.3; } }
-
-        /* --- TAULER I RESULTATS --- */
+        /* TAULER JOC */
         .player-row { background: #1e1e1e; padding: 12px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; width: 100%; box-sizing: border-box; }
         .active-row { border: 2px solid white !important; box-shadow: 0 0 15px var(--primary); background: #252525; }
 
-        .search-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; text-align: left; border: 1px solid #333; display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; }
-        
-        /* ADMIN TARGETES */
+        /* ADMIN & CERCA */
         .admin-result-card { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; border: 1px solid #333; width: 100%; box-sizing: border-box; text-align: left; }
         .admin-exists { border-color: var(--neon) !important; background: rgba(255, 0, 127, 0.05) !important; }
         .admin-preview-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: #444; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .admin-play-icon { width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 10px solid white; margin-left: 3px; }
         .admin-stop-icon { width: 12px; height: 12px; background: white; border-radius: 2px; }
 
-        /* --- REPRODUCTOR --- */
+        .search-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; text-align: left; border: 1px solid #333; display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; }
+
+        /* REPRODUCTOR */
         .play-container { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; margin: 10px 0; }
         #play-btn-main { width: 90px; height: 90px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; box-shadow: 0 0 15px var(--primary); }
         .progress-ring { position: absolute; top: 0; left: 0; transform: rotate(-90deg); z-index: 1; }
@@ -145,7 +71,7 @@
     </style>
 </head>
 <body>
-    <div id="loading-overlay"><div class="spinner"></div><p id="loading-text" style="margin-top:15px;">CARREGANT...</p></div>
+    <div id="loading-overlay"><div class="spinner"></div><p id="loading-text" style="margin-top:15px;">OPERACIÓ EN CURS...</p></div>
     
     <div id="scanner-container">
         <div id="reader"></div>
@@ -246,7 +172,7 @@
         let currentYear = null, isFadingOutAuto = false, allExistingIds = [], databaseSongs = []; 
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        const KEY = 'sonabe_v225', SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
+        const KEY = 'sonabe_v226', SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
         const ADMIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_jcMVHYvfhsHF5G8oLVym9RiNVMT25txw8asWEQDFcYf0trXkTOysUj0ujSA4hJ0F/exec"; 
 
         const circle = document.querySelector('.progress-ring__circle'), radius = circle.r.baseVal.value, circumference = radius * 2 * Math.PI;
@@ -287,7 +213,7 @@
                 }).filter(s => s.id);
                 allExistingIds = databaseSongs.map(s => s.id.toString().trim());
                 document.getElementById('total-songs-display').innerText = `${allExistingIds.length} CANÇONS DISPONIBLES`;
-            } catch(e) { document.getElementById('total-songs-display').innerText = "DATABASE CONNECTADA"; }
+            } catch(e) { document.getElementById('total-songs-display').innerText = "DATABASE ONLINE"; }
         }
 
         function handlePlayClick() {
@@ -308,7 +234,7 @@
         function resetPlayIcons() { document.getElementById('icon-play').style.display='block'; document.getElementById('icon-stop').style.display='none'; cancelAnimationFrame(animationFrame); circle.style.stroke="white"; setProgress(0); }
         audio.onended = () => resetPlayIcons();
 
-        // --- SETUP ---
+        // --- SETUP & JOC ---
         function openSetup() { showScreen('setup-screen'); updateSetupList(); }
         function addPlayer() { const n = document.getElementById('player-input').value.trim(); if(n){ gameState.players.push({name:n, cards:[]}); document.getElementById('player-input').value=""; save(); updateSetupList(); } }
         function updateSetupList() {
@@ -319,8 +245,7 @@
                     <span style="color:red;cursor:pointer;" onclick="gameState.players.splice(${i},1);save();updateSetupList();">✕</span>
                 </div>`).join('');
             document.getElementById('config-area').style.display = gameState.players.length ? 'block' : 'none';
-            document.getElementById('win-input').value = gameState.winCondition;
-            setMode(gameState.mode); setPressure(gameState.pressureMode);
+            document.getElementById('win-input').value = gameState.winCondition; setMode(gameState.mode); setPressure(gameState.pressureMode);
         }
         function setPressure(s) {
             gameState.pressureMode = s;
@@ -343,7 +268,6 @@
             pressureInterval = setInterval(() => { t--; d.innerText = `⏱️ ${t}`; d.style.color = t <= 5 ? "var(--primary)" : "var(--gold)"; if(t <= 0) { clearInterval(pressureInterval); processResult(false); } }, 1000);
         }
 
-        // --- JOC ---
         async function startGame() { gameState.isOnline = true; if(!gameState.playedIds.length) gameState.players.forEach(p => p.cards = [1960 + Math.floor(Math.random()*60)]); save(); fetchNextSong(); }
         async function fetchNextSong() {
             showLoader("Buscant cançó..."); try {
@@ -362,6 +286,7 @@
                 currentYear = yr || parseInt(s.releaseDate.substring(0,4)); document.getElementById('song-year').innerText = currentYear; renderGameUI();
             } catch(e) { hideLoader(); } finally { hideLoader(); }
         }
+
         function renderGameUI() {
             ['solution-card','song-details','btn-rob','btn-next','btn-reveal-physical','winner-actions','ui-timeline-mode','ui-input-mode'].forEach(id => document.getElementById(id).style.display = 'none');
             if (gameState.isOnline) {
@@ -371,16 +296,19 @@
                 renderBoards();
             } else { document.getElementById('turn-text').innerText = "MODE FÍSIC"; document.getElementById('solution-card').style.display = 'flex'; document.getElementById('guess-result').innerText = "CARTA ESCANEJADA"; document.getElementById('btn-reveal-physical').style.display = 'block'; }
         }
+
         function renderTimelineSlots(p) {
             const c = document.getElementById('timeline-slots'); c.innerHTML = ""; const s = [...p.cards].sort((a,b) => a-b);
             c.innerHTML += `<button class="btn" style="width:70px;padding:5px;" onclick="checkGuess(-1)">ANTIC</button>`;
             s.forEach((y, i) => { c.innerHTML += `<div style="background:white;color:black;padding:4px 8px;border-radius:6px;font-weight:bold;font-size:0.8rem;">${y}</div><button class="btn" style="width:70px;padding:5px;" onclick="checkGuess(${i})">${i===s.length-1?'NOU':'ENTRE'}</button>`; });
         }
+
         function checkGuess(idx) {
             const p = gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : gameState.players[gameState.currentTurn], s = [...p.cards].sort((a,b) => a-b);
             let ok = idx === -1 ? currentYear <= s[0] : idx === s.length-1 ? currentYear >= s[s.length-1] : currentYear >= s[idx] && currentYear <= s[idx+1];
             processResult(ok);
         }
+
         function processInputGuess() {
             const v = document.getElementById('game-text-input').value; if(!v) return;
             let ok = false; if(gameState.mode==='exact') ok = parseInt(v)===currentYear;
@@ -388,6 +316,7 @@
             else if(gameState.mode==='artist') ok = normalizeString(v)===normalizeString(document.getElementById('song-artist').innerText);
             processResult(ok);
         }
+
         function processResult(ok) {
             clearInterval(pressureInterval); if(document.getElementById('pressure-timer-display')) document.getElementById('pressure-timer-display').style.display='none';
             const t = gameState.players[gameState.currentTurn];
@@ -398,6 +327,7 @@
                 if(next !== -1){ gameState.nextRobberIdx = next; save(); revealUI(false, true, false); } else { save(); revealUI(false, false, false); }
             }
         }
+
         function revealUI(ok, canRob, win) {
             ['ui-timeline-mode','ui-input-mode'].forEach(id => document.getElementById(id).style.display = 'none'); document.getElementById('solution-card').style.display = 'flex';
             const r = document.getElementById('guess-result');
@@ -407,6 +337,7 @@
                 else { r.innerText="✅ ENCERTAT!"; r.style.color="#28a745"; document.getElementById('btn-next').style.display="block"; }
             } else { r.innerText="❌ INCORRECTE"; r.style.color="#fa2d48"; if(canRob) document.getElementById('btn-rob').style.display="block"; else { document.getElementById('song-details').style.display="flex"; document.getElementById('btn-next').style.display="block"; } }
         }
+
         function executeRobbery() { gameState.currentTurn = gameState.nextRobberIdx; gameState.isRobberyActive = true; save(); renderGameUI(); }
         function nextAction() { performFadeOut(() => { if(!gameState.isOnline) { startScanner(); return; } gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; gameState.originalTurn = gameState.currentTurn; gameState.isRobberyActive = false; gameState.robbersTried = []; save(); fetchNextSong(); }); }
         function playAgain() { performFadeOut(() => { gameState.playedIds = []; gameState.players.forEach(p => p.cards = []); gameState.currentTurn = 0; save(); startGame(); }); }
@@ -415,19 +346,14 @@
         
         function renderBoards() {
             const container = document.getElementById('game-board-container'); if(!container) return;
-            container.style.display = 'block';
-            container.innerHTML = `<h3 style="font-size: 0.9rem; color: var(--gold);">OBJECTIU: ${gameState.winCondition} CARTES</h3>`;
+            container.style.display = 'block'; container.innerHTML = `<h3 style="font-size: 0.9rem; color: var(--gold);">OBJECTIU: ${gameState.winCondition} CARTES</h3>`;
             gameState.players.forEach((p, i) => {
                 const isActive = (i === (gameState.isRobberyActive ? gameState.originalTurn : gameState.currentTurn));
                 const sortedCards = [...p.cards].sort((a,b) => a-b);
                 container.innerHTML += `
                     <div class="player-row ${isActive ? 'active-row' : ''}">
-                        <div style="font-size:0.75rem; font-weight:bold; color:var(--primary); margin-bottom: 5px;">
-                            ${isActive ? '▶ ' : ''}${p.name.toUpperCase()} (${p.cards.length})
-                        </div>
-                        <div style="display:flex; gap:4px; flex-wrap:wrap;">
-                            ${sortedCards.map(y => `<div style="background:white; color:black; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;">${y}</div>`).join('')}
-                        </div>
+                        <div style="font-size:0.75rem; font-weight:bold; color:var(--primary); margin-bottom: 5px;">${isActive ? '▶ ' : ''}${p.name.toUpperCase()} (${p.cards.length})</div>
+                        <div style="display:flex; gap:4px; flex-wrap:wrap;">${sortedCards.map(y => `<div style="background:white; color:black; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;">${y}</div>`).join('')}</div>
                     </div>`;
             });
         }
@@ -441,7 +367,7 @@
         }
         function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => document.getElementById('scanner-container').style.display = 'none'); }
 
-        // --- CERCADOR PÚBLIC (RESTAUURAT) ---
+        // --- CERCADOR PÚBLIC ---
         function openPublicSearch() { showScreen('public-search-screen'); document.getElementById('public-search-input').value = ""; document.getElementById('public-search-results').innerHTML = ""; }
         function closePublicSearch() { publicPreviewAudio.pause(); showScreen('landing-screen'); }
         async function togglePublicPreview(id, btn) {
@@ -459,52 +385,50 @@
             res.innerHTML = m.length ? m.map(s => `
                 <div class="search-item">
                     <button class="admin-preview-btn" onclick="togglePublicPreview('${s.id}', this)"><div class="admin-play-icon"></div></button>
-                    <div style="flex:1">
-                        <b style="font-size:0.85rem; color: white;">${s.title}</b><br>
-                        <span style="color:var(--primary); font-size:0.75rem;">${s.artist} (${s.year})</span>
-                    </div>
+                    <div style="flex:1"><b style="font-size:0.85rem; color: white;">${s.title}</b><br><span style="color:var(--primary); font-size:0.75rem;">${s.artist} (${s.year})</span></div>
                 </div>`).join('') : '<p style="color:#666;font-size:0.8rem;margin-top:20px;">Sense resultats.</p>';
         }
 
-        // --- ADMIN (AMB CHECK DE DATABASE REAL) ---
+        // --- ADMIN (SILENT SAVE) ---
         function checkAdminAccess() { if(prompt("Contrasenya admin:")==="admin") showScreen('admin-screen'); }
         function closeAdmin() { stopAdminPreview(); showScreen('landing-screen'); loadTotalCount(); }
         function stopAdminPreview() { adminPreviewAudio.pause(); if (currentAdminBtn) currentAdminBtn.innerHTML = '<div class="admin-play-icon"></div>'; currentAdminBtn = null; }
-        function toggleAdminPreview(url, btn) {
-            if (currentAdminBtn === btn) { stopAdminPreview(); return; } stopAdminPreview(); currentAdminBtn = btn; btn.innerHTML = '<div class="admin-stop-icon"></div>';
-            adminPreviewAudio.src = url; adminPreviewAudio.play(); adminPreviewAudio.onended = () => stopAdminPreview();
-        }
+        function toggleAdminPreview(url, btn) { if (currentAdminBtn === btn) { stopAdminPreview(); return; } stopAdminPreview(); currentAdminBtn = btn; btn.innerHTML = '<div class="admin-stop-icon"></div>'; adminPreviewAudio.src = url; adminPreviewAudio.play(); adminPreviewAudio.onended = () => stopAdminPreview(); }
+        
         async function searchITunes() {
             const term = document.getElementById('admin-search-input').value; if (!term) return; stopAdminPreview(); showLoader("Buscant a iTunes...");
             try {
                 const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=25&country=es`); const d = await r.json();
                 const container = document.getElementById('admin-results'); container.innerHTML = "";
                 d.results.forEach(s => {
-                    const sid = s.trackId.toString().trim();
-                    const exists = allExistingIds.includes(sid);
-                    const card = document.createElement('div'); card.className = `admin-result-card ${exists ? 'admin-exists' : ''}`;
+                    const sid = s.trackId.toString().trim(); const exists = allExistingIds.includes(sid);
+                    const card = document.createElement('div'); card.id = `card-${sid}`; card.className = `admin-result-card ${exists ? 'admin-exists' : ''}`;
                     card.innerHTML = `
                         <button class="admin-preview-btn" onclick="toggleAdminPreview('${s.previewUrl}', this)"><div class="admin-play-icon"></div></button>
                         <img src="${s.artworkUrl100}" style="width:50px; height:50px; border-radius:8px;">
                         <div style="flex:1">
                             <b style="font-size:0.85rem; color: white;">${s.trackName}</b><br>
-                            <span style="font-size:0.75rem; color:#888">${s.artistName} (${s.releaseDate.substring(0,4)})</span>
-                            ${exists ? `<div style="color:var(--neon); font-size:0.65rem; font-weight:bold; margin-top:3px;">EXISTENT A LA BASE</div>` : ''}
+                            <span style="font-size:0.75rem; color:#888;">${s.artistName} (${s.releaseDate.substring(0,4)})</span>
+                            <div id="status-${sid}" style="color:var(--neon); font-size:0.65rem; font-weight:bold; margin-top:3px;">${exists ? 'EXISTENT A LA BASE' : ''}</div>
                         </div>
-                        <div>
-                            ${!exists ? `<button class="btn btn-primary" style="width: auto; padding: 10px 15px; font-size: 0.7rem;" onclick='addSongToSheet(${JSON.stringify(s).replace(/'/g, "&apos;")})'>AFEGIR</button>` : ''}
-                        </div>`;
+                        <div id="action-${sid}">${!exists ? `<button class="btn btn-primary" style="width: auto; padding: 10px 15px; font-size: 0.7rem;" onclick='addSongToSheet(${JSON.stringify(s).replace(/'/g, "&apos;")})'>AFEGIR</button>` : ''}</div>`;
                     container.appendChild(card);
                 });
-            } catch(e) { alert("Error de connexió"); } finally { hideLoader(); }
+            } catch(e) { alert("Error"); } finally { hideLoader(); }
         }
+
         async function addSongToSheet(s) {
-            const sid = s.trackId.toString(); showLoader("Enviant cançó...");
+            const sid = s.trackId.toString(); const actDiv = document.getElementById(`action-${sid}`); const card = document.getElementById(`card-${sid}`);
+            actDiv.innerHTML = "<span style='font-size:0.7rem; color:#888;'>ENVIANT...</span>";
             const payload = { artista: s.artistName, titol: s.trackName, album: s.collectionName || "Single", any: s.releaseDate.substring(0,4), link: s.trackViewUrl, id: sid, genere: s.primaryGenreName };
             try {
                 await fetch(ADMIN_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-                alert("Cançó afegida correctament!"); loadTotalCount(); searchITunes(); // Recarreguem per marcar-la com existent
-            } catch(e) { alert("Error al Google Script"); } finally { hideLoader(); }
+                // Actualització visual instantània (SILENT)
+                actDiv.innerHTML = "<span style='color:#28a745; font-weight:bold; font-size:0.8rem;'>✅ FET!</span>";
+                card.classList.add('admin-exists');
+                document.getElementById(`status-${sid}`).innerText = "AFEGIT CORRECTAMENT";
+                allExistingIds.push(sid); // L'afegim a la memòria perquè no deixi tornar-la a enviar
+            } catch(e) { actDiv.innerHTML = "<button class='btn' style='padding:5px; font-size:0.6rem;' onclick='location.reload()'>REINTENTA</button>"; }
         }
 
         window.onload = () => { load(); showScreen('landing-screen'); loadTotalCount(); };
