@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v215 ULTIMATE SHIELD</title>
+    <title>Sonabé! 🎶 - v216 PINK ALIGNMENT</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -24,44 +24,33 @@
         
         .fs-btn-top { position: absolute; top: -10px; right: -15px; width: 42px; height: 42px; background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 10px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 999; font-size: 1.2rem; }
 
-        /* --- ESCÀNER ULTIMATE SHIELD v215 --- */
+        /* --- ESCÀNER ALIGNMENT v216 --- */
         #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; overflow: hidden; }
-        
-        #reader { width: 100% !important; height: 100% !important; border: none !important; position: relative; }
-        #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
+        #reader { width: 100% !important; height: 100% !important; border: none !important; }
+        #reader video { object-fit: cover !important; }
 
-        /* DAVID: Bloqueig radical de qualsevol element que generi la llibreria (caixes blanques, angles, ombres) */
-        #reader__scan_region, 
-        #reader__scan_region div, 
-        #reader__scan_region canvas,
-        #reader__scan_region span { 
-            border: none !important; 
-            outline: none !important; 
-            box-shadow: none !important; 
-            opacity: 0 !important; /* Fem invisible tot el que ells dibuixen */
-        }
-
+        /* DAVID: No intentem esborrar el blanc, només el "fem maco" */
+        #reader__scan_region { border: 2px solid rgba(255,255,255,0.2) !important; } 
         #reader__dashboard { display: none !important; }
 
         .scanner-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            pointer-events: none; z-index: 5010; /* Per sobre de tot */
+            pointer-events: none; z-index: 5010;
         }
         .scanner-box {
-            width: 250px; height: 250px;
+            width: 250px; height: 250px; /* Mateixa mida que el qrbox del JS */
             border: 5px solid var(--neon);
-            box-shadow: 0 0 40px var(--neon), inset 0 0 20px var(--neon);
-            border-radius: 40px;
+            box-shadow: 0 0 30px var(--neon);
+            border-radius: 20px; /* Reduït per quadrar millor amb els angles de la llibreria */
             position: relative;
-            background: transparent;
         }
         .scan-line {
-            position: absolute; width: 100%; height: 4px;
-            background: var(--neon); box-shadow: 0 0 25px var(--neon);
-            top: 0; animation: scanAnim 1.8s ease-in-out infinite;
+            position: absolute; width: 100%; height: 3px;
+            background: var(--neon); box-shadow: 0 0 15px var(--neon);
+            top: 0; animation: scanAnim 2s ease-in-out infinite;
         }
-        @keyframes scanAnim { 0% { top: 5%; opacity: 0.2; } 50% { opacity: 1; } 100% { top: 95%; opacity: 0.2; } }
+        @keyframes scanAnim { 0% { top: 5%; } 100% { top: 95%; } }
 
         /* REPRODUCTOR I ALTRES */
         .play-container { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; margin: 10px 0; }
@@ -88,7 +77,7 @@
         <div id="reader"></div>
         <div class="scanner-overlay">
             <div class="scanner-box"><div class="scan-line"></div></div>
-            <p style="margin-top: 35px; font-weight: 900; color: var(--neon); text-shadow: 0 0 15px var(--neon); letter-spacing: 2px; font-size: 0.9rem;">ENQUADRA EL BIDI</p>
+            <p style="margin-top: 30px; font-weight: bold; color: var(--neon); text-shadow: 0 0 10px var(--neon);">ENQUADRA EL BIDI</p>
         </div>
         <button class="btn" style="position:absolute; bottom:50px; left:50%; transform:translateX(-50%); z-index: 5200; background: #333; border: 1px solid var(--neon);" onclick="stopScanner()">CANCEL·LAR</button>
     </div>
@@ -173,7 +162,7 @@
         let databaseSongs = []; 
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        const KEY = 'sonabe_v215';
+        const KEY = 'sonabe_v216';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
         const ADMIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_jcMVHYvfhsHF5G8oLVym9RiNVMT25txw8asWEQDFcYf0trXkTOysUj0ujSA4hJ0F/exec"; 
 
@@ -333,7 +322,7 @@
         function resetGame() { performFadeOut(() => { localStorage.removeItem(KEY); window.location.reload(); }); }
         function goToMenu() { performFadeOut(() => { window.location.reload(); }); }
 
-        // --- ESCÀNER PRECISION v215 ---
+        // --- ESCÀNER ALIGNMENT v216 ---
         function startScanner() { 
             audio.play().then(() => audio.pause()).catch(() => {});
             document.getElementById('scanner-container').style.display = 'block'; 
