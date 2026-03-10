@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v217 VIBRANT SQUARE</title>
+    <title>Sonabé! 🎶 - v218 NEON FUSION</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -24,37 +24,35 @@
         
         .fs-btn-top { position: absolute; top: -10px; right: -15px; width: 42px; height: 42px; background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 10px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 999; font-size: 1.2rem; }
 
-        /* --- ESCÀNER VIBRANT v217 --- */
+        /* --- ESCÀNER FUSION v218 --- */
         #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; overflow: hidden; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
         
-        /* DAVID: Forcem la invisibilitat dels elements blancs que veies a les fotos */
-        #reader__scan_region, #reader__scan_region * { 
-            border: none !important; 
-            box-shadow: none !important; 
-            outline: none !important;
+        /* DAVID: Pintem la caixa de la llibreria directament de neó rosa */
+        #reader__scan_region { 
+            border: 4px solid var(--neon) !important; 
+            box-shadow: 0 0 25px var(--neon), inset 0 0 15px var(--neon) !important;
+            border-radius: 35px !important;
+            overflow: hidden !important;
         }
+        /* Amaguem els angles blancs originals de la llibreria */
+        #reader__scan_region > div { display: none !important; }
         #reader__dashboard { display: none !important; }
 
-        .scanner-overlay {
+        /* Overlay només per a la línia i el text */
+        .scanner-visual-effects {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             pointer-events: none; z-index: 5010;
         }
-        .scanner-box {
-            width: 250px; height: 250px;
-            border: 4px solid var(--neon);
-            box-shadow: 0 0 30px var(--neon), inset 0 0 15px var(--neon);
-            border-radius: 35px;
-            position: relative;
-        }
+        .scan-line-container { width: 250px; height: 250px; position: relative; }
         .scan-line {
             position: absolute; width: 100%; height: 3px;
             background: var(--neon); box-shadow: 0 0 15px var(--neon);
             top: 0; animation: scanAnim 2s ease-in-out infinite;
         }
-        @keyframes scanAnim { 0% { top: 5%; opacity: 0.2; } 50% { opacity: 1; } 100% { top: 95%; opacity: 0.2; } }
+        @keyframes scanAnim { 0% { top: 5%; opacity: 0.3; } 50% { opacity: 1; } 100% { top: 95%; opacity: 0.3; } }
 
         /* REPRODUCTOR */
         .play-container { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; margin: 10px 0; }
@@ -79,9 +77,9 @@
     
     <div id="scanner-container">
         <div id="reader"></div>
-        <div class="scanner-overlay">
-            <div class="scanner-box"><div class="scan-line"></div></div>
-            <p style="margin-top: 30px; font-weight: bold; color: var(--neon); text-shadow: 0 0 10px var(--neon);">ENQUADRA EL BIDI</p>
+        <div class="scanner-visual-effects">
+            <div class="scan-line-container"><div class="scan-line"></div></div>
+            <p style="margin-top: 30px; font-weight: bold; color: var(--neon); text-shadow: 0 0 10px var(--neon); letter-spacing: 1px;">ENQUADRA EL BIDI</p>
         </div>
         <button class="btn" style="position:absolute; bottom:50px; left:50%; transform:translateX(-50%); z-index: 5200; background: #333; border: 1px solid var(--neon);" onclick="stopScanner()">CANCEL·LAR</button>
     </div>
@@ -166,7 +164,7 @@
         let databaseSongs = []; 
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        const KEY = 'sonabe_v217';
+        const KEY = 'sonabe_v218';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
         const ADMIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_jcMVHYvfhsHF5G8oLVym9RiNVMT25txw8asWEQDFcYf0trXkTOysUj0ujSA4hJ0F/exec"; 
 
@@ -323,20 +321,18 @@
         function resetGame() { performFadeOut(() => { localStorage.removeItem(KEY); window.location.reload(); }); }
         function goToMenu() { performFadeOut(() => { window.location.reload(); }); }
 
-        // --- ESCÀNER VIBRANT v217 ---
         function startScanner() { 
             audio.play().then(() => audio.pause()).catch(() => {});
             document.getElementById('scanner-container').style.display = 'block'; 
             html5QrCode = new Html5Qrcode("reader"); 
-            // DAVID: Forcem mides 250x250 per evitar rectangles alts
             html5QrCode.start(
                 { facingMode: "environment" }, 
                 { fps: 20, qrbox: { width: 250, height: 250 } }, 
                 (text) => { 
                     const id = new URLSearchParams(text.split('?')[1]).get('id'); 
                     if (id) { 
-                        // VIBRACIÓ!
-                        if (navigator.vibrate) navigator.vibrate(200);
+                        // VIBRACIÓ! (Format Android compatible)
+                        if (navigator.vibrate) navigator.vibrate([200]);
                         stopScanner(); gameState.isOnline = false; loadSong(id); 
                     } 
                 }
