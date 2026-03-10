@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v212 NEON SCAN REVIVAL</title>
+    <title>Sonabé! 🎶 - v213 SQUARE PRECISION</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -24,35 +24,41 @@
         
         .fs-btn-top { position: absolute; top: -10px; right: -15px; width: 42px; height: 42px; background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 10px; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 999; font-size: 1.2rem; }
 
-        /* ESCÀNER NEÓ v212 */
+        /* --- ESCÀNER PRECISION v213 --- */
         #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; overflow: hidden; }
-        #reader { width: 100% !important; height: 100% !important; }
+        #reader { width: 100% !important; height: 100% !important; border: none !important; }
         #reader video { object-fit: cover !important; }
-        /* Amaguem brossa de la llibreria */
+        
+        /* DAVID: Amaguem totalment la caixa blanca de la llibreria */
         #reader__scan_region { border: none !important; }
+        #reader__scan_region > div { border: none !important; outline: none !important; }
+        #reader__dashboard { display: none !important; }
         #reader img { display: none !important; }
 
         .scanner-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             pointer-events: none; z-index: 5002;
+            background: rgba(0,0,0,0.2); /* Una mica d'ombra fora del quadrat */
         }
         .scanner-box {
             width: 250px; height: 250px;
             border: 4px solid var(--neon);
-            box-shadow: 0 0 30px var(--neon), inset 0 0 15px var(--neon);
-            border-radius: 30px;
+            box-shadow: 0 0 35px var(--neon), inset 0 0 20px var(--neon);
+            border-radius: 35px;
             position: relative;
+            background: transparent;
         }
         .scan-line {
             position: absolute; width: 100%; height: 4px;
             background: var(--neon); box-shadow: 0 0 20px var(--neon);
-            top: 0; animation: scanAnim 2s ease-in-out infinite;
+            top: 0; animation: scanAnim 1.8s ease-in-out infinite;
         }
-        @keyframes scanAnim { 0% { top: 0%; opacity: 0.3; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0.3; } }
+        @keyframes scanAnim { 0% { top: 5%; opacity: 0.3; } 50% { opacity: 1; } 100% { top: 95%; opacity: 0.3; } }
 
-        .play-container { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin: 10px 0; }
-        #play-btn-main { width: 90px; height: 90px; min-width: 90px; min-height: 90px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; box-shadow: 0 0 15px var(--primary); }
+        /* REPRODUCTOR */
+        .play-container { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; margin: 10px 0; }
+        #play-btn-main { width: 90px; height: 90px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; box-shadow: 0 0 15px var(--primary); }
         .progress-ring { position: absolute; top: 0; left: 0; transform: rotate(-90deg); z-index: 1; }
         .progress-ring__circle { stroke: white; stroke-linecap: round; }
 
@@ -60,6 +66,7 @@
         .active-row { border: 2px solid white !important; box-shadow: 0 0 15px var(--primary); }
         .text-input-field { width: 250px; padding: 15px; font-size: 1.1rem; border-radius: 10px; border: 2px solid var(--neon); background: #222; color: white; text-align: center; margin-bottom: 10px; outline: none; }
         
+        /* CERCADOR RESULTATS PUBLIC */
         .search-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; text-align: left; border: 1px solid #333; display: flex; align-items: center; gap: 12px; }
         .preview-btn-small { width: 38px; height: 38px; min-width: 38px; border-radius: 50%; border: none; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .play-icon-small { width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 8px solid white; margin-left: 3px; }
@@ -116,7 +123,7 @@
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
         <div id="config-area" style="display:none; width: 100%;">
             <div class="config-group"><p style="font-size:0.75rem; font-weight:bold; color:#888;">CARTES PER GUANYAR:</p><input type="number" id="win-input" min="2" max="20" oninput="updateWinCondition()" style="width:80px; padding:10px; border-radius:10px; background:#222; color:white; text-align:center; border:1px solid #444;"></div>
-            <div class="config-group"><p style="font-size:0.75rem; font-weight:bold; color:#888;">MODE PRESSIÓ:</p><div style="display:flex; gap:5px; justify-content:center;"><button id="p-off" class="btn" style="width:60px; padding:10px;" onclick="setPressure(0)">OFF</button><button id="p-15" class="btn" style="width:60px; padding:10px;" onclick="setPressure(15)">15s</button><button id="p-20" class="btn" style="width:60px; padding:10px;" onclick="setPressure(20)">20s</button><button id="p-30" class="btn" style="width:60px; padding:10px;" onclick="setPressure(30)">30s</button></div></div>
+            <div class="config-group"><p style="font-size:0.75rem; font-weight:bold; color:#888;">MODE PRESSIÓ:</p><div style="display:flex; gap:5px; justify-content:center;"><button id="p-off" class="btn" style="width:60px; padding:10px;" onclick="setPressure(0)">OFF</button><button id="p-15" class="btn" style="width:60px; padding:10px;" onclick="setPressure(15)">15s</button><button id="p-15" class="btn" style="width:60px; padding:10px;" onclick="setPressure(20)">20s</button><button id="p-30" class="btn" style="width:60px; padding:10px;" onclick="setPressure(30)">30s</button></div></div>
             <div class="btn-list">
                 <button id="mode-timeline" class="btn" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button id="mode-exact" class="btn" onclick="setMode('exact')">ANY EXACTE</button>
@@ -163,7 +170,7 @@
         let databaseSongs = []; 
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 5, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        const KEY = 'sonabe_v212';
+        const KEY = 'sonabe_v213';
         const SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
         const ADMIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_jcMVHYvfhsHF5G8oLVym9RiNVMT25txw8asWEQDFcYf0trXkTOysUj0ujSA4hJ0F/exec"; 
 
@@ -323,15 +330,20 @@
         function resetGame() { performFadeOut(() => { localStorage.removeItem(KEY); window.location.reload(); }); }
         function goToMenu() { performFadeOut(() => { window.location.reload(); }); }
 
-        // --- ESCÀNER NEÓ v212 ---
+        // --- ESCÀNER PRECISION v213 ---
         function startScanner() { 
             audio.play().then(() => audio.pause()).catch(() => {});
             document.getElementById('scanner-container').style.display = 'block'; 
             html5QrCode = new Html5Qrcode("reader"); 
-            html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: 250 }, (text) => { 
-                const id = new URLSearchParams(text.split('?')[1]).get('id'); 
-                if (id) { stopScanner(); gameState.isOnline = false; loadSong(id); } 
-            }).catch(() => stopScanner()); 
+            // DAVID: Ens assegurem que el qrbox coincideixi exactament amb el CSS (250px)
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                { fps: 20, qrbox: 250 }, 
+                (text) => { 
+                    const id = new URLSearchParams(text.split('?')[1]).get('id'); 
+                    if (id) { stopScanner(); gameState.isOnline = false; loadSong(id); } 
+                }
+            ).catch(() => stopScanner()); 
         }
         function stopScanner() { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('scanner-container').style.display = 'none'; }); }
     </script>
