@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v229</title>
+    <title>Sonabé! 🎶 - v230 FIXED</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -34,14 +34,13 @@
         .btn-purple { background-color: var(--violet) !important; color: white !important; box-shadow: 0 0 20px var(--violet) !important; border: none !important; }
         .btn-gold { background-color: var(--gold) !important; color: black !important; box-shadow: 0 0 25px var(--gold) !important; border: 2px solid white !important; }
         .btn-outline { border: 1px solid var(--neon); color: var(--neon); background: transparent; }
+        .mode-selected { background-color: var(--neon) !important; color: white !important; border: 2px solid white !important; box-shadow: 0 0 20px var(--neon); }
         
         #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; overflow: hidden; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
         
         .player-row { background: #1e1e1e; padding: 12px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; width: 100%; box-sizing: border-box; }
         .active-row { border: 2px solid white !important; box-shadow: 0 0 15px var(--primary); background: #252525; }
-
-        .search-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; text-align: left; border: 1px solid #333; display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; }
 
         .play-container { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; margin: 10px 0; }
         #play-btn-main { width: 90px; height: 90px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; box-shadow: 0 0 15px var(--primary); }
@@ -80,9 +79,12 @@
         <div style="display:flex; gap:10px; width: 280px;"><input type="text" id="player-input" placeholder="Nom jugador..." style="flex:1; padding:12px; border-radius:10px; background:#222; color:white; border:1px solid var(--neon);"><button class="btn btn-primary" onclick="addPlayer()" style="width:60px; padding:0;">+</button></div>
         <div id="player-list-setup" style="width:100%; margin:10px 0;"></div>
         <div id="config-area" style="display:none; width: 100%;">
-            <div class="config-group"><p style="font-size:0.75rem; font-weight:bold; color:#888;">CARTES PER GUANYAR:</p><input type="number" id="win-input" value="10" min="2" max="20" oninput="updateWinCondition()" style="width:80px; padding:10px; border-radius:10px; background:#222; color:white; text-align:center; border:1px solid #444;"></div>
+            <div class="config-group">
+                <p style="font-size:0.75rem; font-weight:bold; color:#888;">CARTES PER GUANYAR:</p>
+                <input type="number" id="win-input" value="10" min="2" max="20" oninput="updateWinCondition()" style="width:80px; padding:10px; border-radius:10px; background:#222; color:white; text-align:center; border:1px solid #444;">
+            </div>
             <div class="btn-list">
-                <button id="mode-timeline" class="btn" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
+                <button id="mode-timeline" class="btn mode-selected" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
                 <button class="btn btn-primary" style="margin-top:10px;" onclick="startGame()">COMENÇAR JOC</button>
             </div>
         </div>
@@ -92,6 +94,7 @@
     <div id="game-screen" class="screen">
         <div id="turn-indicator-bar" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; display: flex; justify-content: center; align-items: center;"><span id="turn-text">...</span></div>
         <div class="play-container"><svg class="progress-ring" width="110" height="110"><circle class="progress-ring__circle" stroke-width="5" fill="transparent" r="52" cx="55" cy="55" /></svg><button id="play-btn-main" onclick="handlePlayClick()"><div id="icon-play" style="width:0;height:0;border-top:18px solid transparent;border-bottom:18px solid transparent;border-left:28px solid white;margin-left:8px;"></div><div id="icon-stop" style="width:30px;height:30px;background:white;border-radius:4px;display:none;"></div></button></div>
+        
         <div id="ui-timeline-mode" class="btn-list" style="display:none;"><div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div></div>
         
         <div id="solution-card" style="display:none; flex-direction:column; align-items:center; width: 100%;">
@@ -104,22 +107,25 @@
             </div>
             <div id="action-buttons" class="btn-list" style="margin-top:15px;">
                 <button id="btn-reveal-physical" class="btn btn-primary" style="display:none;" onclick="revealPhysicalSolution()">MOSTRAR SOLUCIÓ</button>
+                <button id="btn-rob" class="btn btn-purple" style="display:none;" onclick="executeRobbery()">ROBAR CARTA 🚨</button>
                 <button id="btn-next" class="btn btn-primary" style="display:none;" onclick="nextAction()">Següent Cançó</button>
             </div>
         </div>
+
         <div id="game-board-container" style="width: 100%; margin-top: 20px;"></div>
+        <button class="btn" style="margin-top:20px; opacity:0.5;" onclick="window.location.reload()">Menú Principal</button>
     </div>
 
     <audio id="audio-player" preload="auto"></audio>
 
     <script>
         const audio = document.getElementById('audio-player');
-        let html5QrCode = null, fadeInterval = null, animationFrame = null;
-        let currentYear = null, allExistingIds = [], databaseSongs = []; 
-        // DAVID: Aquí he posat winCondition: 10 predeterminat
+        let html5QrCode = null, animationFrame = null;
+        let currentYear = null, databaseSongs = [], allExistingIds = []; 
+        // DAVID: winCondition 10 per defecte
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 10, isRobberyActive: false, robbersTried: [] };
 
-        const KEY = 'sonabe_v229', SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
+        const KEY = 'sonabe_v230', SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
 
         const circle = document.querySelector('.progress-ring__circle'), radius = circle.r.baseVal.value, circumference = radius * 2 * Math.PI;
         circle.style.strokeDasharray = `${circumference} ${circumference}`; circle.style.strokeDashoffset = circumference;
@@ -144,7 +150,7 @@
                 databaseSongs = lines.map(l => {
                     const c = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                     return { title: c[0]||"", artist: c[1]||"", year: c[3]||"", id: c[5]||"" };
-                });
+                }).filter(s => s.id);
                 allExistingIds = databaseSongs.map(s => s.id.toString().trim());
                 document.getElementById('total-songs-display').innerText = `${allExistingIds.length} CANÇONS DISPONIBLES`;
             } catch(e) {}
@@ -173,13 +179,17 @@
         function addPlayer() { const n = document.getElementById('player-input').value.trim(); if(n){ gameState.players.push({name:n, cards:[]}); document.getElementById('player-input').value=""; save(); updateSetupList(); } }
         function updateSetupList() {
             const l = document.getElementById('player-list-setup'); 
-            l.innerHTML = gameState.players.map((p,i) => `<div style="padding:10px;margin:5px;border-radius:8px;background:rgba(255,255,255,0.05);">👤 ${p.name.toUpperCase()}</div>`).join('');
+            l.innerHTML = gameState.players.map((p,i) => `<div style="padding:10px;margin:5px;border-radius:8px;background:rgba(255,255,255,0.05);display:flex;justify-content:space-between;"><span>👤 ${p.name.toUpperCase()}</span><span style="color:red;" onclick="gameState.players.splice(${i},1);updateSetupList();">✕</span></div>`).join('');
             document.getElementById('config-area').style.display = gameState.players.length ? 'block' : 'none';
         }
         function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 10; save(); }
-        function setMode(m) { gameState.mode = m; save(); }
 
-        async function startGame() { gameState.players.forEach(p => p.cards = [1980]); fetchNextSong(); }
+        async function startGame() { 
+            gameState.isOnline = true;
+            gameState.players.forEach(p => p.cards = [1970 + Math.floor(Math.random()*40)]); 
+            fetchNextSong(); 
+        }
+
         async function fetchNextSong() {
             showLoader("Buscant cançó...");
             const sel = databaseSongs[Math.floor(Math.random()*databaseSongs.length)];
@@ -192,38 +202,109 @@
             const d = await r.json(); const s = d.results[0];
             audio.src = s.previewUrl; currentYear = yr;
             document.getElementById('song-year').innerText = currentYear;
-            document.getElementById('album-img').src = s.artworkUrl100;
+            document.getElementById('album-img').src = s.artworkUrl100.replace("100x100", "600x600");
             document.getElementById('song-title').innerText = s.trackName;
             document.getElementById('song-artist').innerText = s.artistName;
             renderGameUI(); hideLoader();
         }
 
         function renderGameUI() {
-            document.getElementById('turn-text').innerText = "TORN DE: " + gameState.players[gameState.currentTurn].name.toUpperCase();
+            const p = gameState.players[gameState.currentTurn];
+            document.getElementById('turn-text').innerText = gameState.isRobberyActive ? `🚨 ROBATORI: ${p.name.toUpperCase()}` : `TORN DE: ${p.name.toUpperCase()}`;
             document.getElementById('ui-timeline-mode').style.display = 'block';
             document.getElementById('solution-card').style.display = 'none';
+            document.getElementById('song-details').style.display = 'none';
+            document.getElementById('btn-rob').style.display = 'none';
+            document.getElementById('btn-next').style.display = 'none';
             renderTimelineSlots();
+            renderBoards();
         }
 
         function renderTimelineSlots() {
             const c = document.getElementById('timeline-slots'); c.innerHTML = "";
-            const p = gameState.players[gameState.currentTurn];
+            const p = gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : gameState.players[gameState.currentTurn];
             const s = [...p.cards].sort((a,b) => a-b);
-            c.innerHTML += `<button class="btn" onclick="checkGuess(-1)">ANTIC</button>`;
+            c.innerHTML += `<button class="btn" style="width:70px;padding:5px;" onclick="checkGuess(-1)">ANTIC</button>`;
             s.forEach((y, i) => {
-                c.innerHTML += `<div style="background:white;color:black;padding:5px 10px;border-radius:6px;font-weight:bold;">${y}</div>`;
-                c.innerHTML += `<button class="btn" onclick="checkGuess(${i})">MÉS NOU</button>`;
+                c.innerHTML += `<div style="background:white;color:black;padding:4px 8px;border-radius:6px;font-weight:bold;font-size:0.8rem;">${y}</div>`;
+                c.innerHTML += `<button class="btn" style="width:70px;padding:5px;" onclick="checkGuess(${i})">${i===s.length-1?'NOU':'ENTRE'}</button>`;
             });
         }
 
         function checkGuess(idx) {
+            const p = gameState.isRobberyActive ? gameState.players[gameState.originalTurn] : gameState.players[gameState.currentTurn];
+            const s = [...p.cards].sort((a,b) => a-b);
+            let ok = idx === -1 ? currentYear <= s[0] : idx === s.length-1 ? currentYear >= s[s.length-1] : currentYear >= s[idx] && currentYear <= s[idx+1];
+            processResult(ok);
+        }
+
+        function processResult(ok) {
             document.getElementById('ui-timeline-mode').style.display = 'none';
             document.getElementById('solution-card').style.display = 'flex';
-            document.getElementById('song-details').style.display = 'flex';
-            document.getElementById('btn-next').style.display = 'block';
+            const r = document.getElementById('guess-result');
+            if(ok) {
+                gameState.players[gameState.currentTurn].cards.push(currentYear);
+                r.innerText = "✅ ENCERTAT!"; r.style.color = "#28a745";
+                document.getElementById('song-details').style.display = 'flex';
+                document.getElementById('btn-next').style.display = 'block';
+                if(gameState.players[gameState.currentTurn].cards.length >= gameState.winCondition) {
+                    r.innerText = "🏆 VICTÒRIA!"; confetti();
+                }
+            } else {
+                r.innerText = "❌ INCORRECTE"; r.style.color = "#fa2d48";
+                if(!gameState.isRobberyActive) {
+                    gameState.originalTurn = gameState.currentTurn;
+                    gameState.robbersTried = [gameState.currentTurn];
+                } else gameState.robbersTried.push(gameState.currentTurn);
+                
+                let next = -1;
+                for(let i=1; i<gameState.players.length; i++){
+                    let c = (gameState.originalTurn + i) % gameState.players.length;
+                    if(!gameState.robbersTried.includes(c)){ next = c; break; }
+                }
+                if(next !== -1) {
+                    gameState.nextRobberIdx = next;
+                    document.getElementById('btn-rob').style.display = 'block';
+                } else {
+                    document.getElementById('song-details').style.display = 'flex';
+                    document.getElementById('btn-next').style.display = 'block';
+                }
+            }
+            save();
+            renderBoards();
+        }
+
+        function executeRobbery() {
+            gameState.currentTurn = gameState.nextRobberIdx;
+            gameState.isRobberyActive = true;
+            renderGameUI();
+        }
+
+        function nextAction() {
+            if(!gameState.isOnline) { startScanner(); return; }
+            gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
+            gameState.isRobberyActive = false;
+            gameState.robbersTried = [];
+            fetchNextSong();
+        }
+
+        function renderBoards() {
+            const container = document.getElementById('game-board-container');
+            container.innerHTML = "";
+            gameState.players.forEach((p, i) => {
+                const isActive = (i === gameState.currentTurn);
+                const sorted = [...p.cards].sort((a,b) => a-b);
+                container.innerHTML += `<div class="player-row ${isActive ? 'active-row' : ''}">
+                    <div style="font-weight:bold; color:var(--primary);">${p.name.toUpperCase()} (${p.cards.length}/${gameState.winCondition})</div>
+                    <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:5px;">
+                        ${sorted.map(y => `<span style="background:white; color:black; padding:2px 5px; border-radius:4px; font-size:0.7rem; font-weight:bold;">${y}</span>`).join('')}
+                    </div>
+                </div>`;
+            });
         }
 
         function startScanner() {
+            gameState.isOnline = false;
             document.getElementById('scanner-container').style.display = 'block';
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
@@ -232,7 +313,6 @@
             });
         }
         function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => document.getElementById('scanner-container').style.display = 'none'); }
-        function nextAction() { window.location.reload(); }
         function resetGame() { localStorage.removeItem(KEY); window.location.reload(); }
 
         window.onload = () => { load(); showScreen('landing-screen'); loadTotalCount(); };
