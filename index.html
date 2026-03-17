@@ -405,7 +405,7 @@
         <div class="neon-logo">Sonabé!</div>
         <div id="total-songs-display" class="song-count-badge">CONNECTANT...</div>
         <div class="btn-list">
-            <button class="btn btn-primary" onclick="startScanner()">Tinc les cartes! 📷</button>
+            <button class="btn btn-primary" onclick="unlockVibration(); startScanner()">Tinc les cartes! 📷</button>
             <button class="btn btn-outline" onclick="openSetup()">Jugar en línia 🎲</button>
             <button class="btn" style="border-color: var(--gold); color: var(--gold);"
                 onclick="openPublicSearch()">Cercador cançons 🔍</button>
@@ -472,7 +472,7 @@
             <span id="turn-text">...</span><span id="pressure-timer-display" style="display:none; margin-left:10px;">⏱️ 00</span></div>
         <div class="play-container"><svg class="progress-ring" width="110" height="110">
                 <circle class="progress-ring__circle" stroke-width="5" fill="transparent" r="52" cx="55" cy="55" />
-            </svg><button id="play-btn-main" onclick="handlePlayClick()">
+            </svg><button id="play-btn-main" onclick="unlockVibration(); handlePlayClick()">
                 <div id="icon-play"
                     style="width:0;height:0;border-top:18px solid transparent;border-bottom:18px solid transparent;border-left:28px solid white;margin-left:8px;">
                 </div>
@@ -519,6 +519,15 @@
         let html5QrCode = null, fadeInterval = null, animationFrame = null, pressureInterval = null;
         let currentYear = null, isFadingOutAuto = false, allExistingIds = [], databaseSongs = [];
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 10, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
+
+        let vibrationUnlocked = false;
+
+        function unlockVibration() { vibrationUnlocked = true; }
+
+        function vibrateDevice(pattern) {
+            if (!navigator.vibrate) return;
+            try { navigator.vibrate(pattern); } catch(e) {}
+        }
 
         const KEY = 'sonabe_v243', SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
         const ADMIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_jcMVHYvfhsHF5G8oLVym9RiNVMT25txw8asWEQDFcYf0trXkTOysUj0ujSA4hJ0F/exec";
@@ -698,8 +707,8 @@
                         void flash.offsetWidth;
                         flash.style.animation = 'flashAnim 0.5s ease-out forwards';
                         setTimeout(() => flash.style.display = 'none', 500);
-                        // Vibració - cridar immediatament abans de qualsevol async
-                        try { navigator.vibrate(200); } catch(e) {}
+                        // Vibració
+                        vibrateDevice(200);
                         // Carregar cançó
                         setTimeout(() => { stopScanner(false); gameState.isOnline = false; loadSong(id); }, 300);
                     }
