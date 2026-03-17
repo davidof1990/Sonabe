@@ -520,7 +520,7 @@
         let currentYear = null, isFadingOutAuto = false, allExistingIds = [], databaseSongs = [];
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 10, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        let audioCtx = null;
+        let audioCtx = null, scanHandled = false;
 
         function getAudioCtx() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -699,6 +699,7 @@
         }
 
         function startScanner(cancelGoesHome = true) {
+            scanHandled = false;
             document.getElementById('scanner-container').style.display = 'block';
             // Guardar context per saber on tornar en cancel·lar
             document.getElementById('scanner-container').dataset.cancelGoesHome = cancelGoesHome;
@@ -712,8 +713,10 @@
                 { facingMode: "environment" },
                 { fps: 20, qrbox: { width: 250, height: 250 } },
                 (text) => {
+                    if (scanHandled) return;
                     const id = new URLSearchParams(text.split('?')[1]).get('id');
                     if (id) {
+                        scanHandled = true;
                         // Flash verd
                         const flash = document.getElementById('scan-success-flash');
                         flash.style.display = 'block';
