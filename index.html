@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v243 SEARCH FIXED</title>
+    <title>Sonabé! 🎶 - v244 scan reparat</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -142,21 +142,29 @@
 
         #reader video {
             object-fit: cover !important;
+            width: 100% !important;
+            height: 100% !important;
         }
 
-        #reader__scan_region {
+        /* Amagar TOTS els elements visuals natius de html5-qrcode */
+        #reader > *:not(video) {
+            display: none !important;
+        }
+        #reader__scan_region,
+        #reader__scan_region *,
+        #reader__dashboard,
+        #reader__dashboard *,
+        #reader__header_message,
+        #reader__status_span,
+        #reader img,
+        #reader svg,
+        #reader div:not([style*="position: absolute"]) {
+            display: none !important;
             border: none !important;
             background: transparent !important;
         }
 
-        #reader__scan_region>div {
-            border: none !important;
-        }
-
-        #reader__dashboard {
-            display: none !important;
-        }
-
+        /* El recuadro rosa el posem per sobre amb z-index alt */
         .scan-line-container {
             width: 250px;
             height: 250px;
@@ -362,8 +370,8 @@
 
     <div id="scanner-container">
         <div id="reader"></div>
-        <div class="scanner-visual-effects"
-            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 5010;">
+        <!-- Overlay visual per sobre del vídeo, pointer-events:none perquè no bloquegi l'escàner -->
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 5010;">
             <div class="scan-line-container">
                 <div class="scan-line"></div>
             </div>
@@ -588,7 +596,7 @@
         function processResult(ok) { clearInterval(pressureInterval); if (document.getElementById('pressure-timer-display')) document.getElementById('pressure-timer-display').style.display = 'none'; const t = gameState.players[gameState.currentTurn]; if (ok) { t.cards.push(currentYear); const win = t.cards.length >= gameState.winCondition; save(); revealUI(true, false, win); } else { if (!gameState.isRobberyActive) { gameState.originalTurn = gameState.currentTurn; gameState.robbersTried = [gameState.currentTurn]; } else gameState.robbersTried.push(gameState.currentTurn); let next = -1; for (let i = 1; i < gameState.players.length; i++) { let c = (gameState.originalTurn + i) % gameState.players.length; if (!gameState.robbersTried.includes(c)) { next = c; break; } } if (next !== -1) { gameState.nextRobberIdx = next; save(); revealUI(false, true, false); } else { save(); revealUI(false, false, false); } } }
         function revealUI(ok, canRob, win) { ['ui-timeline-mode', 'ui-input-mode'].forEach(id => document.getElementById(id).style.display = 'none'); document.getElementById('solution-card').style.display = 'flex'; const r = document.getElementById('guess-result'); if (ok) { document.getElementById('song-details').style.display = "flex"; if (win) { r.innerHTML = "🏆 VICTÒRIA!"; r.style.color = "#ffd700"; document.getElementById('winner-actions').style.display = "flex"; confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } }); } else { r.innerText = "✅ ENCERTAT!"; r.style.color = "#28a745"; document.getElementById('btn-next').style.display = "block"; } } else { r.innerText = "❌ INCORRECTE"; r.style.color = "#fa2d48"; if (canRob) document.getElementById('btn-rob').style.display = "block"; else { document.getElementById('song-details').style.display = "flex"; document.getElementById('btn-next').style.display = "block"; } } }
         function executeRobbery() { gameState.currentTurn = gameState.nextRobberIdx; gameState.isRobberyActive = true; save(); renderGameUI(); }
-        function nextAction() { performFadeOut(() => { if (!gameState.isOnline) { startScanner(); return; } gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; gameState.originalTurn = gameState.currentTurn; gameState.isRobberyActive = false; gameState.robbersTried = []; save(); fetchNextSong(); }); }
+        function nextAction() { performFadeOut(() => { if (!gameState.isOnline) { startScanner(false); return; } gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length; gameState.originalTurn = gameState.currentTurn; gameState.isRobberyActive = false; gameState.robbersTried = []; save(); fetchNextSong(); }); }
 
         function renderBoards() {
             const container = document.getElementById('game-board-container'); if (!container) return; container.style.display = 'block';
@@ -600,8 +608,49 @@
             });
         }
 
-        function startScanner() { document.getElementById('scanner-container').style.display = 'block'; html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: { width: 250, height: 250 } }, (text) => { const id = new URLSearchParams(text.split('?')[1]).get('id'); if (id) { stopScanner(); gameState.isOnline = false; loadSong(id); } }).catch(() => stopScanner()); }
-        function stopScanner() { if (html5QrCode) html5QrCode.stop().then(() => document.getElementById('scanner-container').style.display = 'none'); }
+        let qrObserver = null;
+
+        function nukeNativeQROverlay() {
+            const reader = document.getElementById('reader');
+            if (!reader) return;
+            // Eliminar imatges, svgs i canvas injectats per la llibreria
+            reader.querySelectorAll('img, svg, canvas').forEach(el => el.remove());
+            const scanRegion = document.getElementById('reader__scan_region');
+            if (scanRegion) scanRegion.querySelectorAll('img, svg, div').forEach(el => el.remove());
+            const dashboard = document.getElementById('reader__dashboard');
+            if (dashboard) dashboard.style.display = 'none';
+        }
+
+        function startScanner(cancelGoesHome = true) {
+            document.getElementById('scanner-container').style.display = 'block';
+            // Guardar context per saber on tornar en cancel·lar
+            document.getElementById('scanner-container').dataset.cancelGoesHome = cancelGoesHome;
+            html5QrCode = new Html5Qrcode("reader");
+
+            // MutationObserver: elimina qualsevol element nou que injecti la llibreria
+            qrObserver = new MutationObserver(() => nukeNativeQROverlay());
+            qrObserver.observe(document.getElementById('reader'), { childList: true, subtree: true });
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 20, qrbox: { width: 250, height: 250 } },
+                (text) => {
+                    const id = new URLSearchParams(text.split('?')[1]).get('id');
+                    if (id) { stopScanner(false); gameState.isOnline = false; loadSong(id); }
+                }
+            ).catch(() => stopScanner());
+        }
+
+        function stopScanner(returnToMenu = null) {
+            if (qrObserver) { qrObserver.disconnect(); qrObserver = null; }
+            const goHome = returnToMenu !== null ? returnToMenu : (document.getElementById('scanner-container').dataset.cancelGoesHome !== 'false');
+            // Amagar i navegar immediatament, sense esperar la Promise
+            document.getElementById('scanner-container').style.display = 'none';
+            if (goHome) showScreen('landing-screen');
+            else showScreen('game-screen');
+            // Aturar la càmera en segon pla
+            if (html5QrCode) { html5QrCode.stop().catch(() => {}); html5QrCode = null; }
+        }
         
         // --- CERCADOR PÚBLIC ---
         function openPublicSearch() { showScreen('public-search-screen'); }
