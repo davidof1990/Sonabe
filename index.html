@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ca">
 
 <head>
@@ -698,8 +698,8 @@
                         void flash.offsetWidth;
                         flash.style.animation = 'flashAnim 0.5s ease-out forwards';
                         setTimeout(() => flash.style.display = 'none', 500);
-                        // Vibració
-                        if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+                        // Vibració - cridar immediatament abans de qualsevol async
+                        try { navigator.vibrate(200); } catch(e) {}
                         // Carregar cançó
                         setTimeout(() => { stopScanner(false); gameState.isOnline = false; loadSong(id); }, 300);
                     }
