@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v238 SCANNER PRO</title>
+    <title>Sonabé! 🎶 - v243 SEARCH FIXED</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -494,7 +494,7 @@
         let currentYear = null, isFadingOutAuto = false, allExistingIds = [], databaseSongs = [];
         let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 10, isRobberyActive: false, robbersTried: [], pendingWinner: null, isOnline: false, pressureMode: 0 };
 
-        const KEY = 'sonabe_v238', SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
+        const KEY = 'sonabe_v243', SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
         const ADMIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_jcMVHYvfhsHF5G8oLVym9RiNVMT25txw8asWEQDFcYf0trXkTOysUj0ujSA4hJ0F/exec";
 
         const circle = document.querySelector('.progress-ring__circle'), radius = circle.r.baseVal.value, circumference = radius * 2 * Math.PI;
@@ -602,9 +602,34 @@
 
         function startScanner() { document.getElementById('scanner-container').style.display = 'block'; html5QrCode = new Html5Qrcode("reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 20, qrbox: { width: 250, height: 250 } }, (text) => { const id = new URLSearchParams(text.split('?')[1]).get('id'); if (id) { stopScanner(); gameState.isOnline = false; loadSong(id); } }).catch(() => stopScanner()); }
         function stopScanner() { if (html5QrCode) html5QrCode.stop().then(() => document.getElementById('scanner-container').style.display = 'none'); }
+        
+        // --- CERCADOR PÚBLIC ---
         function openPublicSearch() { showScreen('public-search-screen'); }
-        function closePublicSearch() { showScreen('landing-screen'); }
-        function performPublicSearch() { const t = normalizeString(document.getElementById('public-search-input').value); const res = document.getElementById('public-search-results'); if (!t || t.length < 2) { res.innerHTML = ""; return; } const m = databaseSongs.filter(s => normalizeString(s.title).includes(t) || normalizeString(s.artist).includes(t)).slice(0, 20); res.innerHTML = m.map(s => `<div class="search-item"><b>${s.title}</b><br><span style="color:var(--primary); font-size:0.75rem;">${s.artist} (${s.year})</span></div>`).join(''); }
+        function closePublicSearch() { publicPreviewAudio.pause(); showScreen('landing-screen'); }
+        function performPublicSearch() { 
+            const t = normalizeString(document.getElementById('public-search-input').value); 
+            const res = document.getElementById('public-search-results'); 
+            if (!t || t.length < 2) { res.innerHTML = ""; return; } 
+            const m = databaseSongs.filter(s => normalizeString(s.title).includes(t) || normalizeString(s.artist).includes(t)).slice(0, 20); 
+            res.innerHTML = m.map(s => `
+                <div class="search-item">
+                    <button class="admin-preview-btn" onclick="togglePublicPreview('${s.id}', this)"><div class="admin-play-icon"></div></button>
+                    <div style="flex:1"><b>${s.title}</b><br><span style="color:var(--primary); font-size:0.75rem;">${s.artist} (${s.year})</span></div>
+                </div>`).join(''); 
+        }
+        async function togglePublicPreview(id, btn) {
+            if (currentPublicBtn === btn) { publicPreviewAudio.pause(); btn.innerHTML = '<div class="admin-play-icon"></div>'; currentPublicBtn = null; return; }
+            if (currentPublicBtn) currentPublicBtn.innerHTML = '<div class="admin-play-icon"></div>';
+            currentPublicBtn = btn; btn.innerHTML = "⏳";
+            try {
+                const r = await fetch(`https://itunes.apple.com/lookup?id=${id}&country=es`); const d = await r.json();
+                if (d.results[0].previewUrl) {
+                    btn.innerHTML = '<div class="admin-stop-icon"></div>';
+                    publicPreviewAudio.src = d.results[0].previewUrl; publicPreviewAudio.play();
+                    publicPreviewAudio.onended = () => { btn.innerHTML = '<div class="admin-play-icon"></div>'; currentPublicBtn = null; };
+                }
+            } catch(e) { btn.innerHTML = "❌"; }
+        }
         
         // ADMIN ITUNES
         function checkAdminAccess() { if (prompt("Contrasenya admin:") === "admin") showScreen('admin-screen'); }
