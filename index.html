@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sonabé! 🎶 - v230 FIXED</title>
+    <title>Sonabé! 🎶 - v231 FULL RESTORE</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -38,9 +38,13 @@
         
         #scanner-container { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index: 5000; overflow: hidden; }
         #reader { width: 100% !important; height: 100% !important; border: none !important; }
-        
+        #reader__scan_region { border: 4px solid var(--neon) !important; box-shadow: 0 0 25px var(--neon), inset 0 0 15px var(--neon) !important; border-radius: 35px !important; }
+
         .player-row { background: #1e1e1e; padding: 12px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid var(--primary); text-align: left; width: 100%; box-sizing: border-box; }
         .active-row { border: 2px solid white !important; box-shadow: 0 0 15px var(--primary); background: #252525; }
+
+        .admin-result-card { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; border: 1px solid #333; width: 100%; box-sizing: border-box; }
+        .search-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 10px; text-align: left; border: 1px solid #333; display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; }
 
         .play-container { position: relative; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; margin: 10px 0; }
         #play-btn-main { width: 90px; height: 90px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; box-shadow: 0 0 15px var(--primary); }
@@ -83,8 +87,21 @@
                 <p style="font-size:0.75rem; font-weight:bold; color:#888;">CARTES PER GUANYAR:</p>
                 <input type="number" id="win-input" value="10" min="2" max="20" oninput="updateWinCondition()" style="width:80px; padding:10px; border-radius:10px; background:#222; color:white; text-align:center; border:1px solid #444;">
             </div>
+            <div class="config-group">
+                <p style="font-size:0.75rem; font-weight:bold; color:#888;">MODE PRESSIÓ:</p>
+                <div style="display:flex; gap:5px; justify-content:center; flex-wrap: wrap;">
+                    <button id="p-off" class="btn mode-selected" onclick="setPressure(0)">OFF</button>
+                    <button id="p-10" class="btn" onclick="setPressure(10)">10s</button>
+                    <button id="p-15" class="btn" onclick="setPressure(15)">15s</button>
+                    <button id="p-20" class="btn" onclick="setPressure(20)">20s</button>
+                    <button id="p-30" class="btn" onclick="setPressure(30)">30s</button>
+                </div>
+            </div>
             <div class="btn-list">
                 <button id="mode-timeline" class="btn mode-selected" onclick="setMode('timeline')">LÍNIA DEL TEMPS</button>
+                <button id="mode-exact" class="btn" onclick="setMode('exact')">ANY EXACTE</button>
+                <button id="mode-song" class="btn" onclick="setMode('song')">CANÇÓ</button>
+                <button id="mode-artist" class="btn" onclick="setMode('artist')">GRUP</button>
                 <button class="btn btn-primary" style="margin-top:10px;" onclick="startGame()">COMENÇAR JOC</button>
             </div>
         </div>
@@ -92,10 +109,11 @@
     </div>
 
     <div id="game-screen" class="screen">
-        <div id="turn-indicator-bar" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; display: flex; justify-content: center; align-items: center;"><span id="turn-text">...</span></div>
+        <div id="turn-indicator-bar" style="background: var(--primary); color: white; padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; display: flex; justify-content: center; align-items: center;"><span id="turn-text">...</span><span id="pressure-timer-display" style="display:none; margin-left:10px;">⏱️ 00</span></div>
         <div class="play-container"><svg class="progress-ring" width="110" height="110"><circle class="progress-ring__circle" stroke-width="5" fill="transparent" r="52" cx="55" cy="55" /></svg><button id="play-btn-main" onclick="handlePlayClick()"><div id="icon-play" style="width:0;height:0;border-top:18px solid transparent;border-bottom:18px solid transparent;border-left:28px solid white;margin-left:8px;"></div><div id="icon-stop" style="width:30px;height:30px;background:white;border-radius:4px;display:none;"></div></button></div>
         
         <div id="ui-timeline-mode" class="btn-list" style="display:none;"><div id="timeline-slots" style="display:flex; gap:5px; flex-wrap:wrap; justify-content:center;"></div></div>
+        <div id="ui-input-mode" class="btn-list" style="display:none;"><input type="text" id="game-text-input" class="text-input-field" placeholder=""><button class="btn btn-primary" style="margin-top:10px; width: 100%;" onclick="processInputGuess()">COMPROVAR</button></div>
         
         <div id="solution-card" style="display:none; flex-direction:column; align-items:center; width: 100%;">
             <div id="guess-result" style="font-weight:bold; font-size:1.5rem; margin-bottom:10px;"></div>
@@ -111,21 +129,26 @@
                 <button id="btn-next" class="btn btn-primary" style="display:none;" onclick="nextAction()">Següent Cançó</button>
             </div>
         </div>
-
         <div id="game-board-container" style="width: 100%; margin-top: 20px;"></div>
-        <button class="btn" style="margin-top:20px; opacity:0.5;" onclick="window.location.reload()">Menú Principal</button>
+    </div>
+
+    <div id="public-search-screen" class="screen">
+        <div class="neon-logo" style="font-size: 1.8rem;">Cercador</div>
+        <div class="config-group"><input type="text" id="public-search-input" class="text-input-field" placeholder="Grup o cançó..." oninput="performPublicSearch()"></div>
+        <div id="public-search-results" style="width: 100%; max-height: 450px; overflow-y: auto; padding: 5px;"></div>
+        <button class="btn" onclick="showScreen('landing-screen')">Tornar</button>
     </div>
 
     <audio id="audio-player" preload="auto"></audio>
 
     <script>
         const audio = document.getElementById('audio-player');
-        let html5QrCode = null, animationFrame = null;
+        let html5QrCode = null, animationFrame = null, pressureInterval = null;
         let currentYear = null, databaseSongs = [], allExistingIds = []; 
-        // DAVID: winCondition 10 per defecte
-        let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 10, isRobberyActive: false, robbersTried: [] };
+        // DAVID: winCondition 10 predeterminat al codi
+        let gameState = { players: [], currentTurn: 0, originalTurn: 0, mode: 'timeline', playedIds: [], winCondition: 10, isRobberyActive: false, robbersTried: [], pressureMode: 0 };
 
-        const KEY = 'sonabe_v230', SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
+        const KEY = 'sonabe_v231', SHEET_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSKbhu-nwl5Mrq1-_WiGPQyiflqbb3a5C9BRTTDWgwMNqTur9_8GBODKlJC9-OHol7EhIzap9Yv_lF/pub?output=csv";
 
         const circle = document.querySelector('.progress-ring__circle'), radius = circle.r.baseVal.value, circumference = radius * 2 * Math.PI;
         circle.style.strokeDasharray = `${circumference} ${circumference}`; circle.style.strokeDashoffset = circumference;
@@ -136,6 +159,7 @@
         function hideLoader() { document.getElementById('loading-overlay').style.display = 'none'; }
         function save() { localStorage.setItem(KEY, JSON.stringify(gameState)); }
         function load() { const s = localStorage.getItem(KEY); if (s) { try { gameState = JSON.parse(s); } catch(e){} } }
+        function normalizeString(str) { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); }
 
         function revealPhysicalSolution() {
             document.getElementById('song-details').style.display = 'flex';
@@ -160,8 +184,8 @@
             const pi = document.getElementById('icon-play'), si = document.getElementById('icon-stop');
             if (audio.paused) {
                 pi.style.display = 'none'; si.style.display = 'block'; audio.volume = 1;
-                audio.play(); updateSmoothProgress();
-            } else { audio.pause(); resetPlayIcons(); }
+                audio.play(); updateSmoothProgress(); startPressureTimer();
+            } else { audio.pause(); resetPlayIcons(); clearInterval(pressureInterval); }
         }
 
         function resetPlayIcons() { document.getElementById('icon-play').style.display='block'; document.getElementById('icon-stop').style.display='none'; cancelAnimationFrame(animationFrame); setProgress(0); }
@@ -183,10 +207,22 @@
             document.getElementById('config-area').style.display = gameState.players.length ? 'block' : 'none';
         }
         function updateWinCondition() { gameState.winCondition = parseInt(document.getElementById('win-input').value) || 10; save(); }
+        function setPressure(s) { gameState.pressureMode = s; ['p-off','p-10','p-15','p-20','p-30'].forEach(id => document.getElementById(id).className = 'btn'); const target = s === 0 ? 'p-off' : 'p-'+s; document.getElementById(target).className = 'btn mode-selected'; save(); }
+        function setMode(m) { gameState.mode = m; ['mode-timeline','mode-exact','mode-song','mode-artist'].forEach(id => document.getElementById(id).className = 'btn'); document.getElementById('mode-'+m).className = 'btn mode-selected'; save(); }
+
+        function startPressureTimer() {
+            if (gameState.pressureMode <= 0 || gameState.isRobberyActive) return;
+            clearInterval(pressureInterval); let t = gameState.pressureMode;
+            const d = document.getElementById('pressure-timer-display'); d.style.display = 'inline-block'; d.innerText = `⏱️ ${t}`;
+            pressureInterval = setInterval(() => {
+                t--; d.innerText = `⏱️ ${t}`;
+                if(t <= 0) { clearInterval(pressureInterval); processResult(false); }
+            }, 1000);
+        }
 
         async function startGame() { 
             gameState.isOnline = true;
-            gameState.players.forEach(p => p.cards = [1970 + Math.floor(Math.random()*40)]); 
+            gameState.players.forEach(p => p.cards = [1960 + Math.floor(Math.random()*50)]); 
             fetchNextSong(); 
         }
 
@@ -211,12 +247,28 @@
         function renderGameUI() {
             const p = gameState.players[gameState.currentTurn];
             document.getElementById('turn-text').innerText = gameState.isRobberyActive ? `🚨 ROBATORI: ${p.name.toUpperCase()}` : `TORN DE: ${p.name.toUpperCase()}`;
-            document.getElementById('ui-timeline-mode').style.display = 'block';
+            
+            if (gameState.mode === 'timeline') {
+                document.getElementById('ui-timeline-mode').style.display = 'block';
+                document.getElementById('ui-input-mode').style.display = 'none';
+                renderTimelineSlots();
+            } else {
+                document.getElementById('ui-timeline-mode').style.display = 'none';
+                document.getElementById('ui-input-mode').style.display = 'block';
+                document.getElementById('game-text-input').value = "";
+            }
+
             document.getElementById('solution-card').style.display = 'none';
             document.getElementById('song-details').style.display = 'none';
             document.getElementById('btn-rob').style.display = 'none';
             document.getElementById('btn-next').style.display = 'none';
-            renderTimelineSlots();
+            document.getElementById('btn-reveal-physical').style.display = 'none';
+            
+            if(!gameState.isOnline) {
+                document.getElementById('turn-text').innerText = "MODE FÍSIC";
+                document.getElementById('solution-card').style.display = 'flex';
+                document.getElementById('btn-reveal-physical').style.display = 'block';
+            }
             renderBoards();
         }
 
@@ -238,10 +290,23 @@
             processResult(ok);
         }
 
+        function processInputGuess() {
+            const v = document.getElementById('game-text-input').value;
+            let ok = false;
+            if(gameState.mode==='exact') ok = parseInt(v)===currentYear;
+            else if(gameState.mode==='song') ok = normalizeString(v)===normalizeString(document.getElementById('song-title').innerText);
+            else if(gameState.mode==='artist') ok = normalizeString(v)===normalizeString(document.getElementById('song-artist').innerText);
+            processResult(ok);
+        }
+
         function processResult(ok) {
+            clearInterval(pressureInterval);
             document.getElementById('ui-timeline-mode').style.display = 'none';
+            document.getElementById('ui-input-mode').style.display = 'none';
+            document.getElementById('pressure-timer-display').style.display = 'none';
             document.getElementById('solution-card').style.display = 'flex';
             const r = document.getElementById('guess-result');
+            
             if(ok) {
                 gameState.players[gameState.currentTurn].cards.push(currentYear);
                 r.innerText = "✅ ENCERTAT!"; r.style.color = "#28a745";
@@ -283,6 +348,7 @@
         function nextAction() {
             if(!gameState.isOnline) { startScanner(); return; }
             gameState.currentTurn = (gameState.originalTurn + 1) % gameState.players.length;
+            gameState.originalTurn = gameState.currentTurn;
             gameState.isRobberyActive = false;
             gameState.robbersTried = [];
             fetchNextSong();
@@ -313,7 +379,18 @@
             });
         }
         function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => document.getElementById('scanner-container').style.display = 'none'); }
+        
+        function performPublicSearch() {
+            const t = normalizeString(document.getElementById('public-search-input').value);
+            const res = document.getElementById('public-search-results');
+            if (!t || t.length < 2) { res.innerHTML = ""; return; }
+            const m = databaseSongs.filter(s => normalizeString(s.title).includes(t) || normalizeString(s.artist).includes(t)).slice(0, 20);
+            res.innerHTML = m.map(s => `<div class="search-item"><b>${s.title}</b><br><span style="color:var(--primary); font-size:0.75rem;">${s.artist} (${s.year})</span></div>`).join('');
+        }
+        
+        function openPublicSearch() { showScreen('public-search-screen'); document.getElementById('public-search-input').value = ""; }
         function resetGame() { localStorage.removeItem(KEY); window.location.reload(); }
+        function checkAdminAccess() { if(prompt("Pass:")==="admin") alert("Admin Actiu"); }
 
         window.onload = () => { load(); showScreen('landing-screen'); loadTotalCount(); };
     </script>
